@@ -2,7 +2,7 @@
  *
  * $Id: example.h,v 1.10 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -24,6 +24,7 @@
 class ClassDef;
 class MemberName;
 
+/** Data associated with an example. */
 struct Example
 {
   QCString anchor;
@@ -31,6 +32,7 @@ struct Example
   QCString file;
 };
 
+/** A sorted dictionary of Example objects. */
 class ExampleSDict : public SDict<Example>
 {
   public:

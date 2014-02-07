@@ -2,7 +2,7 @@
  *
  * $Id: pycode.h,v 1.9 2001/03/19 19:27:39 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -57,7 +57,7 @@ static Definition *  g_currentDefinition;
 static MemberDef *   g_currentMemberDef;
 static bool          g_includeCodeFragment;
 static QCString      g_realScope;
-static bool          g_insideBody;
+//static bool          g_insideBody;
 static int           g_bodyCurlyCount;
 static bool          g_searchingForBody;
 static QCString      g_classScope;
@@ -296,7 +296,7 @@ static void addToSearchIndex(const char *text)
 }
 
 
-static ClassDef *stripClassName(const char *s)
+static ClassDef *stripClassName(const char *s,Definition *d=g_currentDefinition)
 {
   int pos=0;
   QCString type = s;
@@ -309,11 +309,11 @@ static ClassDef *stripClassName(const char *s)
     ClassDef *cd=0;
     if (!g_classScope.isEmpty())
     {
-      cd=getResolvedClass(g_currentDefinition,g_sourceFileDef,g_classScope+"::"+clName);
+      cd=getResolvedClass(d,g_sourceFileDef,g_classScope+"::"+clName);
     }
     if (cd==0)
     {
-      cd=getResolvedClass(g_currentDefinition,g_sourceFileDef,clName);
+      cd=getResolvedClass(d,g_sourceFileDef,clName);
     }
     if (cd)
     {
@@ -346,7 +346,7 @@ static void startCodeLine()
     {
       g_currentDefinition = d;
       g_currentMemberDef = g_sourceFileDef->getSourceMember(g_yyLineNr);
-      g_insideBody = FALSE;
+      //g_insideBody = FALSE;
       g_searchingForBody = TRUE;
       g_realScope = d->name().copy();
       g_classScope = d->name().copy();
@@ -382,7 +382,7 @@ static void startCodeLine()
     }
     //g_code->endLineNumber();
   }
-  g_code->startCodeLine(); 
+  g_code->startCodeLine(g_sourceFileDef); 
   if (g_currentFontClass)
   {
     g_code->startFontClass(g_currentFontClass);
@@ -473,21 +473,20 @@ static void codifyLines(char *text)
 
 static void addDocCrossReference(MemberDef *src,MemberDef *dst)
 {
+  static bool referencedByRelation = Config_getBool("REFERENCED_BY_RELATION");
+  static bool callerGraph =  Config_getBool("CALLER_GRAPH");
+  static bool referencesRelation = Config_getBool("REFERENCES_RELATION");
+  static bool callGraph = Config_getBool("CALL_GRAPH");
   if (dst->isTypedef() || dst->isEnumerate()) return; // don't add types
   //printf("addDocCrossReference src=%s,dst=%s\n",src->name().data(),dst->name().data());
-  if ((Config_getBool("REFERENCED_BY_RELATION") || Config_getBool("CALLER_GRAPH")) && 
-      (src->isFunction() || src->isSlot()) 
-     )
+  if ((referencedByRelation || callerGraph) && (src->isFunction() || src->isSlot()))
   {
     dst->addSourceReferencedBy(src);
   }
-  if ((Config_getBool("REFERENCES_RELATION") || Config_getBool("CALL_GRAPH")) && 
-      (src->isFunction() || src->isSlot())
-     )
+  if ((referencesRelation || callGraph) && (src->isFunction() || src->isSlot()))
   {
     src->addSourceReferences(dst);
   }
-
 }
 
 
@@ -508,21 +507,21 @@ static bool getLinkInScope(const QCString &c,  // scope
   if (getDefs(c,m,"()",md,cd,fd,nd,gd,FALSE,g_sourceFileDef) && 
       md->isLinkable())
   {
-    //printf("Found!\n");
     //Definition *d=0;
     //if (cd) d=cd; else if (nd) d=nd; else if (fd) d=fd; else d=gd;
 
     Definition *d = md->getOuterScope()==Doxygen::globalScope ?
 	            md->getBodyDef() : md->getOuterScope();
+    //printf("Found! d=%s\n",d?d->name().data():"<none>");
     if (md->getGroupDef()) d = md->getGroupDef();
     if (d && d->isLinkable())
     {
-      g_theCallContext.setClass(stripClassName(md->typeString()));
-      //printf("g_currentDefinition=%p g_currentMemberDef=%p g_insideBody=%d\n",
-      //        g_currentDefinition,g_currentMemberDef,g_insideBody);
+      g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
+      //printf("g_currentDefinition=%p g_currentMemberDef=%p\n",
+      //        g_currentDefinition,g_currentMemberDef);
 
       if (g_currentDefinition && g_currentMemberDef &&
-	  md!=g_currentMemberDef && g_insideBody)
+	  md!=g_currentMemberDef)
       {
 	addDocCrossReference(g_currentMemberDef,md);
       }
@@ -564,35 +563,43 @@ static bool getLink(const char *className,
 /*
   For a given string in the source code,
   finds its class or global id and links to it.
-
-  As of June 1, '05, this ONLY finds classes
 */
 static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
-                                      bool /*typeOnly*/=FALSE)
+                                      bool typeOnly=FALSE)
 {
   QCString className=clName;
 
   // Don't do anything for empty text
   if (className.isEmpty()) return;
 
+  //fprintf(stderr,"generateClassOrGlobalLink(className=%s)\n",className.data());
+
   ClassDef *cd=0,*lcd=0;  /** Class def that we may find */
   MemberDef *md=0;        /** Member def that we may find */
-  bool isLocal=FALSE;
-
-  // printf("generateClassOrGlobalLink(className=%s)\n",className.data());
+  //bool isLocal=FALSE;
 
   if ((lcd=g_theVarContext.findVariable(className))==0) // not a local variable
   {
     Definition *d = g_currentDefinition;
+    QCString scope = substitute(className,".","::");
 
-    cd = getResolvedClass(d,g_sourceFileDef,className,&md);
+    cd = getResolvedClass(d,g_sourceFileDef,substitute(className,".","::"),&md);
 
-    //printf("d=%p g_sourceFileDef=%p\n",d,g_currentDefinition);
-    //printf("is found as a type %s\n",cd?cd->name().data():"<null>");
+    //fprintf(stderr,"d=%s g_sourceFileDef=%s\n",
+    //	d?d->displayName().data():"<null>",
+    //	g_currentDefinition?g_currentDefinition->displayName().data():"<null>");
+    //fprintf(stderr,"is found as a type %s\n",cd?cd->name().data():"<null>");
 
     if (cd==0 && md==0) // also see if it is variable or enum or enum value
     {
-      if (getLink(g_classScope,clName,ol,clName))
+      NamespaceDef *nd = getResolvedNamespace(scope);
+      if (nd)
+      {
+        writeMultiLineCodeLink(ol,nd->getReference(),nd->getOutputFileBase(),nd->anchor(),clName,nd->briefDescriptionAsTooltip());
+        addToSearchIndex(className);
+        return;
+      }
+      else if (getLink(g_classScope,clName,ol,clName))
       {
 	return;
       }
@@ -604,13 +611,13 @@ static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
     {
       g_theCallContext.setClass(lcd);
     }
-    isLocal=TRUE;
+    //isLocal=TRUE;
     //fprintf(stderr,"is a local variable cd=%p!\n",cd);
   }
 
   if (cd && cd->isLinkable()) // is it a linkable class
   {
-    writeMultiLineCodeLink(ol,cd->getReference(),cd->getOutputFileBase(),0,clName,cd->briefDescriptionAsTooltip());
+    writeMultiLineCodeLink(ol,cd->getReference(),cd->getOutputFileBase(),cd->anchor(),clName,cd->briefDescriptionAsTooltip());
     addToSearchIndex(className);
     if (md)
     {
@@ -625,49 +632,55 @@ static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
   }
   else // not a class, maybe a global member
   {
-
-    /*
-      This code requires a going-over in order to
-      make it work for Python
-
-    //printf("class %s not linkable! cd=%p md=%p typeOnly=%d\n",clName,cd,md,typeOnly);
-    if (!isLocal && (md!=0 || (cd==0 && !typeOnly))) // not a class, see if it is a global enum/variable/typedef.
+    int scopeEnd = className.findRev(".");
+    if (scopeEnd!=-1 && !typeOnly) // name with explicit scope
     {
-      if (md==0) // not found as a typedef
+      QCString scope = substitute(className.left(scopeEnd),".","::");
+      QCString locName = className.right(className.length()-scopeEnd-1);
+      ClassDef *mcd = getClass(scope);
+      //fprintf(stderr,"scope=%s locName=%s mcd=%p\n",scope.data(),locName.data(),mcd);
+      if (mcd)
       {
-	md = setCallContextForVar(clName);
-	//printf("setCallContextForVar(%s) md=%p g_currentDefinition=%p\n",clName,md,g_currentDefinition);
-	if (md && g_currentDefinition)
+	MemberDef *md = mcd->getMemberByName(locName);
+	if (md)
 	{
-	  //fprintf(stderr,"%s accessible from %s? %d md->getOuterScope=%s\n",
-	  //    md->name().data(),g_currentDefinition->name().data(),
-	  //    isAccessibleFrom(g_currentDefinition,g_sourceFileDef,md),
-	  //    md->getOuterScope()->name().data());
-	}
-	     
-        if (md && g_currentDefinition && 
-	    isAccessibleFrom(g_currentDefinition,g_sourceFileDef,md)==-1)
-	{
-	  md=0; // variable not accessible
-	}
-      }
-      if (md)
-      {
-        //printf("is a global md=%p g_currentDefinition=%s\n",md,g_currentDefinition?g_currentDefinition->name().data():"<none>");
-	if (md->isLinkable())
-	{
-	  writeMultiLineCodeLink(ol,md->getReference(),md->getOutputFileBase(),md->anchor(),clName,md->briefDescriptionAsTooltip());
-          addToSearchIndex(clName);
-	  if (g_currentMemberDef)
+          g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
+          writeMultiLineCodeLink(ol,md->getReference(),md->getOutputFileBase(),md->anchor(),clName,md->briefDescriptionAsTooltip());
+          addToSearchIndex(className);
+	  Definition *d = md->getOuterScope()==Doxygen::globalScope ?
+	                  md->getBodyDef() : md->getOuterScope();
+	  if (md->getGroupDef()) d = md->getGroupDef();
+	  if (d && d->isLinkable() && md->isLinkable() && g_currentMemberDef)
 	  {
 	    addDocCrossReference(g_currentMemberDef,md);
 	  }
 	  return;
 	}
       }
+      else // check namespace as well
+      {
+        NamespaceDef *mnd = getResolvedNamespace(scope);
+        if (mnd)
+        {
+  	  MemberDef *md=mnd->getMemberByName(locName);
+	  if (md)
+          {
+	    //printf("name=%s scope=%s\n",locName.data(),scope.data());
+	    g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
+            writeMultiLineCodeLink(ol,md->getReference(),md->getOutputFileBase(),md->anchor(),clName,md->briefDescriptionAsTooltip());
+            addToSearchIndex(className);
+	    Definition *d = md->getOuterScope()==Doxygen::globalScope ?
+	                    md->getBodyDef() : md->getOuterScope();
+	    if (md->getGroupDef()) d = md->getGroupDef();
+	    if (d && d->isLinkable() && md->isLinkable() && g_currentMemberDef)
+	    {
+	      addDocCrossReference(g_currentMemberDef,md);
+	    }
+	    return;
+          }
+        }
+      }
     }
-
-    */
     
     // nothing found, just write out the word
     codifyLines(clName);
@@ -730,15 +743,19 @@ static bool findMemberLink(CodeOutputInterface &ol,Definition *sym,const char *s
   {
     ClassDef *cd = (ClassDef*)sym->getOuterScope();
     ClassDef *thisCd = (ClassDef *)g_currentDefinition;
-    QCString anchor;
+    QCString anchor=sym->anchor();
     if (sym->definitionType()==Definition::TypeMember)
     {
-      anchor=((MemberDef *)sym)->anchor();
+      if (g_currentMemberDef)
+      {
+	addDocCrossReference(g_currentMemberDef,(MemberDef*)sym);
+      }
     }
+    //fprintf(stderr,"cd=%s thisCd=%s\n",cd?cd->name().data():"<none>",thisCd?thisCd->name().data():"<none>");
 
     // TODO: find the nearest base class in case cd is a base class of
     // thisCd 
-    if (cd==thisCd) 
+    if (cd==thisCd || (thisCd && thisCd->isBaseClass(cd,TRUE)))
     {
       writeMultiLineCodeLink(ol,sym->getReference(),
           sym->getOutputFileBase(),
@@ -967,6 +984,10 @@ TARGET           ({IDENTIFIER}|"("{TARGET_LIST}")"|"["{TARGET_LIST}"]"|{ATTRIBUT
 					codify(yytext);
 					endFontClass();
 				    }
+      "self."{IDENTIFIER}/"("       {
+				        codify("self.");
+				        findMemberLink(*g_code,&yytext[5]);
+	                            }
       "self."{IDENTIFIER}           {
 				        codify("self.");
 				        findMemberLink(*g_code,&yytext[5]);
@@ -987,7 +1008,7 @@ TARGET           ({IDENTIFIER}|"("{TARGET_LIST}")"|"["{TARGET_LIST}"]"|{ATTRIBUT
 					codify(yytext);
                                     }
 
-   {IDENTIFIER}                     {
+   ({IDENTIFIER}".")*{IDENTIFIER}   {
                                         // The parser
 					// is assuming
 					// that ALL identifiers
@@ -1104,10 +1125,14 @@ TARGET           ({IDENTIFIER}|"("{TARGET_LIST}")"|"["{TARGET_LIST}"]"|{ATTRIBUT
   		                 codify(yytext);
 		                 endFontClass();
                                }
-
-    {IDENTIFIER}               {
-  		                 codify(yytext);
+    ({IDENTIFIER}".")*{IDENTIFIER}/"("  {
+				 generateClassOrGlobalLink(*g_code,yytext);
+      			       }
+    ({IDENTIFIER}".")+{IDENTIFIER} {
+				 generateClassOrGlobalLink(*g_code,yytext,TRUE);
 			       }
+    {IDENTIFIER}               { codify(yytext); }
+		   	
 }
 
 
@@ -1117,6 +1142,12 @@ TARGET           ({IDENTIFIER}|"("{TARGET_LIST}")"|"["{TARGET_LIST}"]"|{ATTRIBUT
     {BB}                               {
                                          codify(yytext);
                                        }
+    "pass"			       {
+                                          startFontClass("keyword");
+					  codifyLines(yytext);
+		                          endFontClass();
+					  BEGIN(Body);
+      				       }
     {KEYWORD}                          {
                                           startFontClass("keyword");
 					  codifyLines(yytext);
@@ -1336,6 +1367,10 @@ TARGET           ({IDENTIFIER}|"("{TARGET_LIST}")"|"["{TARGET_LIST}"]"|{ATTRIBUT
 				 BEGIN(Body);
                                }
 
+<*>[ \t]+                      {
+  		                 codify(yytext);
+				 BEGIN(Body);					
+  			       }
 <*>.                           {
   		                 codify(yytext);
 				 // printf("[pycode] '%s' [ state %d ]  [line %d] no match\n",
@@ -1391,19 +1426,14 @@ static void adjustScopesAndSuites(unsigned indentLength)
   }
 }
 
-void parsePythonCode(CodeOutputInterface &od,const char *className,
+void parsePythonCode(CodeOutputInterface &od,const char * /*className*/,
                  const QCString &s,bool exBlock, const char *exName,
-		 FileDef *fd,int startLine,int endLine,bool inlineFragment,
+		 FileDef *fd,int startLine,int endLine,bool /*inlineFragment*/,
 		 MemberDef *,bool) 
 {
 
   //printf("***parseCode()\n");
   
-  //--- some code to eliminate warnings---
-  className = "";
-  exBlock = FALSE;
-  exName = "";
-  inlineFragment = "";
   //--------------------------------------
   if (s.isEmpty()) return;
   g_code = &od;

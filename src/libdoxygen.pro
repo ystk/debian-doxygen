@@ -1,11 +1,11 @@
 #
-# This file was generated from libdoxygen.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from libdoxygen.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 #
-# $Id: libdoxygen.pro.in,v 1.1 2001/03/19 19:27:41 root Exp $
+# 
 #
-# Copyright (C) 1997-2010 by Dimitri van Heesch.
+# Copyright (C) 1997-2012 by Dimitri van Heesch.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -20,7 +20,9 @@
 
 TEMPLATE     =	libdoxygen.t
 CONFIG       =	console warn_on staticlib debug
-HEADERS      =	bufstr.h \
+HEADERS      =	arguments.h \
+                bufstr.h \
+		cite.h \
                 classdef.h \
                 classlist.h \
                 cmdmapper.h \
@@ -45,16 +47,19 @@ HEADERS      =	bufstr.h \
                 docvisitor.h \
 		dot.h \
 		doxygen.h \
+		doxygen_bst.h \
 		doxygen_css.h \
 		eclipsehelp.h \
 		entry.h \
 		example.h \
 		filedef.h \
 		filename.h \
+		footer_html.h \
 		formula.h \
 		ftextstream.h \
 		ftvhelp.h \
 		groupdef.h \
+		header_html.h \
 		htags.h \
 		htmlattrib.h \
                 htmldocvisitor.h \
@@ -64,7 +69,13 @@ HEADERS      =	bufstr.h \
 		image.h \
 		index.h \
                 index_xsd.h \
-		instdox.h \
+		jquery_p1_js.h \
+		jquery_p2_js.h \
+		jquery_p3_js.h \
+		jquery_ui_js.h \
+		jquery_fx_js.h \
+		svgpan_js.h \
+		dynsections_js.h \
 		language.h \
                 latexdocvisitor.h \
 		latexgen.h \
@@ -74,6 +85,7 @@ HEADERS      =	bufstr.h \
 		logos.h \
 		mandocvisitor.h \
 		mangen.h \
+		markdown.h \
                 marshal.h \
 		memberdef.h \
 		membergroup.h \
@@ -82,6 +94,8 @@ HEADERS      =	bufstr.h \
 		message.h \
                 msc.h \
 		namespacedef.h \
+		navtree_css.h \
+		navtree_js.h \
                 objcache.h \
 		outputgen.h \
 		outputlist.h \
@@ -99,6 +113,7 @@ HEADERS      =	bufstr.h \
 		qhpxmlwriter.h \
 		qtbc.h \
 		reflist.h \
+		resize_js.h \
                 rtfdocvisitor.h \
 		rtfgen.h \
 		rtfstyle.h \
@@ -106,14 +121,17 @@ HEADERS      =	bufstr.h \
 		searchindex.h \
 		search_css.h \
 		search_js.h \
-		search_php.h \
+		search_functions_php.h \
+		search_opensearch_php.h \
 		section.h \
 		sortdict.h \
                 store.h \
 		tagreader.h \
+		tclscanner.h \
                 textdocvisitor.h \
 		translator.h \
 		translator_adapter.h \
+		translator_am.h \
 		translator_br.h \
 		translator_ca.h \
 		translator_cn.h \
@@ -148,6 +166,7 @@ HEADERS      =	bufstr.h \
 		translator_ua.h \
 		translator_vi.h \
 		translator_za.h \
+		types.h \
 		unistd.h \
 		util.h \
 		version.h \
@@ -157,8 +176,10 @@ HEADERS      =	bufstr.h \
 		xmldocvisitor.h \
                 xmlgen.h
 
-SOURCES      =	ce_lex.cpp \
+SOURCES      =	arguments.cpp \
+                ce_lex.cpp \
                 ce_parse.cpp \
+		cite.cpp \
 		classdef.cpp \
 		classlist.cpp \
                 cmdmapper.cpp \
@@ -166,6 +187,7 @@ SOURCES      =	ce_lex.cpp \
 		commentcnv.cpp \
 		commentscan.cpp \
 		cppvalue.cpp \
+                dbusxmlscanner.cpp \
 		debug.cpp \
                 defgen.cpp \
 		declinfo.cpp \
@@ -196,7 +218,6 @@ SOURCES      =	ce_lex.cpp \
 		indexlog.cpp \
 		image.cpp \
 		index.cpp \
-		instdox.cpp \
 		language.cpp \
                 latexdocvisitor.cpp \
 		latexgen.cpp \
@@ -205,6 +226,7 @@ SOURCES      =	ce_lex.cpp \
 		logos.cpp \
 		mandocvisitor.cpp \
 		mangen.cpp \
+		markdown.cpp \
                 marshal.cpp \
 		memberdef.cpp \
 		membergroup.cpp \
@@ -231,16 +253,17 @@ SOURCES      =	ce_lex.cpp \
 		searchindex.cpp \
                 store.cpp \
 		tagreader.cpp \
+                tclscanner.cpp \
                 textdocvisitor.cpp \
 		translator.cpp \
 		util.cpp \
 		version.cpp \
 		vhdlcode.cpp \
 		vhdldocgen.cpp \
+		vhdlparser.cpp \
 		vhdlscanner.cpp \
 		xmldocvisitor.cpp \
-                xmlgen.cpp \
-                dbusxmlscanner.cpp \
+                xmlgen.cpp
 
 win32:TMAKE_CXXFLAGS       += -DQT_NODLL 
 win32-msvc:TMAKE_CXXFLAGS  += -Zm200
@@ -256,3 +279,4 @@ DESTDIR                    =  ../lib
 TARGET                     =  doxygen
 OBJECTS_DIR                =  ../objects
 
+TMAKE_MOC = /usr/bin/moc

@@ -1,5 +1,5 @@
 #
-# This file was generated from Makefile.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from Makefile.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 DOXYGEN   = /Users/dimitri/doxygen
@@ -10,12 +10,12 @@ MAKE      = /opt/local/bin/gmake
 PERL      = /opt/local/bin/perl
 RM        = rm -f
 CP        = cp
-VERSION   = 1.7.1
+VERSION   = 1.8.1.2
 INSTALL   = /usr/local
-INSTTOOL  = /usr/bin/install
+INSTTOOL  = /opt/local/bin/ginstall
 DOXYDOCS  = ..
 DOCDIR    = $(INSTALL)/share/doc/packages/doxygen
-QTDIR     = 
+QTDIR     = /usr
 HAVE_DOT  = /usr/local/bin/dot
 MKSPECS   = -spec macx-g++
 all: Makefile.libmd5 

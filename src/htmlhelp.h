@@ -2,7 +2,7 @@
  *
  * $Id: htmlhelp.h,v 1.7 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -27,9 +27,11 @@
 #include "ftextstream.h"
 
 class QFile;
+class Definition;
 class HtmlHelpIndex;
 
-/*! A class that generated the HTML Help specific files.
+/** A class that generated the HTML Help specific files.
+ *
  *  These files can be used with the Microsoft HTML Help workshop
  *  to generate compressed HTML files (.chm).
  */
@@ -71,19 +73,19 @@ class HtmlHelp  : public IndexIntf
     void decContentsDepth();
     void addContentsItem(bool isDir,
                          const char *name, 
-                         const char *ref = 0, 
-                         const char *file = 0,
-                         const char *anchor = 0);
-    //void addIndexItem(const char *level1, const char *level2, 
-    //                  const char *contRef, const char *memRef,
-    //                  const char *anchor,const MemberDef *md);
-    void addIndexItem(Definition *context,MemberDef *md,
-                      const char *anchor,const char *word);
+                         const char *ref, 
+                         const char *file,
+                         const char *anchor,
+                         bool separateIndex,
+                         bool addToNavIndex,
+                         Definition *def);
+    void addIndexItem(Definition *context,MemberDef *md,const char *title);
     void addIndexFile(const char *name);
-    void addImageFile(const char *) {}
+    void addImageFile(const char *);
     void addStyleSheetFile(const char *) {}
 
   private:
+    friend class HtmlHelpIndex;
     void createProjectFile();
 
     QFile *cf,*kf; 
@@ -91,6 +93,7 @@ class HtmlHelp  : public IndexIntf
     HtmlHelpIndex *index;
     int dc;
     QStrList indexFiles;
+    QStrList imageFiles;
     QDict<void> indexFileDict;
     static HtmlHelp *theInstance;
     QCString recode(const QCString &s);

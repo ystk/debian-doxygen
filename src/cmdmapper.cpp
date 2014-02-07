@@ -3,7 +3,7 @@
  * 
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -18,6 +18,13 @@
 
 #include "cmdmapper.h"
 
+/** Call representing a mapping from a command name to a command ID. */
+struct CommandMap
+{
+  const char *cmdName;
+  int cmdId;
+};
+
 CommandMap cmdMap[] =
 {
   { "a",             CMD_EMPHASIS },
@@ -29,10 +36,12 @@ CommandMap cmdMap[] =
   { "authors",       CMD_AUTHORS },
   { "b",             CMD_BOLD },
   { "c",             CMD_CODE },
+  { "cite",          CMD_CITE },
   { "code",          CMD_STARTCODE },
   { "copydoc",       CMD_COPYDOC },
   { "copybrief",     CMD_COPYBRIEF },
   { "copydetails",   CMD_COPYDETAILS },
+  { "copyright",     CMD_COPYRIGHT },
   { "date",          CMD_DATE },
   { "dontinclude",   CMD_DONTINCLUDE },
   { "dotfile",       CMD_DOTFILE },
@@ -73,9 +82,11 @@ CommandMap cmdMap[] =
   { "return",        CMD_RETURN },
   { "returns",       CMD_RETURN },
   { "retval",        CMD_RETVAL },
+  { "rtfonly",       CMD_RTFONLY },
   { "sa",            CMD_SA },
   { "secreflist",    CMD_SECREFLIST },
   { "section",       CMD_SECTION },
+  { "snippet",       CMD_SNIPPET },
   { "subpage",       CMD_SUBPAGE },
   { "subsection",    CMD_SUBSECTION },
   { "subsubsection", CMD_SUBSUBSECTION },
@@ -102,6 +113,8 @@ CommandMap cmdMap[] =
   { "$",             CMD_DOLLAR },
   { "#",             CMD_HASH },
   { "%",             CMD_PERCENT },
+  { "|",             CMD_PIPE },
+  { "::",            CMD_DCOLON },
   { "\"",            CMD_QUOTE },
   { "_internalref",  CMD_INTERNALREF },
   { "dot",           CMD_DOT },
@@ -112,7 +125,10 @@ CommandMap cmdMap[] =
   { "endmanonly",    CMD_ENDMANONLY },
   { "includelineno", CMD_INCWITHLINES },
   { "inheritdoc",    CMD_INHERITDOC },
-  { 0,               0 }
+  { "mscfile",       CMD_MSCFILE },
+  { "rtfonly",       CMD_RTFONLY },
+  { "endrtfonly",    CMD_ENDRTFONLY },
+  { 0,               0 },
 };
 
 //----------------------------------------------------------------------------
@@ -157,6 +173,7 @@ CommandMap htmlTagMap[] =
   { "h6",         HTML_H6 },
   { "span",       HTML_SPAN },
   { "div",        HTML_DIV },
+  { "blockquote", HTML_BLOCKQUOTE },
 
   { "c",            XML_C },
   // { "code",       XML_CODE },  <= ambiguous <code> is also a HTML tag
@@ -180,6 +197,7 @@ CommandMap htmlTagMap[] =
   { "summary",      XML_SUMMARY },
   { "term",         XML_TERM },
   { "value",        XML_VALUE },
+  { "inheritdoc",   XML_INHERITDOC },
   { 0,              0 }
 };
 
@@ -187,6 +205,25 @@ CommandMap htmlTagMap[] =
 
 Mapper *Mappers::cmdMapper     = new Mapper(cmdMap,TRUE);
 Mapper *Mappers::htmlTagMapper = new Mapper(htmlTagMap,FALSE);
+
+int Mapper::map(const char *n)
+{
+  QCString name=n;
+  if (!m_cs) name=name.lower();
+  int *result;
+  return !name.isEmpty() && (result=m_map.find(name)) ? *result: 0;
+}
+
+Mapper::Mapper(const CommandMap *cm,bool caseSensitive) : m_map(89), m_cs(caseSensitive)
+{
+  m_map.setAutoDelete(TRUE);
+  const CommandMap *p = cm;
+  while (p->cmdName)
+  {
+    m_map.insert(p->cmdName,new int(p->cmdId));
+    p++;
+  }
+}
 
 void Mappers::freeMappers()
 {

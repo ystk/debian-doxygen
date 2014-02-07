@@ -1,5 +1,5 @@
 #
-# This file was generated from libmd5.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from libmd5.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 TEMPLATE	= lib
@@ -12,3 +12,4 @@ DESTDIR                    =  ../lib
 TARGET                     =  md5
 OBJECTS_DIR                =  ../objects
 
+TMAKE_MOC = /usr/bin/moc

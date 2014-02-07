@@ -2,7 +2,7 @@
  *
  * $Id: filename.h,v 1.10 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,6 +22,7 @@
 #include <qdict.h>
 #include "filedef.h"
 
+/** Class representing all files with a certain base name */
 class FileName : public FileList
 { 
   public:
@@ -37,12 +38,14 @@ class FileName : public FileList
     QCString fName;
 };
 
+/** Iterator for FileDef objects in a FileName list. */
 class FileNameIterator : public QListIterator<FileDef>
 {
   public:
     FileNameIterator(const FileName &list);
 };
 
+/** Class representing a list of FileName objects. */
 class FileNameList : public QList<FileName>
 {
   public:
@@ -52,12 +55,14 @@ class FileNameList : public QList<FileName>
     int compareItems(GCI item1,GCI item2);
 };
 
+/** Iterator for FileName objects in a FileNameList. */
 class FileNameListIterator : public QListIterator<FileName>
 {
   public:
     FileNameListIterator( const FileNameList &list );
 };
 
+/** Unsorted dictionary of FileName objects. */
 class FileNameDict : public QDict<FileName>
 {
   public:

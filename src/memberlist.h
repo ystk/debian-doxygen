@@ -2,7 +2,7 @@
  *
  * $Id: memberlist.h,v 1.19 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -27,6 +27,7 @@ class MemberGroup;
 class MemberGroupList;
 class StorageIntf;
 
+/** A list of MemberDef objects. */
 class MemberList : public QList<MemberDef> 
 { 
   public:
@@ -134,15 +135,20 @@ class MemberList : public QList<MemberDef>
     int numDecMembers() const  { ASSERT(m_numDecMembers!=-1); return m_numDecMembers; }
     int numDocMembers() const  { ASSERT(m_numDocMembers!=-1); return m_numDocMembers; }
     bool needsSorting() const  { return m_needsSorting; }
-    void countDecMembers(bool countEnumValues=FALSE);
+    void countDecMembers(bool countEnumValues=FALSE,GroupDef *gd=0);
     void countDocMembers(bool countEnumValues=FALSE);
+    int countInheritableMembers(ClassDef *inheritedFrom) const;
     void writePlainDeclarations(OutputList &ol,
-               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd);
+               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
+               ClassDef *inheritedFrom,const char *inheritId);
     void writeDeclarations(OutputList &ol,
                ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
-               const char *title,const char *subtitle,bool showEnumValues=FALSE);
+               const char *title,const char *subtitle,
+               bool showEnumValues=FALSE,bool showInline=FALSE,
+               ClassDef *inheritedFrom=0);
     void writeDocumentation(OutputList &ol,const char *scopeName,
-               Definition *container,const char *title,bool showEnumValues=FALSE);
+               Definition *container,const char *title,bool showEnumValues=FALSE,bool showInline=FALSE);
+    void writeSimpleDocumentation(OutputList &ol,Definition *container);
     void writeDocumentationPage(OutputList &ol,
                const char *scopeName, Definition *container);
     bool declVisible() const;
@@ -175,6 +181,7 @@ class MemberList : public QList<MemberDef>
     bool m_needsSorting;
 };
 
+/** An iterator for MemberDef objects in a MemberList. */
 class MemberListIterator : public QListIterator<MemberDef>
 {
   public:
@@ -182,6 +189,7 @@ class MemberListIterator : public QListIterator<MemberDef>
     virtual ~MemberListIterator() {}
 };
 
+/** An unsorted dictionary of MemberDef objects. */
 class MemberDict : public QDict<MemberDef>
 {
   public:
@@ -189,6 +197,7 @@ class MemberDict : public QDict<MemberDef>
     virtual ~MemberDict() {}
 };
 
+/** A sorted dictionary of MemberDef objects. */
 class MemberSDict : public SDict<MemberDef>
 {
   public:

@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -123,13 +123,17 @@
 //    - Changed file encoding to utf-8, adapted idLanguageCharset()
 //    - New German orthography (ngerman) is now default in LaTeX
 //
+//   2012/04/11 Peter Grotrian
+//    - Updated for "new since 1.8.0" version
+//    - Some small corrections
+//
 //   Todo:
 //    - see FIXME
 
 #ifndef TRANSLATOR_DE_H
 #define TRANSLATOR_DE_H
 
-class TranslatorGerman : public TranslatorAdapter_1_6_3
+class TranslatorGerman : public Translator
 {
   public:
 
@@ -222,11 +226,11 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
 
     /*! put after an enum name in the list of all members */
     virtual QCString trEnumName()
-    { return "enum Bezeichner"; }
+    { return "enum-Bezeichner"; }
     
     /*! put after an enum value in the list of all members */
     virtual QCString trEnumValue()
-    { return "enum Wert"; }
+    { return "enum-Wert"; }
     
     /*! put after an undocumented member in the list of all members */
     virtual QCString trDefinedIn()
@@ -950,7 +954,7 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
     /*! Text for the \\invariant command */
     virtual QCString trInvariant()
     {
-      return "Invariant";
+      return "Invariante";
     }
 
     /*! Text shown before a multi-line variable/enum initialization */
@@ -1029,7 +1033,7 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
 
     virtual QCString trStaticProtectedAttribs()
     {
-      return "Statische geschützte Attribute";
+      return "Statische, geschützte Attribute";
     }
 
     virtual QCString trPrivateTypes()
@@ -1044,7 +1048,7 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
 
     virtual QCString trStaticPrivateAttribs()
     {
-      return "Statische private Attribute";
+      return "Statische, private Attribute";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1170,8 +1174,8 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
         "Pfeil stehen die Variable(n), mit deren Hilfe auf die Struktur oder "
         "Klasse an der Pfeilspitze zugegriffen werden kann.</li>\n"
         "<li>Ein gestrichelter gelber Pfeil kennzeichnet eine Verknüpfung "
-        "zwischen einer Template Instanz und der Template Klasse von welcher "
-        "es abstammt. Neben dem Pfeil sind die Template Parameter aufgeführt.</li>\n"
+        "zwischen einer Template-Instanz und der Template-Klasse von welcher "
+        "es abstammt. Neben dem Pfeil sind die Template-Parameter aufgeführt.</li>\n"
         "</ul>\n";
     }
 
@@ -1531,7 +1535,7 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
     /*! Put in front of the call graph for a function. */
     virtual QCString trCallGraph()
     {
-      return "Hier ist ein Graph der zeigt, was diese Funktion aufruft:";
+      return "Hier ist ein Graph, der zeigt, was diese Funktion aufruft:";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1670,7 +1674,7 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
      *  of documentation blocks for enumeration values
      */
     virtual QCString trEnumerationValueDocumentation()
-    { return "Enumerator-Dokumentation"; }
+    { return "Dokumentation der Aufzählungswerte"; }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 1.5.4 (mainly for Fortran)
@@ -1909,6 +1913,118 @@ class TranslatorGerman : public TranslatorAdapter_1_6_3
     {
       return "Keine Treffer";
     }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.6.3 (missing items for the directory pages)
+//////////////////////////////////////////////////////////////////////////
+ 
+    /*! introduction text for the directory dependency graph */
+    virtual QCString trDirDependency(const char *name)
+    {
+      return (QCString)"Diagramm der Verzeichnisabhängigkeiten für "+name;
+    }
+ 
+    /*! when clicking a directory dependency label, a page with a
+     *  table is shown. The heading for the first column mentions the
+     *  source file that has a relation to another file.
+     */
+    virtual QCString trFileIn(const char *name)
+    {
+      return (QCString)"Datei in "+name;
+    }
+ 
+    /*! when clicking a directory dependency label, a page with a
+     *  table is shown. The heading for the second column mentions the
+     *  destination file that is included.
+     */
+    virtual QCString trIncludesFileIn(const char *name)
+    {
+      return (QCString)"Include-Dateien in "+name;
+    }
+ 
+    /** Compiles a date string.
+     *  @param year Year in 4 digits
+     *  @param month Month of the year: 1=January
+     *  @param day Day of the Month: 1..31
+     *  @param dayOfWeek Day of the week: 1=Monday..7=Sunday
+     *  @param hour Hour of the day: 0..23
+     *  @param minutes Minutes in the hour: 0..59
+     *  @param seconds Seconds within the minute: 0..59
+     *  @param includeTime Include time in the result string?
+     */
+    virtual QCString trDateTime(int year,int month,int day,int dayOfWeek,
+                                int hour,int minutes,int seconds,
+                                bool includeTime)
+    {
+      static const char *days[]   = { "Mon","Die","Mit","Don","Fre","Sam","Son" };
+      static const char *months[] = { "Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez" };
+      QCString sdate;
+      sdate.sprintf("%s %s %d %d",days[dayOfWeek-1],months[month-1],day,year);
+      if (includeTime)
+      {
+        QCString stime;
+        stime.sprintf(" %.2d:%.2d:%.2d",hour,minutes,seconds);
+        sdate+=stime;
+      }
+      return sdate;
+    }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "Literaturverzeichnis"; }
+
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    { return "Copyright"; }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    { return QCString("Diagramm der Verzeichnisabhängigkeiten für ")+name+":"; }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Detail level selector shown for hierarchical indices */
+    virtual QCString trDetailLevel()
+    { return "Detailebene"; }
+
+    /*! Section header for list of template parameters */
+    virtual QCString trTemplateParameters()
+    { return "Template-Parameter"; }
+
+    /*! Used in dot graph when UML_LOOK is enabled and there are many fields */
+    virtual QCString trAndMore(const QCString &number)
+    { return "und "+number+" mehr ..."; }
+
+    /*! Used file list for a Java enum */
+    virtual QCString trEnumGeneratedFromFiles(bool single)
+    { QCString result = "Die Dokumentation für diesen enum wurde aus ";
+      if (single)
+		result += "der folgenden Datei";
+	  else
+		result += "den folgenden Dateien";
+      result+=" generiert:";
+      return result;
+    }
+
+    /*! Header of a Java enum page (Java enums are represented as classes). */
+    virtual QCString trEnumReference(const char *name)
+    { return QCString(name)+" Enum-Referenz"; }
+
+    /*! Used for a section containing inherited members */
+    virtual QCString trInheritedFrom(const char *members,const char *what)
+    { return QCString(members)+" geerbt von "+what; }
+
+    /*! Header of the sections with inherited members specific for the 
+     *  base class(es) 
+     */
+    virtual QCString trAdditionalInheritedMembers()
+    { return "Weitere Geerbte Elemente"; }
 
 };
 

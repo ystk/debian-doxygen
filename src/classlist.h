@@ -2,7 +2,7 @@
  *
  * $Id: classlist.h,v 1.8 2001/03/19 19:27:39 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -24,6 +24,9 @@
 #include "classdef.h"
 #include "sortdict.h"
 
+class Definition;
+
+/** A list of ClassDef objects. */
 class ClassList : public QList<ClassDef>
 { 
   public:
@@ -33,12 +36,14 @@ class ClassList : public QList<ClassDef>
    int compareItems(GCI item1,GCI item2);
 };
 
+/** An iterator for ClassDef objects in a ClassList. */
 class ClassListIterator : public QListIterator<ClassDef>
 {
   public:
     ClassListIterator(const ClassList &list);
 };
 
+/** An unsorted dictionary of ClassDef objects. */
 class ClassDict : public QDict<ClassDef>
 {
   public:
@@ -46,6 +51,7 @@ class ClassDict : public QDict<ClassDef>
    ~ClassDict() {}
 };
 
+/** A sorted dictionary of ClassDef objects. */
 class ClassSDict : public SDict<ClassDef>
 {
   public:
@@ -54,6 +60,7 @@ class ClassSDict : public SDict<ClassDef>
    int compareItems(GCI item1,GCI item2);
    void writeDeclaration(OutputList &ol,const ClassDef::CompoundType *filter=0,
                          const char *header=0,bool localNames=FALSE);
+   void writeDocumentation(OutputList &ol,Definition *container=0);
    bool declVisible(const ClassDef::CompoundType *filter=0) const;
 };
 

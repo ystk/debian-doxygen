@@ -2,7 +2,7 @@
  *
  * $Id: groupdef.h,v 1.18 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -40,7 +40,9 @@ class PageDef;
 class DirDef;
 class DirList;
 class FTVHelp;
+class Entry;
 
+/** A model of a group of symbols. */
 class GroupDef : public Definition
 {
   public:
@@ -48,9 +50,11 @@ class GroupDef : public Definition
    ~GroupDef();
     DefType definitionType() const { return TypeGroup; }
     QCString getOutputFileBase() const;
+    QCString anchor() const { return QCString(); }
+    QCString displayName(bool=TRUE) const { return hasGroupTitle() ? title : Definition::name(); }
     const char *groupTitle() const { return title; }
     void setGroupTitle( const char *newtitle );
-    bool hasGroupTitle( ) { return titleSet; }
+    bool hasGroupTitle( ) const { return titleSet; }
     void addFile(const FileDef *def); 
     bool addClass(const ClassDef *def);
     bool addNamespace(const NamespaceDef *def);
@@ -65,15 +69,9 @@ class GroupDef : public Definition
     void writeDocumentation(OutputList &ol);
     void writeMemberPages(OutputList &ol);
     void writeQuickMemberLinks(OutputList &ol,MemberDef *currentMd) const;
-    int countMembers() const;
-    bool isLinkableInProject() const
-    {
-      return !isReference();
-    }
-    bool isLinkable() const
-    {
-      return TRUE;
-    }
+    int  countMembers() const;
+    bool isLinkableInProject() const;
+    bool isLinkable() const;
     bool isASubGroup() const;
     void computeAnchors();
 
@@ -86,7 +84,7 @@ class GroupDef : public Definition
 
     bool visited;    // number of times accessed for output - KPW
 
-    friend void writeGroupTreeNode(OutputList&, GroupDef*, int, FTVHelp*);      
+    //friend void writeGroupTreeNode(OutputList&, GroupDef*, int, FTVHelp*);      
                     // make accessible for writing tree view of group in index.cpp - KPW
 
     void setGroupScope(Definition *d) { groupScope = d; }
@@ -104,7 +102,9 @@ class GroupDef : public Definition
     GroupList *     getSubGroups() const    { return groupList; }
     PageSDict *     getPages() const        { return pageDict; }
     DirList *       getDirs() const         { return dirList; }
+    PageSDict *     getExamples() const     { return exampleDict; }
     //MemberList*     getMembers() const      { return allMemberList; }
+    void sortSubGroups();
     
   protected:
     void addMemberListToGroup(MemberList *,bool (MemberDef::*)() const);
@@ -121,6 +121,7 @@ class GroupDef : public Definition
     void writeNestedGroups(OutputList &ol,const QCString &title);
     void writeDirs(OutputList &ol,const QCString &title);
     void writeClasses(OutputList &ol,const QCString &title);
+    void writeInlineClasses(OutputList &ol);
     void writePageDocumentation(OutputList &ol);
     void writeDetailedDescription(OutputList &ol,const QCString &title);
     void writeBriefDescription(OutputList &ol);
@@ -153,6 +154,7 @@ class GroupDef : public Definition
 
 };
 
+/** A sorted dictionary of GroupDef objects. */
 class GroupSDict : public SDict<GroupDef>
 {
   public:
@@ -164,6 +166,7 @@ class GroupSDict : public SDict<GroupDef>
     }
 };
 
+/** A list of GroupDef objects. */
 class GroupList : public QList<GroupDef>
 {
   public:
@@ -173,6 +176,7 @@ class GroupList : public QList<GroupDef>
     }
 };
 
+/** An iterator for GroupDef objects in a GroupList. */
 class GroupListIterator : public QListIterator<GroupDef>
 {
   public:

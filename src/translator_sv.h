@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -135,7 +135,7 @@ class TranslatorSwedish : public TranslatorAdapter_1_6_0
     { return "Mer..."; }
 
     virtual QCString trListOfAllMembers()
-    { return "Lista över alla medlemmar."; }
+    { return "Lista över alla medlemmar"; }
 
     virtual QCString trMemberList()
     { return "Medlemslista"; }

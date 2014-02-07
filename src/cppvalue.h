@@ -3,7 +3,7 @@
  * $Id: cppvalue.h,v 1.7 2001/03/19 19:27:40 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,11 +22,10 @@
 #include <stdio.h>
 #include <qglobal.h> 
 
+/** A class representing a C-preprocessor value. */
 class CPPValue
 {
   public:
-  
-  
     enum Type { Int, Float };
   
     CPPValue(long val=0) : type(Int) { v.l = val; }

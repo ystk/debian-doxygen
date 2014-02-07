@@ -3,7 +3,7 @@
  * $Id: dochandler.cpp,v 1.33 2002/10/13 21:01:58 dimitri Exp $
  *
  *
- * Copyright (C) 1997-2006 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -2043,11 +2043,11 @@ DocSectionHandler::DocSectionHandler(IBaseHandler *parent,int level)
   if (level<6) 
   {
     sectionKey.sprintf("sect%d",level+1);
-    addStartHandler(sectionKey,this,&DocSectionHandler::startSubSection);
+    addStartHandler(sectionKey.utf8(),this,&DocSectionHandler::startSubSection);
   }
   addStartHandler("internal",this,&DocSectionHandler::startInternal);
   sectionKey.sprintf("sect%d",level);
-  addEndHandler(sectionKey,this,&DocSectionHandler::endDocSection);
+  addEndHandler(sectionKey.utf8(),this,&DocSectionHandler::endDocSection);
 }
 
 DocSectionHandler::~DocSectionHandler()
@@ -2120,7 +2120,7 @@ DocInternalHandler::DocInternalHandler(IBaseHandler *parent,int level)
   addStartHandler("para",this,&DocInternalHandler::startParagraph);
   QString sectionKey;
   sectionKey.sprintf("sect%d",level+1);
-  addStartHandler(sectionKey,this,&DocInternalHandler::startSubSection);
+  addStartHandler(sectionKey.utf8(),this,&DocInternalHandler::startSubSection);
   addEndHandler("internal",this,&DocInternalHandler::endInternal);
 }
 

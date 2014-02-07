@@ -3,7 +3,7 @@
  * $Id: reflist.cpp,v 1.2 2001/03/19 19:27:41 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include "reflist.h"
 #include "util.h"
+#include "ftextstream.h"
 
 /*! Create a list of items that are cross referenced with documentation blocks
  *  @param listName String representing the name of the list.
@@ -128,26 +129,33 @@ void RefList::insertIntoList(const char *key,RefItem *item)
   }
 }
 
+
 void RefList::generatePage()
 {
   if (m_itemList==0) return;
   m_itemList->sort();
   SDict<RefItem>::Iterator it(*m_itemList);
   RefItem *item;
+  QCString doc;
+  doc += "<dl class=\"reflist\">";
   for (it.toFirst();(item=it.current());++it)
   {
-    QCString doc;
-    doc =  "\\anchor ";
+    doc += " <dt>";
+    doc +=  "\\anchor ";
     doc += item->listAnchor;
-    doc += " <dl><dt>";
+    doc += "\n";
     doc += item->prefix;
     doc += " \\_internalref ";
     doc += item->name;
     doc += " \"";
     doc += item->title;
-    doc += "\"";
-    if (!item->args.isEmpty()) doc += item->args;
-    doc += "</dt>\n<dd>";
+    doc += "\" ";
+    // write declaration in case a function with arguments
+    if (!item->args.isEmpty()) 
+    {
+      doc += item->args;
+    }
+    doc += "</dt><dd> ";
     doc += item->text;
     QListIterator<RefItem> li(item->extraItems);
     RefItem *extraItem;
@@ -155,8 +163,9 @@ void RefList::generatePage()
     {
       doc += "<p>" + extraItem->text;
     }
-    doc += "</dd></dl>\n";
-    addRelatedPage(m_listName,m_pageTitle,doc,0,m_listName,1,0,0,0);
+    doc += "</dd>";
   }
+  doc += "</dl>\n";
+  addRelatedPage(m_listName,m_pageTitle,doc,0,m_listName,1,0,0,0);
 }
 

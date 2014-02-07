@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -52,6 +52,7 @@ class HtmlDocVisitor : public DocVisitor
     void visit(DocFormula *);
     void visit(DocIndexEntry *);
     void visit(DocSimpleSectSep *);
+    void visit(DocCite *);
 
     //--------------------------------------
     // visitor functions for compound nodes
@@ -103,6 +104,8 @@ class HtmlDocVisitor : public DocVisitor
     void visitPost(DocImage *);
     void visitPre(DocDotFile *);
     void visitPost(DocDotFile *);
+    void visitPre(DocMscFile *);
+    void visitPost(DocMscFile *);
     void visitPre(DocLink *);
     void visitPost(DocLink *);
     void visitPre(DocRef *);
@@ -123,6 +126,8 @@ class HtmlDocVisitor : public DocVisitor
     void visitPost(DocCopy *);
     void visitPre(DocText *);
     void visitPost(DocText *);
+    void visitPre(DocHtmlBlockQuote *);
+    void visitPost(DocHtmlBlockQuote *);
 
   private:
 
@@ -130,6 +135,7 @@ class HtmlDocVisitor : public DocVisitor
     // helper functions 
     //--------------------------------------
     
+    void writeObfuscatedMailAddress(const QCString &url);
     void filter(const char *str);
     void filterQuotedCdataAttr(const char* str);
     void startLink(const QCString &ref,const QCString &file,

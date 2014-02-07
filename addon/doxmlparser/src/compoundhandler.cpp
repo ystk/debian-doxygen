@@ -3,7 +3,7 @@
  * $Id: compoundhandler.cpp,v 1.33 2002/10/13 21:01:58 dimitri Exp $
  *
  *
- * Copyright (C) 1997-2006 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -79,7 +79,7 @@ class CompoundIdIterator : public ICompoundIterator,
     virtual ICompound *current() const
     { 
       QString *id = QListIterator<QString>::current(); 
-      return id ? m_mainHandler->compoundById(*id) : 0;
+      return id ? m_mainHandler->compoundById(id->utf8()) : 0;
     }
     virtual void release()
     { delete this; }
@@ -92,7 +92,7 @@ class CompoundIdIterator : public ICompoundIterator,
 
 ICompound *RelatedCompound::compound() const 
 { 
-  return m_parent->m_mainHandler->compoundById(m_id); 
+  return m_parent->m_mainHandler->compoundById(m_id.utf8()); 
 }
 
 //----------------------------------------------------------------------------
@@ -149,7 +149,7 @@ class CompoundTypeMap
     }
     ICompound::CompoundKind map(const QString &s)
     {
-      int *val = m_map.find(s);
+      int *val = m_map.find(s.utf8());
       if (val==0) 
       {
         debug(1,"Warning: `%s' is an invalid compound type\n",s.data());

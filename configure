@@ -2,7 +2,7 @@
 #
 # $Id: configure,v 1.229 2005/11/09 21:17:03 dimitri Exp $
 #
-# Copyright (C) 1997-2008 by Dimitri van Heesch.
+# Copyright (C) 1997-2012 by Dimitri van Heesch.
 # 
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -16,8 +16,8 @@
 # shell script to configure doxygen
 
 doxygen_version_major=1
-doxygen_version_minor=7
-doxygen_version_revision=1
+doxygen_version_minor=8
+doxygen_version_revision=1.2
 
 #NOTE: Setting version_mmn to "NO" will omit mmn info from the package.
 doxygen_version_mmn=NO
@@ -38,7 +38,7 @@ f_app=NO
 f_thread=NO
 f_flex=NO
 f_bison=NO
-f_langs=nl,sv,cz,fr,id,it,de,jp,je,es,fi,ru,hr,pl,pt,hu,kr,ke,ro,si,cn,no,br,dk,sk,ua,gr,tw,sr,ca,lt,za,ar,fa,vi,tr,eo
+f_langs=nl,sv,cz,fr,id,it,de,jp,je,es,fi,ru,hr,pl,pt,hu,kr,ke,ro,si,cn,no,mk,br,dk,sk,ua,gr,tw,sr,ca,lt,za,ar,fa,sc,vi,tr,eo,am
 
 while test -n "$1";  do
   case $1 in
@@ -176,6 +176,12 @@ if test -z "$f_platform"; then
       ;;
     FreeBSD:*)
       f_platform=freebsd-g++
+      if test "$f_insttool" = NO; then
+        f_insttool=/usr/bin/install
+      fi
+      ;;
+    NetBSD:*)
+      f_platform=netbsd-g++
       if test "$f_insttool" = NO; then
         f_insttool=/usr/bin/install
       fi
@@ -606,7 +612,7 @@ EOF
        echo "	\$(MAKE) -C libmd5" >> $DST
        echo "	\$(MAKE) -C src" >> $DST
        if test $f_wizard = YES; then
-         echo "	\$(MAKE) -C addon/doxywizard" >> $DST
+         echo "	\$(MAKE) MAN1DIR=\$(MAN1DIR) -C addon/doxywizard" >> $DST
        fi
        if test $f_app = YES; then
          echo "	\$(MAKE) -C addon/doxyapp" >> $DST
@@ -614,7 +620,7 @@ EOF
        echo "" >> $DST
        echo "doxywizard_install:" >> $DST
        if test $f_wizard = YES; then
-         echo "	\$(MAKE) -C addon/doxywizard install" >> $DST
+         echo "	\$(MAKE) MAN1DIR=\$(MAN1DIR) -C addon/doxywizard install" >> $DST
        fi
        echo "" >> $DST
      fi
@@ -626,7 +632,10 @@ EOF
      echo "  Created $DST from $SRC..."
 done
 
-f_inprofiles="qtools/qtools.pro.in src/libdoxygen.pro.in src/libdoxycfg.pro.in src/doxygen.pro.in src/doxytag.pro.in addon/doxywizard/doxywizard.pro.in addon/doxmlparser/src/doxmlparser.pro.in addon/doxmlparser/test/xmlparse.pro.in addon/doxmlparser/examples/metrics/metrics.pro.in libmd5/libmd5.pro.in addon/doxyapp/doxyapp.pro.in" 
+cat src/libdoxycfg.t.in | sed -e "s|%%FLEX%%|$f_flex|g" -e "s|%%BISON%%|$f_bison|g" > src/libdoxycfg.t
+cat src/libdoxygen.t.in | sed -e "s|%%FLEX%%|$f_flex|g" -e "s|%%BISON%%|$f_bison|g" > src/libdoxygen.t
+
+f_inprofiles="qtools/qtools.pro.in src/libdoxygen.pro.in src/libdoxycfg.pro.in src/doxygen.pro.in addon/doxywizard/doxywizard.pro.in addon/doxmlparser/src/doxmlparser.pro.in addon/doxmlparser/test/xmlparse.pro.in addon/doxmlparser/examples/metrics/metrics.pro.in libmd5/libmd5.pro.in addon/doxyapp/doxyapp.pro.in" 
 
 for i in $f_inprofiles ; do
      SRC=$i
@@ -658,7 +667,7 @@ fi
 echo -n "  Generating src/lang_cfg.h..."
 echo $f_langs | $f_perl -e '@l=split(/,/,<STDIN>); 
         chomp @l; 
-	@allowed=(split(/,/,"NL,SV,CZ,FR,ID,IT,DE,JP,JE,ES,FI,RU,HR,PL,PT,HU,KR,KE,RO,SI,CN,NO,MK,BR,DK,SK,UA,GR,TW,SR,CA,LT,ZA,AR,FA,SC,VI,TR,EO"));
+	@allowed=(split(/,/,"NL,SV,CZ,FR,ID,IT,DE,JP,JE,ES,FI,RU,HR,PL,PT,HU,KR,KE,RO,SI,CN,NO,MK,BR,DK,SK,UA,GR,TW,SR,CA,LT,ZA,AR,FA,SC,VI,TR,EO,AM"));
 	foreach my $elem (@l){ 
 	     $elem =~ tr/a-z/A-Z/;
 	     $r=0;

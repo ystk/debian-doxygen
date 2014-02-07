@@ -1,5 +1,5 @@
 #
-# This file was generated from doxmlparser.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from doxmlparser.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 TEMPLATE     =	lib.t
@@ -29,3 +29,4 @@ OBJECTS_DIR                =  ../objects
 TARGET                      = doxmlparser
 INCLUDEPATH                += ../../../qtools ../include
 
+TMAKE_MOC = /usr/bin/moc

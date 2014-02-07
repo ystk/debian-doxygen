@@ -2,7 +2,7 @@
  *
  * $Id: latexgen.h,v 1.50 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,6 +22,7 @@
 
 class QFile;
 
+/** Generator for LaTeX output. */
 class LatexGenerator : public OutputGenerator
 {
   public:
@@ -30,6 +31,7 @@ class LatexGenerator : public OutputGenerator
     static void init();
     static void writeStyleSheetFile(QFile &f);
     static void writeHeaderFile(QFile &f);
+    static void writeFooterFile(QFile &f);
 
     //OutputGenerator *copy();
     //OutputGenerator *clone() { return new LatexGenerator(*this); }
@@ -37,16 +39,17 @@ class LatexGenerator : public OutputGenerator
     void enable() 
     { if (genStack->top()) active=*genStack->top(); else active=TRUE; }
     void disable() { active=FALSE; }
-    void enableIf(OutputType o)  { if (o==Latex) active=TRUE;  }
-    void disableIf(OutputType o) { if (o==Latex) active=FALSE; }
-    void disableIfNot(OutputType o) { if (o!=Latex) active=FALSE; }
+    void enableIf(OutputType o)  { if (o==Latex) enable();  }
+    void disableIf(OutputType o) { if (o==Latex) disable(); }
+    void disableIfNot(OutputType o) { if (o!=Latex) disable(); }
     bool isEnabled(OutputType o) { return (o==Latex && active); } 
     OutputGenerator *get(OutputType o) { return (o==Latex) ? this : 0; }
 
     void printDoc(DocNode *,const char *);
 
     void startFile(const char *name,const char *manName,const char *title);
-    void writeFooter() {}
+    void writeSearchInfo() {}
+    void writeFooter(const char *) {}
     void endFile();
     void clearBuffer();
     
@@ -90,8 +93,8 @@ class LatexGenerator : public OutputGenerator
     void endHtmlLink();
     void startTypewriter() { t << "{\\ttfamily "; }
     void endTypewriter()   { t << "}";      }
-    void startGroupHeader();
-    void endGroupHeader();
+    void startGroupHeader(int);
+    void endGroupHeader(int);
     void startItemListItem() { t << "\\item " << endl; }
     void endItemListItem()   {}
 
@@ -107,12 +110,14 @@ class LatexGenerator : public OutputGenerator
     void endMemberDocList() {}
     void startMemberList();
     void endMemberList();
+    void startInlineHeader();
+    void endInlineHeader();
     void startAnonTypeScope(int);
     void endAnonTypeScope(int);
-    void startMemberItem(int);
+    void startMemberItem(const char *,int,const char *);
     void endMemberItem();
     void startMemberTemplateParams();
-    void endMemberTemplateParams();
+    void endMemberTemplateParams(const char *);
 
     void startMemberGroupHeader(bool);
     void endMemberGroupHeader();
@@ -128,7 +133,7 @@ class LatexGenerator : public OutputGenerator
     void startCodeFragment();
     void endCodeFragment();
     void writeLineNumber(const char *,const char *,const char *,int l);
-    void startCodeLine();
+    void startCodeLine(bool hasLineNumbers);
     void endCodeLine();
     void startEmphasis() { t << "{\\em ";  }
     void endEmphasis()   { t << "}"; }
@@ -138,8 +143,8 @@ class LatexGenerator : public OutputGenerator
     void endDescription();
     void startDescItem();
     void endDescItem();
-    void lineBreak(const char *style=0) { (void)style; t << "\\par\n"; }
-    void startMemberDoc(const char *,const char *,const char *,const char *);
+    void lineBreak(const char *style=0);
+    void startMemberDoc(const char *,const char *,const char *,const char *,bool);
     void endMemberDoc(bool);
     void startDoxyAnchor(const char *,const char *,const char *,const char *,const char *);
     void endDoxyAnchor(const char *,const char *);
@@ -158,8 +163,10 @@ class LatexGenerator : public OutputGenerator
     void endCenter()        { t << "\\end{center}" << endl; }
     void startSmall()       { t << "\\footnotesize "; }
     void endSmall()         { t << "\\normalsize "; }
-    void startMemberDescription();
+    void startMemberDescription(const char *,const char *);
     void endMemberDescription();
+    void writeInheritedSectionTitle(const char *,const char *,const char *,
+                      const char *,const char *,const char *) {}
     void startDescList(SectionTypes)     { t << "\\begin{Desc}\n\\item["; }
     void endDescList()       { t << "\\end{Desc}" << endl; }
     void startSimpleSect(SectionTypes,const char *,const char *,const char *);
@@ -180,7 +187,11 @@ class LatexGenerator : public OutputGenerator
     void endPageRef(const char *,const char *);
     void startQuickIndices() {}
     void endQuickIndices() {}
-    void writeQuickLinks(bool,HighlightedItem) {}
+    void writeSplitBar(const char *) {}
+    void writeNavigationPath(const char *) {}
+    void writeLogo() {}
+    void writeQuickLinks(bool,HighlightedItem,const char*) {}
+    void writeSummaryLink(const char *,const char *,const char *,bool) {}
     void startContents() {}
     void endContents() {}
     void writeNonBreakableSpace(int);
@@ -231,6 +242,19 @@ class LatexGenerator : public OutputGenerator
     void startConstraintDocs();
     void endConstraintDocs();
     void endConstraintList();
+
+    void startMemberDocSimple();
+    void endMemberDocSimple();
+    void startInlineMemberType();
+    void endInlineMemberType();
+    void startInlineMemberName();
+    void endInlineMemberName();
+    void startInlineMemberDoc();
+    void endInlineMemberDoc();
+
+    void startLabels();
+    void writeLabel(const char *l,bool isLast);
+    void endLabels();
 
     void startFontClass(const char *); // {}
     void endFontClass(); // {}

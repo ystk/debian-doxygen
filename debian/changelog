@@ -1,3 +1,203 @@
+doxygen (1.8.1.2-2) unstable; urgency=low
+
+  [ Mònica Ramírez Arceda ]
+  * Non-maintainer upload.
+  * Include jquery-1.7.1.js source in debian/jquery and update its license.
+    This file has the source code for src/jquery_p[123].js. 
+    Closes: #625956.
+  * Include jquery.scrollTo-1.4.2.js in debian/jquery and add its license.
+    This file has the source code for src/jquery_fx.js.
+  * Include jquery-ui*.js and jquery.ba-hashchange.js in debian/jquery and 
+    add their licenses. These files have the source code for src/jquery_ui.js.
+
+  [ Helmut Grohne ]
+  * Added myself as uploader.
+
+ -- Helmut Grohne <helmut@subdivi.de>  Thu, 28 Feb 2013 10:09:45 +0100
+
+doxygen (1.8.1.2-1) unstable; urgency=low
+
+  * doxygen 1.8.1.2 (bug fix) release.
+    - Changes:
+      + doxygen now strips the leading indentation shared by the lines in a
+        @code..@endcode block.
+      + id 678218: Changed title of the SVG graphs from 'G' to the root node
+        of the graph.
+    - New features:
+      + Added button in the navigation tree to allow enabling/disabling
+        syncing the navigation tree with the content.
+      + Extended the number of HTML entities with Greek letters and other
+        symbols (thanks to Charles Karney for the patch).
+      + id 663645: Added support for C++11 strongly typed enums
+        (enum class E { ... }).
+    - Bug fixes:
+      + id 590518: Added missing class member initialization to a class
+        in doxmlparser and made the library compile again.
+      + id 667678: Added support for Obj-C property attribute "unsafe_retained".
+      + id 674842,676984: Unmatched quote in a comment prevented alias
+        expansion.
+      + id 676019: Fixed another case where local include path did not appear
+        correctly in the class documentation.
+      + id 676966: Fortran: Some keyword were not colored in the source view.
+      + id 676981: Fortran: Argument type was wrong type of in case of
+        out of place !> comment.
+      + id 677935: Included patch to fix problem compiling for x86 release
+        on Windows.
+      + id 677992: Section without title could result in an invalid
+        Qt Help index.
+      + id 678022: Anonymous enum could result in an invalid Qt Help index.
+      + id 678102: Superfluous trailing comma in javascript prevented
+        navigation tree to load in IE7.
+      + id 678177: a + at the start of a line inside a <pre> block, triggered
+        the start of a list. Also -- and --- where not kept untouched inside
+        a <pre> block.
+      + id 678180: ndash (--) appearing in a brief description could lead to
+        invalid SVG images.
+      + id 678288: -- and --- inside a Markdown code block were not handled
+        properly.
+      + id 679331,675766: In body documentation with a different indentation
+        then the main documentation was not rendered correctly (MARKDOWN=YES).
+      + id 679436: Using an escaped pipe symbol in a Markdown table did not
+        get unescaped in the output.
+      + id 679533: Code fragments did not appear properly in the doxygen manual.
+      + id 679615: Added missing delete call in a piece of debugging code.
+      + id 679626: Fixed some navigation issues in the manual
+      + Not all inherited members appeared in the "Additional inherited members"
+        list.
+      + Link to call after "Inherited members" was not correct when
+        CREATE_SUBDIRS was enabled.
+      + New VHDL diagram was not generated if the path contained spaces.
+      + Fixed a couple of problems handling Objective-C categories.
+  * Fix segfault building the leechcraft docs (Thibaut Paumard).
+    Closes: #676423.
+  * Make doxygen Multi-Arch: foreign. Closes: #658984.
+
+ -- Matthias Klose <doko@debian.org>  Fri, 13 Jul 2012 23:41:38 +0200
+
+doxygen (1.8.1.1-1) unstable; urgency=low
+
+  * doxygen 1.8.1.1 (bug fix) release.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 12 Jun 2012 23:59:02 +0200
+
+doxygen (1.8.1-1) unstable; urgency=low
+
+  * doxygen 1.8.1 release.
+  * Build-depend on latex-xcolor.
+  * doxygen-latex: Depend on latex-xcolor.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 22 May 2012 14:48:01 +0800
+
+doxygen (1.7.6.1-2.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Add depends on ghostscript and texlive-fonts-recommended to doxygen-latex.
+    Closes: #654587, #637661.
+
+ -- Bas Wijnen <wijnen@debian.org>  Sat, 07 Jan 2012 12:58:25 +0100
+
+doxygen (1.7.6.1-2) unstable; urgency=low
+
+  * Don't apply doxygen_direct_dot_run.diff.  Closes: #618125.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 12 Dec 2011 15:31:10 +0100
+
+doxygen (1.7.6.1-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 10 Dec 2011 23:26:59 +0100
+
+doxygen (1.7.6-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 04 Dec 2011 23:33:44 +0100
+
+doxygen (1.7.5.1-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 23 Oct 2011 16:49:34 +0200
+
+doxygen (1.7.4-4) unstable; urgency=low
+
+  * doxygen-latex: Depend on texlive-font-utils. Closes: #636315.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 04 Aug 2011 16:43:34 +0200
+
+doxygen (1.7.4-3) unstable; urgency=low
+
+  * doxygen: Drop the dependency on doxygen-latex. Closes: #616351, #619902.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 09 Jul 2011 12:10:11 +0200
+
+doxygen (1.7.4-2) unstable; urgency=low
+
+  * Re-enable the doxygen_direct_dot_run.diff patch, still issues on
+    armel. Closes: #627494.
+  * Only include jquery.js in generated output when needed (Chris Butler).
+    Closes: #622147.
+  * Include jquery.js source in debian/; add jquery.js license.
+    Closes: #625956.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 23 May 2011 20:07:07 +0200
+
+doxygen (1.7.4-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 29 Mar 2011 01:32:10 +0200
+
+doxygen (1.7.3-6) unstable; urgency=low
+
+  * Update doxygen_direct_dot_run.diff (Mattias Ellert). Closes: #618433.
+  * Disable the doxygen_direct_dot_run.diff patch, race conditions should
+    be fixed in 1.7.x releases.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 16 Mar 2011 14:50:57 +0100
+
+doxygen (1.7.3-5) unstable; urgency=low
+
+  * Let doxygen depend on doxygen-latex for some time, until packages
+    explicitly build-depend on doxygen-latex.
+
+ -- Matthias Klose <doko@debian.org>  Wed, 02 Mar 2011 16:12:07 +0100
+
+doxygen (1.7.3-4) experimental; urgency=low
+
+  * Build a dependency package adding dependencies for all LaTeX packages
+    required to build documents using the default stylesheet.
+
+ -- Matthias Klose <doko@debian.org>  Thu, 20 Jan 2011 02:51:40 +0100
+
+doxygen (1.7.3-3) experimental; urgency=low
+
+  * Recommend latex-xcolor and texlive-latex-base, unconditionally
+    used for documentation generated in LaTeX.
+  * Build with -g. Closes: #605586.
+  * COMPACT_LATEX is fixed in 1.7.3. Closes: #606276.
+
+ -- Matthias Klose <doko@debian.org>  Sat, 08 Jan 2011 10:40:27 +0100
+
+doxygen (1.7.3-2) experimental; urgency=low
+
+  * Fix build failure with qmake-qt3. Closes: #602814.
+
+ -- Matthias Klose <doko@debian.org>  Tue, 04 Jan 2011 16:02:36 +0100
+
+doxygen (1.7.3-1) experimental; urgency=low
+
+  * New upstream version.
+
+ -- Matthias Klose <doko@debian.org>  Mon, 03 Jan 2011 23:59:47 +0100
+
+doxygen (1.7.2-1) experimental; urgency=low
+
+  * New upstream version.
+
+ -- Matthias Klose <doko@debian.org>  Sun, 14 Nov 2010 06:08:08 +0100
+
 doxygen (1.7.1-2) unstable; urgency=low
 
   * Don't use threads for the `dot' runs (Petr Salinger).

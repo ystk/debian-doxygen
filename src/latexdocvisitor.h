@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,7 +22,8 @@
 #include "docvisitor.h"
 #include <qstack.h>
 #include <qcstring.h>
-#include <qmap.h>
+#include <qlist.h>
+//#include <qmap.h>
 
 class FTextStream;
 class CodeOutputInterface;
@@ -53,6 +54,7 @@ class LatexDocVisitor : public DocVisitor
     void visit(DocFormula *);
     void visit(DocIndexEntry *);
     void visit(DocSimpleSectSep *);
+    void visit(DocCite *);
 
     //--------------------------------------
     // visitor functions for compound nodes
@@ -106,6 +108,8 @@ class LatexDocVisitor : public DocVisitor
     void visitPost(DocImage *);
     void visitPre(DocDotFile *);
     void visitPost(DocDotFile *);
+    void visitPre(DocMscFile *);
+    void visitPost(DocMscFile *);
     void visitPre(DocLink *lnk);
     void visitPost(DocLink *);
     void visitPre(DocRef *ref);
@@ -114,8 +118,6 @@ class LatexDocVisitor : public DocVisitor
     void visitPost(DocSecRefItem *);
     void visitPre(DocSecRefList *);
     void visitPost(DocSecRefList *);
-    //void visitPre(DocLanguage *);
-    //void visitPost(DocLanguage *);
     void visitPre(DocParamSect *);
     void visitPost(DocParamSect *);
     void visitPre(DocParamList *);
@@ -128,8 +130,22 @@ class LatexDocVisitor : public DocVisitor
     void visitPost(DocCopy *);
     void visitPre(DocText *);
     void visitPost(DocText *);
+    void visitPre(DocHtmlBlockQuote *);
+    void visitPost(DocHtmlBlockQuote *);
 
   private:
+
+    struct ActiveRowSpan
+    {
+      ActiveRowSpan(DocHtmlCell *c,int rs,int cs,int col) 
+        : cell(c), rowSpan(rs), colSpan(cs), column(col) {}
+      DocHtmlCell *cell;
+      int rowSpan;
+      int colSpan;
+      int column;
+    };
+
+    typedef QList<ActiveRowSpan> RowSpanList;
 
     //--------------------------------------
     // helper functions 
@@ -144,6 +160,10 @@ class LatexDocVisitor : public DocVisitor
     void startDotFile(const QCString &fileName,const QCString &width,
                       const QCString &height, bool hasCaption);
     void endDotFile(bool hasCaption);
+
+    void startMscFile(const QCString &fileName,const QCString &width,
+                      const QCString &height, bool hasCaption);
+    void endMscFile(bool hasCaption);
     void writeMscFile(const QCString &fileName);
 
     void pushEnabled();
@@ -159,11 +179,14 @@ class LatexDocVisitor : public DocVisitor
     bool m_insideItem;
     bool m_hide;
     bool m_insideTabbing;
+    bool m_insideTable;
+    int  m_numCols;
     QStack<bool> m_enabled;
     QCString m_langExt;
-	QMap<int, int> m_rowspanIndices;
-	int m_currentColumn;
-	bool m_inRowspan;
+    RowSpanList m_rowSpans;
+    int m_currentColumn;
+    bool m_inRowspan;
+    bool m_inColspan;
 };
 
 #endif

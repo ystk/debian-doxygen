@@ -1,5 +1,5 @@
 #
-# This file was generated from Makefile.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from Makefile.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 DOXYGEN   = /Users/dimitri/doxygen
@@ -10,12 +10,12 @@ MAKE      = /opt/local/bin/gmake
 PERL      = /opt/local/bin/perl
 RM        = rm -f
 CP        = cp
-VERSION   = 1.7.1
+VERSION   = 1.8.1.2
 INSTALL   = /usr/local
-INSTTOOL  = /usr/bin/install
+INSTTOOL  = /opt/local/bin/ginstall
 DOXYDOCS  = ..
 DOCDIR    = $(INSTALL)/share/doc/packages/doxygen
-QTDIR     = 
+QTDIR     = /usr
 HAVE_DOT  = /usr/local/bin/dot
 MKSPECS   = -spec macx-g++
 
@@ -44,14 +44,18 @@ all: class/html/index.html \
      memgrp/html/index.html \
      docstring/html/index.html \
      pyexample/html/index.html \
+     tclexample/html/index.html \
      mux/html/index.html \
-     manual/html/index.html
+     manual/html/index.html 
+
+# Disabled since it is broken :-(
+#     dbusxml/html/index.html
 
 clean:
 	rm -rf  class define enum file func page relates author \
                 par overload example include qtstyle jdstyle structcmd \
 		autolink tag restypedef afterdoc template tag group diagrams \
-		memgrp docstring pyexample mux manual
+		memgrp docstring pyexample mux manual dbusxml tclexample
 
 class/html/index.html: class.h class.cfg
 	$(DOXYGEN)/bin/doxygen class.cfg
@@ -124,6 +128,9 @@ memgrp/html/index.html: memgrp.cpp memgrp.cfg
 pyexample/html/index.html: pyexample.py pyexample.cfg
 	$(DOXYGEN)/bin/doxygen pyexample.cfg
 
+tclexample/html/index.html: tclexample.tcl tclexample.cfg
+	$(DOXYGEN)/bin/doxygen tclexample.cfg
+
 mux/html/index.html: mux.vhdl mux.cfg
 	$(DOXYGEN)/bin/doxygen mux.cfg
 
@@ -132,6 +139,9 @@ manual/html/index.html: manual.c manual.cfg
 
 docstring/html/index.html: docstring.py docstring.cfg
 	$(DOXYGEN)/bin/doxygen docstring.cfg
+
+#dbusxml/html/index.html: dbusxml.xml dbusxml.cfg
+#	$(DOXYGEN)/bin/doxygen dbusxml.cfg
 
 diagrams/html/index.html: diagrams_a.h diagrams_b.h diagrams_c.h diagrams_d.h diagrams_e.h diagrams.cfg
 ifneq ($(HAVE_DOT),)

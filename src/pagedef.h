@@ -2,7 +2,7 @@
  *
  * $Id:$
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -21,11 +21,18 @@
 class PageSDict;
 class OutputList;
 
+/** @brief A model of a page symbol. */
 class PageDef : public Definition
 {
   public:
     PageDef(const char *f,int l,const char *n,const char *d,const char *t);
    ~PageDef();
+
+    // setters
+    void setFileName(const char *name) { m_fileName = name; }
+    void setShowToc(bool b);
+
+    // getters
     DefType definitionType() const { return TypePage; }
     bool isLinkableInProject() const 
     { 
@@ -35,22 +42,25 @@ class PageDef : public Definition
     {
       return isLinkableInProject() || isReference();
     } 
-    void writeDocumentation(OutputList &ol);
 
     // functions to get a uniform interface with Definitions
     QCString getOutputFileBase() const;
+    QCString anchor() const { return QCString(); }
     void findSectionsInDocumentation();
     QCString title() const { return m_title; }
     GroupDef *  getGroupDef() const;
     PageSDict * getSubPages() const { return m_subPageDict; }
-    void setFileName(const char *name) { m_fileName = name; }
     void addInnerCompound(Definition *d);
     bool visibleInIndex() const;
     bool documentedPage() const;
     bool hasSubPages() const;
     bool hasParentPage() const;
+    bool showToc() const { return m_showToc; }
     void setPageScope(Definition *d){ m_pageScope = d; }
     Definition *getPageScope() const { return m_pageScope; }
+    QCString displayName(bool=TRUE) const { return !m_title.isEmpty() ? m_title : Definition::name(); }
+
+    void writeDocumentation(OutputList &ol);
 
   private:
     void setNestingLevel(int l);
@@ -61,6 +71,7 @@ class PageDef : public Definition
     PageSDict *m_subPageDict;                 // list of pages in the group
     Definition *m_pageScope;
     int m_nestingLevel;
+    bool m_showToc;
 };
 
 class PageSDict : public SDict<PageDef>

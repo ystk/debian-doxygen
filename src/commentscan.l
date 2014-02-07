@@ -1,6 +1,6 @@
 /*****************************************************************************
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -44,6 +44,8 @@
 #include "reflist.h"
 #include "debug.h"
 #include "parserintf.h"
+#include "cite.h"
+#include "markdown.h"
 
 // forward declarations
 static bool handleBrief(const QCString &);
@@ -83,6 +85,7 @@ static bool handleMemberOf(const QCString &);
 static bool handleRefItem(const QCString &);
 static bool handleSection(const QCString &);
 static bool handleAnchor(const QCString &);
+static bool handleCite(const QCString &);
 static bool handleFormatBlock(const QCString &);
 static bool handleAddIndex(const QCString &);
 static bool handleIf(const QCString &);
@@ -106,8 +109,10 @@ static bool handleProtected(const QCString &);
 static bool handleProtectedSection(const QCString &);
 static bool handlePublic(const QCString &s);
 static bool handlePublicSection(const QCString &s);
+static bool handleToc(const QCString &s);
 static bool handleInherit(const QCString &);
 static bool handleExtends(const QCString &);
+static bool handleCopyDoc(const QCString &);
 
 typedef bool (*DocCmdFunc)(const QCString &name);
 
@@ -161,6 +166,7 @@ static DocCmdMap docCmdMap[] =
   { "relatedalso",     &handleRelatedAlso,      TRUE  },
   { "relatesalso",     &handleRelatedAlso,      TRUE  },
   { "refitem",         &handleRefItem,          TRUE  },
+  { "cite",            &handleCite,             TRUE  },
   { "subpage",         &handleSubpage,          TRUE  },
   { "section",         &handleSection,          TRUE  },
   { "subsection",      &handleSection,          TRUE  },
@@ -198,6 +204,7 @@ static DocCmdMap docCmdMap[] =
   { "protectedsection",&handleProtectedSection, FALSE },
   { "public",          &handlePublic,           FALSE },
   { "publicsection",   &handlePublicSection,    FALSE },
+  { "tableofcontents", &handleToc,              FALSE },
   { "inherit",         &handleInherit,          TRUE  },
   { "extends",         &handleExtends,          TRUE  },
   { "implements",      &handleExtends,          TRUE  },
@@ -206,12 +213,12 @@ static DocCmdMap docCmdMap[] =
   { "attention",       0,                       TRUE  },
   { "author",          0,                       TRUE  },
   { "authors",         0,                       TRUE  },
-  { "copydoc",         0,                       TRUE  },
+  { "copydoc",         &handleCopyDoc,          TRUE  },
   { "copybrief",       0,                       FALSE },
   { "copydetails",     0,                       TRUE  },
   { "date",            0,                       TRUE  },
   { "dotfile",         0,                       TRUE  },
-  { "htmlinclude",     0,                       TRUE  },
+  { "htmlinclude",     0,                       FALSE },
   { "image",           0,                       TRUE  },
   { "include",         0,                       TRUE  },
   { "includelineno",   0,                       TRUE  },
@@ -236,7 +243,7 @@ static DocCmdMap docCmdMap[] =
   { "throw",           0,                       TRUE  },
   { "throws",          0,                       TRUE  },
   { "until",           0,                       TRUE  },
-  { "verbinclude",     0,                       TRUE  },
+  { "verbinclude",     0,                       FALSE },
   { "version",         0,                       TRUE  },
   { "warning",         0,                       TRUE  },
   { 0, 0, FALSE }
@@ -382,8 +389,9 @@ static Entry*		current      = 0 ;   // working entry
 //static Entry*		previous     = 0 ;   // TODO: remove need for this
 static bool             needNewEntry;
 
-static QCString         sectionLabel;
-static QCString		sectionTitle;
+static QCString         g_sectionLabel;
+static QCString		g_sectionTitle;
+static int              g_sectionLevel;
 static QCString         xrefItemKey;
 static QCString         newXRefItemKey;
 static QCString         xrefItemTitle;
@@ -396,9 +404,11 @@ static int              braceCount;
 static bool             insidePre;
 static bool             parseMore;
 static int              g_condCount;
-static int              g_sectionLevel;
 
 static int              g_commentCount;
+static bool             g_spaceBeforeCmd;
+static bool             g_spaceBeforeIf;
+static QCString         g_copyDocArg;
 
 //-----------------------------------------------------------------------------
 
@@ -413,38 +423,40 @@ static QCString         g_compoundName;
 
 static void initParser()
 {
-  sectionLabel.resize(0);
-  sectionTitle.resize(0);
+  g_sectionLabel.resize(0);
+  g_sectionTitle.resize(0);
   g_memberGroupHeader.resize(0);
 }
 
 //-----------------------------------------------------------------------------
 
-static QCString getDocSectionName(int s)
+static bool getDocSectionName(int s)
 {
   switch(s)
   {
-    case Entry::CLASSDOC_SEC:       return "\\class";
-    case Entry::STRUCTDOC_SEC:      return "\\struct";
-    case Entry::UNIONDOC_SEC:       return "\\union";
-    case Entry::EXCEPTIONDOC_SEC:   return "\\exception";
-    case Entry::NAMESPACEDOC_SEC:   return "\\namespace";
-    case Entry::PROTOCOLDOC_SEC:    return "\\protocol";
-    case Entry::CATEGORYDOC_SEC:    return "\\category";
-    case Entry::ENUMDOC_SEC:        return "\\enum";
-    case Entry::PAGEDOC_SEC:        return "\\page";
-    case Entry::VARIABLEDOC_SEC:    return "\\var";
-    case Entry::MEMBERDOC_SEC:      return "\\fn";
-    case Entry::OVERLOADDOC_SEC:    return "\\overload";
-    case Entry::FILEDOC_SEC:        return "\\file";
-    case Entry::DEFINEDOC_SEC:      return "\\def";
-    case Entry::GROUPDOC_SEC:       return "\\defgroup";
-    case Entry::MAINPAGEDOC_SEC:    return "\\mainpage";
-    case Entry::PACKAGEDOC_SEC:     return "\\package";
-    case Entry::DIRDOC_SEC:         return "\\dir";
-    case Entry::EXAMPLE_SEC:        return "\\example";
-    case Entry::MEMBERGRP_SEC:      return "\\name";
-    default: return "";
+    case Entry::CLASSDOC_SEC:
+    case Entry::STRUCTDOC_SEC:
+    case Entry::UNIONDOC_SEC:
+    case Entry::EXCEPTIONDOC_SEC:
+    case Entry::NAMESPACEDOC_SEC:
+    case Entry::PROTOCOLDOC_SEC:
+    case Entry::CATEGORYDOC_SEC:
+    case Entry::ENUMDOC_SEC:
+    case Entry::PAGEDOC_SEC:
+    case Entry::VARIABLEDOC_SEC:
+    case Entry::MEMBERDOC_SEC:
+    case Entry::OVERLOADDOC_SEC:
+    case Entry::FILEDOC_SEC:
+    case Entry::DEFINEDOC_SEC:
+    case Entry::GROUPDOC_SEC:
+    case Entry::MAINPAGEDOC_SEC:
+    case Entry::PACKAGEDOC_SEC:
+    case Entry::DIRDOC_SEC:
+    case Entry::EXAMPLE_SEC:
+    case Entry::MEMBERGRP_SEC:
+      return TRUE;
+    default: 
+      return FALSE;
   }
 }
 
@@ -453,7 +465,7 @@ static QCString getDocSectionName(int s)
 static bool makeStructuralIndicator(Entry::Sections s)
 {
   //printf("current->section=%x\n",current->section);
-  if (!getDocSectionName(current->section).isEmpty())
+  if (getDocSectionName(current->section))
   {
     return TRUE;
   }
@@ -550,8 +562,9 @@ static void addXRefItem(const char *listName,const char *itemTitle,
       docEntry->doc += cmdString;
     }
     SectionInfo *si=new SectionInfo(listName,anchorLabel,
-	                            sectionTitle,SectionInfo::Anchor);
-    Doxygen::sectionDict.insert(anchorLabel,si);
+	                            g_sectionTitle,SectionInfo::Anchor,
+                                    g_sectionLevel);
+    Doxygen::sectionDict.append(anchorLabel,si);
     docEntry->anchors->append(si);
   }
   outputXRef.resize(0);
@@ -579,9 +592,9 @@ static QCString addFormula()
     formLabel.sprintf("\\form#%d",f->getId());
   }
   int i;
-  for (i=0;i<formulaNewLines;i++) formLabel+="\\_fakenl"; // add fake newlines to
-                                                          // keep the warnings 
-                                                          // correctly aligned.
+  for (i=0;i<formulaNewLines;i++) formLabel+="@_fakenl"; // add fake newlines to
+                                                         // keep the warnings 
+                                                         // correctly aligned.
   return formLabel;
 }
 
@@ -590,14 +603,33 @@ static QCString addFormula()
 static void checkFormula();
 //-----------------------------------------------------------------------------
 
+static SectionInfo::SectionType sectionLevelToType(int level)
+{
+  if (level>=0 && level<5) return (SectionInfo::SectionType)level;
+  return SectionInfo::Anchor;
+}
+
 static void addSection()
 {
-  sectionTitle+=yytext;
-  sectionTitle=sectionTitle.stripWhiteSpace();
-  //printf("Adding new section file=%s label=%s title=%s\n",yyFileName,sectionLabel.data(),sectionTitle.data()); 
-  SectionInfo *si = new SectionInfo(yyFileName,sectionLabel,sectionTitle,SectionInfo::Anchor);
+  // create a new section element
+  g_sectionTitle+=yytext;
+  g_sectionTitle=g_sectionTitle.stripWhiteSpace();
+  SectionInfo *si = new SectionInfo(yyFileName,g_sectionLabel,
+                          g_sectionTitle,sectionLevelToType(g_sectionLevel),g_sectionLevel);
+
+  // add section to this entry
   current->anchors->append(si);
-  Doxygen::sectionDict.insert(yytext,si);
+
+  // add section to the global dictionary
+  Doxygen::sectionDict.append(g_sectionLabel,si);
+
+}
+
+//-----------------------------------------------------------------------------
+
+static void addCite()
+{
+  Doxygen::citeDict->insert(yytext);
 }
 
 //-----------------------------------------------------------------------------
@@ -720,6 +752,7 @@ static inline void setOutput(OutputContext ctx)
       else
       {
         pOutputString = &current->doc;
+	inContext = OutputDoc; // need to switch to detailed docs, see bug 631380
       }
       break;
     case OutputXRef:
@@ -736,6 +769,7 @@ static inline void setOutput(OutputContext ctx)
 // add a string to the output
 static inline void addOutput(const char *s)
 {
+  //printf("addOutput(%s)\n",s);
   *pOutputString+=s;
 }
 
@@ -779,7 +813,7 @@ static int yyread(char *buf,int max_size)
 
        /* start command character */
 CMD	  ("\\"|"@")
-DCMD1     ("arg"|"attention"|"author"|"code")
+DCMD1     ("arg"|"attention"|"author"|"cite"|"code")
 DCMD2     ("date"|"dot"|"msc"|"dotfile"|"example")
 DCMD3     ("htmlinclude"|"htmlonly"|"image"|"include")
 DCMD4     ("includelineno"|"internal"|"invariant")
@@ -800,7 +834,8 @@ OL	  [oO][lL]
 DL	  [dD][lL]
 IMG       [iI][mM][gG]
 HR        [hH][rR]
-DETAILEDHTML {PRE}|{UL}|{TABLE}|{OL}|{DL}|{P}|[Hh][1-6]|{IMG}|{HR}
+PARA      [pP][aA][rR][aA]
+DETAILEDHTML {PRE}|{UL}|{TABLE}|{OL}|{DL}|{P}|[Hh][1-6]|{IMG}|{HR}|{PARA}
 BN        [ \t\n\r]
 BL        [ \t\r]*"\n" 
 B         [ \t]
@@ -814,6 +849,7 @@ FILEECHAR [a-z_A-Z0-9\x80-\xFF\-\+]
 FILE      ({FILESCHAR}*{FILEECHAR}+("."{FILESCHAR}*{FILEECHAR}+)*)|("\""[^\n\"]*"\"")
 ID        "$"?[a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF]*
 LABELID   [a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF\-]*
+CITEID    [a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF\-:/]*
 SCOPEID   {ID}({ID}*{BN}*"::"{BN}*)*({ID}?)
 SCOPENAME "$"?(({ID}?{BN}*("::"|"."){BN}*)*)((~{BN}*)?{ID})
 MAILADR   [a-z_A-Z0-9.+\-]+"@"[a-z_A-Z0-9\-]+("."[a-z_A-Z0-9\-]+)+[a-z_A-Z0-9\-]+ 
@@ -860,6 +896,8 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 %x	AnchorLabel
 %x      HtmlComment
 %x      SkipLang
+%x	CiteLabel
+%x	CopyDoc
 
 %%
 
@@ -919,12 +957,27 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 					}
 <Comment>"<summary>"			{ // start of a .NET XML style brief description
 					  setOutput(OutputBrief);
+                                          addOutput(yytext);
   					}
-<Comment>"<remarks>"|"</summary>"	{ // start of a .NET XML style detailed description
+<Comment>"<remarks>"            	{ // start of a .NET XML style detailed description
+					  setOutput(OutputDoc);
+                                          addOutput(yytext);
+  					}
+<Comment>"</summary>"	                { // start of a .NET XML style detailed description
+                                          addOutput(yytext);
 					  setOutput(OutputDoc);
   					}
 <Comment>"</remarks>"			{ // end of a brief or detailed description
+                                          addOutput(yytext);
   					}
+<Comment>"<"{PRE}{ATTR}">"              {
+                                          insidePre=TRUE;
+                                          addOutput(yytext);
+                                        }
+<Comment>"</"{PRE}">"                   {
+                                          insidePre=FALSE;
+                                          addOutput(yytext);
+                                        }
 <Comment>{RCSTAG}			{ // RCS tag which end a brief description
   					  setOutput(OutputDoc);
 					  REJECT;
@@ -932,10 +985,16 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 <Comment>"<!--"				{ 
   					  BEGIN(HtmlComment);
 					}
+<Comment>{B}*{CMD}"endinternal"{B}*	{
+  					  warn(yyFileName,yyLineNr,
+                                               "warning: found \\endinternal without matching \\internal"
+                                              );
+  					}
 <Comment>{B}*{CMD}[a-z_A-Z]+{B}*	{ // potentially interesting command
                                           // the {B}* in the front was added for bug620924
   					  QCString cmdName = QCString(yytext).stripWhiteSpace().data()+1;
 					  DocCmdMapper::Cmd *cmdPtr = DocCmdMapper::map(cmdName);
+					  g_spaceBeforeCmd = yytext[0]==' ' || yytext[0]=='\t';
 					  if (cmdPtr) // special action is required
 					  {
 					    if (cmdPtr->endsBrief)
@@ -944,6 +1003,9 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 					      // this command forces the end of brief description
 					      setOutput(OutputDoc);
 					    }
+                                            int i=0;
+                                            while (yytext[i]==' ' || yytext[i]=='\t') i++;
+                                            if (i>0) addOutput(QCString(yytext).left(i));
 					    if (cmdPtr->func && cmdPtr->func(cmdName))
 					    {
 					      // implicit split of the comment block into two
@@ -966,7 +1028,7 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 					    {
 					      // command without handler, to be processed
 					      // later by parsedoc.cpp
-					      addOutput(yytext);
+					      addOutput(yytext+i);
 					    }
 					  }
 					  else // command not relevant
@@ -1033,7 +1095,40 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 <Comment>^{B}*"."{B}*/\n                { // explicit end autolist: e.g "  ."
   				          addOutput(yytext); 
 					}
-<Comment>("."+)[a-z_A-Z0-9]		{ // . at start or in the middle of a word, or ellipsis
+<Comment>^{B}*[1-9][0-9]*"."{B}+        |
+<Comment>^{B}*[*+]{B}+			{ // start of autolist
+                                          if (!Doxygen::markdownSupport)
+                                          {
+                                            REJECT;
+                                          }
+                                          else
+                                          {
+                                            if (inContext!=OutputXRef) 
+                                            {
+                                              briefEndsAtDot=FALSE;
+                                              setOutput(OutputDoc);
+                                            }
+                                            addOutput(yytext); 
+                                          }
+  					}
+<Comment>^{B}*"-"{B}+			{ // start of autolist
+					  if (inContext!=OutputXRef) 
+					  {
+					    briefEndsAtDot=FALSE;
+					    setOutput(OutputDoc);
+					  }
+  				          addOutput(yytext); 
+  					}
+<Comment>^{B}*([\-:|]{B}*)*("--"|"---")({B}*[\-:|])*{B}*/\n { // horizontal line (dashed)
+  				          addOutput(yytext); 
+                                        }
+<Comment>"---"                          { // mdash
+                                          addOutput(insidePre || Doxygen::markdownSupport ? yytext : "&mdash;");
+                                        }
+<Comment>"--"                           { // ndash
+                                          addOutput(insidePre || Doxygen::markdownSupport ? yytext : "&ndash;");
+                                        }
+<Comment>("."+)[a-z_A-Z0-9\)]		{ // . at start or in the middle of a word, or ellipsis
   					  addOutput(yytext);
   					}
 <Comment>".\\"[ \t]			{ // . with escaped space.
@@ -1238,7 +1333,7 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 <ClassDocArg2>.				{ // ignore other stuff
   					}
 
-<ClassDocArg3>[<]?{FILE}?[>]?		{ // third argument; include file name
+<ClassDocArg3>[<"]?{FILE}?[">]?		{ // third argument; include file name
  					  current->includeName = yytext;
 					  BEGIN( Comment );
 					}
@@ -1255,7 +1350,7 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 
   /* --------- handle arguments of {def,add,weak}group commands --------- */
 
-<GroupDocArg1>{ID}(".html"?)		{ // group name
+<GroupDocArg1>{LABELID}(".html"?)	{ // group name
   					  current->name = yytext;
 					  //lastDefGroup.groupname = yytext;
 					  //lastDefGroup.pri = current->groupingPri();
@@ -1349,7 +1444,7 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 
   /* --------- handle arguments of the xrefitem command ------------ */
 
-<XRefItemParam1>{ID}			{ // first argument
+<XRefItemParam1>{LABELID}		{ // first argument
   					  newXRefItemKey=yytext;
                                           setOutput(OutputXRef);
 					  BEGIN(XRefItemParam2);
@@ -1456,9 +1551,9 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
   /* ----- handle arguments of the section/subsection/.. commands ------- */
 
 <SectionLabel>{LABELID}			{ // first argyment
-  					  sectionLabel=yytext;
+  					  g_sectionLabel=yytext;
                                           addOutput(yytext);
-					  sectionTitle.resize(0);
+					  g_sectionTitle.resize(0);
 					  BEGIN(SectionTitle);
   					}
 <SectionLabel>{DOCNL}			{ // missing argument
@@ -1475,8 +1570,7 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 					      );
 					  BEGIN(Comment);
   					}
-
-<SectionTitle>[^\n@\\*]*/"\n"            { // end of section title
+<SectionTitle>[^\n@\\*]*/"\n"           { // end of section title
   					  addSection();
                                           addOutput(yytext);
 					  BEGIN( Comment );
@@ -1491,19 +1585,19 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 					  addOutput('\n');
   					}
 <SectionTitle>[^\n@\\]*			{ // any character without special meaning
-  					  sectionTitle+=yytext;
+  					  g_sectionTitle+=yytext;
 					  addOutput(yytext);
   					}
 <SectionTitle>("\\\\"|"@@"){ID}		{ // unescape escaped command
-  					  sectionTitle+=&yytext[1];
+  					  g_sectionTitle+=&yytext[1];
 					  addOutput(yytext);
   					}
 <SectionTitle>{CMD}[$@\\&~<>#%]		{ // unescape escaped character
-  					  sectionTitle+=yytext[1];
+  					  g_sectionTitle+=yytext[1];
   					  addOutput(yytext);
   					}
 <SectionTitle>.				{ // anything else
-  					  sectionTitle+=yytext;
+  					  g_sectionTitle+=yytext;
 					  addOutput(*yytext);
   					}
 
@@ -1540,8 +1634,8 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
   /* ----- handle arguments of the anchor command ------- */
 
 <AnchorLabel>{LABELID}			{ // found argument
-                                          SectionInfo  *si = new SectionInfo(yyFileName,yytext,0,SectionInfo::Anchor);
-                                          Doxygen::sectionDict.insert(yytext,si);
+                                          SectionInfo  *si = new SectionInfo(yyFileName,yytext,0,SectionInfo::Anchor,0);
+                                          Doxygen::sectionDict.append(yytext,si);
   					  current->anchors->append(si);
 					  addOutput(yytext);
 					  BEGIN( Comment );
@@ -1648,9 +1742,15 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
   					  addOutput(*yytext);
   					}
 <GuardParamEnd>{B}*{DOCNL}		{
+  					  g_spaceBeforeIf=FALSE;
   					  BEGIN(Comment);
   					}
 <GuardParamEnd>{B}*			{
+  					  if (g_spaceBeforeIf) // needed for 665313 in combation with bug620924
+					  {
+					    addOutput(" ");
+					  }
+  					  g_spaceBeforeIf=FALSE;
   					  BEGIN(Comment);
   					}
 <GuardParamEnd>.			{
@@ -1770,6 +1870,9 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 					    BEGIN(Comment);
 					  }
   					}
+<SkipInternal>[@\\]"endinternal"[ \t]*  {
+					  BEGIN(Comment);
+					}
 <SkipInternal>[^ \\@\n]+		{ // skip non-special characters
   					}
 <SkipInternal>.				{ // any other character
@@ -1795,7 +1898,7 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
 
   /* ----- handle argument of ingroup command ------- */
 
-<InGroupParam>{ID}			{ // group id
+<InGroupParam>{LABELID}			{ // group id
   					  current->groups->append(
 					    new Grouping(yytext, Grouping::GROUPING_INGROUP)
 					  );
@@ -1935,6 +2038,49 @@ RCSTAG    "$"{ID}":"[^\n$]+"$"
                                    }
 <SkipLang>.			   { /* any other character */
                                    }
+
+  /* ----- handle arguments of the cite command ------- */
+
+<CiteLabel>{CITEID}			{ // found argyment
+  					  addCite();
+                                          addOutput(yytext);
+					  BEGIN(Comment);
+  					}
+<CiteLabel>{DOCNL}			{ // missing argument
+  					  warn(yyFileName,yyLineNr,
+					      "warning: \\cite command has no label"
+					      );
+  					  if (*yytext=='\n') yyLineNr++;
+					  addOutput('\n');
+					  BEGIN( Comment );
+  					}
+<CiteLabel>.				{ // invalid character for cite label
+  					  warn(yyFileName,yyLineNr,
+					      "warning: Invalid or missing cite label"
+					      );
+					  BEGIN(Comment);
+  					}
+
+  /* ----- handle argument of the copydoc command ------- */
+
+<CopyDoc><<EOF>>			|
+<CopyDoc>{DOCNL}			{
+  					  if (*yytext=='\n') yyLineNr++;
+					  addOutput('\n');
+					  setOutput(OutputDoc);
+                                          addOutput("\\copydetails ");
+					  addOutput(g_copyDocArg);
+					  addOutput("\n");
+					  BEGIN(Comment);
+  					}
+<CopyDoc>[^\n\\]+			{
+  					  g_copyDocArg+=yytext;
+					  addOutput(yytext);
+  					}
+<CopyDoc>.				{
+  					  g_copyDocArg+=yytext;
+					  addOutput(yytext);
+  					}
 
 
 %%
@@ -2203,7 +2349,7 @@ static bool handleMemberOf(const QCString &)
 
 static bool handleRefItem(const QCString &)
 {
-  addOutput(" @refitem ");
+  addOutput("@refitem ");
   BEGIN(LineParam);
   return FALSE;
 }
@@ -2211,7 +2357,7 @@ static bool handleRefItem(const QCString &)
 static bool handleSection(const QCString &s)
 {
   setOutput(OutputDoc);
-  addOutput(" @"+s+" ");
+  addOutput("@"+s+" ");
   BEGIN(SectionLabel);
   if      (s=="section")       g_sectionLevel=1;
   else if (s=="subsection")    g_sectionLevel=2;
@@ -2230,21 +2376,28 @@ static bool handleSubpage(const QCString &s)
     warn(yyFileName,yyLineNr,
 	"warning: found \\subpage command in a comment block that is not marked as a page!");
   }
-  addOutput(" @"+s+" ");
+  addOutput("@"+s+" ");
   BEGIN(SubpageLabel);
   return FALSE;
 }
 
 static bool handleAnchor(const QCString &s)
 {
-  addOutput(" @"+s+" ");
+  addOutput("@"+s+" ");
   BEGIN(AnchorLabel);
+  return FALSE;
+}
+
+static bool handleCite(const QCString &s)
+{
+  addOutput("@"+s+" ");
+  BEGIN(CiteLabel);
   return FALSE;
 }
 
 static bool handleFormatBlock(const QCString &s)
 {
-  addOutput(" @"+s+" ");
+  addOutput("@"+s+" ");
   //printf("handleFormatBlock(%s)\n",s.data());
   blockName=s;
   g_commentCount=0;
@@ -2254,7 +2407,7 @@ static bool handleFormatBlock(const QCString &s)
 
 static bool handleAddIndex(const QCString &)
 {
-  addOutput(" @addindex ");
+  addOutput("@addindex ");
   BEGIN(LineParam);
   return FALSE;
 }
@@ -2263,6 +2416,7 @@ static bool handleIf(const QCString &)
 {
   enabledSectionFound=FALSE;
   guardType = Guard_If;
+  g_spaceBeforeIf = g_spaceBeforeCmd;
   BEGIN(GuardParam);
   return FALSE;
 }
@@ -2271,6 +2425,7 @@ static bool handleIfNot(const QCString &)
 {
   enabledSectionFound=FALSE;
   guardType = Guard_IfNot;
+  g_spaceBeforeIf = g_spaceBeforeCmd;
   BEGIN(GuardParam);
   return FALSE;
 }
@@ -2372,6 +2527,7 @@ static bool handleInternal(const QCString &)
   }
   else
   {
+    // re-enabled for bug640828
     addOutput("\\internal "); 
   }
   return FALSE;
@@ -2433,6 +2589,16 @@ static bool handlePublicSection(const QCString &)
   return FALSE;
 }
 
+static bool handleToc(const QCString &)
+{
+  if (current->section==Entry::PAGEDOC_SEC || 
+      current->section==Entry::MAINPAGEDOC_SEC)
+  {
+    current->stat=TRUE;  // we 'abuse' stat to pass whether or the TOC is enabled
+  }
+  return FALSE;
+}
+
 static bool handleInherit(const QCString &)
 {
   BEGIN(InheritParam);
@@ -2442,6 +2608,15 @@ static bool handleInherit(const QCString &)
 static bool handleExtends(const QCString &)
 {
   BEGIN(ExtendsParam);
+  return FALSE;
+}
+
+static bool handleCopyDoc(const QCString &)
+{
+  setOutput(OutputBrief);
+  addOutput("\\copybrief ");
+  g_copyDocArg.resize(0);
+  BEGIN(CopyDoc);
   return FALSE;
 }
 
@@ -2496,6 +2671,8 @@ bool parseCommentBlock(/* in */     ParserInterface *parser,
   briefEndsAtDot = isAutoBriefOn;
   g_condCount    = 0;
   g_sectionLevel = 0;
+  g_spaceBeforeCmd = FALSE;
+  g_spaceBeforeIf  = FALSE;
 
   if (!current->inbodyDocs.isEmpty() && isInbody) // separate in body fragments
   {
@@ -2503,7 +2680,7 @@ bool parseCommentBlock(/* in */     ParserInterface *parser,
   }
 
   Debug::print(Debug::CommentScan,0,"-----------\nCommentScanner: %s:%d\n"
-               "input=[%s]\n",fileName.data(),lineNr,comment.data()
+               "input=[\n%s]\n",fileName.data(),lineNr,comment.data()
               );
   
   commentScanYYrestart( commentScanYYin );
@@ -2521,7 +2698,7 @@ bool parseCommentBlock(/* in */     ParserInterface *parser,
     warn(yyFileName,yyLineNr,"Documentation block ended in the middle of a conditional section!");
   }
 
-  current->doc=stripLeadingAndTrailingEmptyLines(current->doc);
+  current->doc=stripLeadingAndTrailingEmptyLines(current->doc,current->docLine);
 
   if (current->section==Entry::FILEDOC_SEC && current->doc.isEmpty())
   {
@@ -2535,9 +2712,18 @@ bool parseCommentBlock(/* in */     ParserInterface *parser,
     openGroup(current,yyFileName,yyLineNr);
   }
 
+  if (Doxygen::markdownSupport)
+  {
+    current->brief      = processMarkdown(fileName,current,current->brief);
+    current->doc        = processMarkdown(fileName,current,current->doc);
+    current->inbodyDocs = processMarkdown(fileName,current,current->inbodyDocs);
+  }
+
   Debug::print(Debug::CommentScan,0,
-               "brief=[%s]\ndocs=[%s]\ninbody=[%s]\n===========\n",
-	       current->brief.data(),current->doc.data(),current->inbodyDocs.data()
+               "brief=[line=%d\n%s]\ndocs=[line=%d\n%s]\ninbody=[line=%d\n%s]\n===========\n",
+	       current->briefLine,current->brief.data(),
+               current->docLine,current->doc.data(),
+               current->inbodyLine,current->inbodyDocs.data()
               );
   
   checkFormula();
@@ -2548,7 +2734,7 @@ bool parseCommentBlock(/* in */     ParserInterface *parser,
   newEntryNeeded = needNewEntry;
 
   // if we did not proceed during this call, it does not make
-  // sence to continue, since we get stuck. See bug 567346 for situations
+  // sense to continue, since we get stuck. See bug 567346 for situations
   // were this happens
   if (parseMore && position==inputPosition) parseMore=FALSE;
 
@@ -2652,7 +2838,7 @@ void openGroup(Entry *e,const char *,int)
   }
   else // start of a member group
   {
-    //printf("    membergroup id=%d\n",g_memberGroupId);
+    //printf("    membergroup id=%d %s\n",g_memberGroupId,g_memberGroupHeader.data());
     if (g_memberGroupId==DOX_NOGROUP) // no group started yet
     {
       static int curGroupId=0;
@@ -2719,7 +2905,7 @@ static void groupAddDocs(Entry *e,const char *fileName)
   if (e->section==Entry::MEMBERGRP_SEC)
   {
     g_memberGroupDocs=e->brief.stripWhiteSpace();
-    e->doc = stripLeadingAndTrailingEmptyLines(e->doc);
+    e->doc = stripLeadingAndTrailingEmptyLines(e->doc,e->docLine);
     if (!g_memberGroupDocs.isEmpty() && !e->doc.isEmpty())
     {
       g_memberGroupDocs+="\n\n";

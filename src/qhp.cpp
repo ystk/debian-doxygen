@@ -33,6 +33,7 @@ static QCString makeFileName(const char * withoutExtension)
 
 static QCString makeRef(const char * withoutExtension, const char * anchor)
 {
+  //printf("QHP::makeRef(%s,%s)\n",withoutExtension,anchor);
   if (!withoutExtension) return QCString(); 
   QCString result = makeFileName(withoutExtension);
   if (!anchor) return result;
@@ -85,10 +86,10 @@ void Qhp::initialize()
     { "name", filterName, 0 };
     m_doc.open("customFilter", tagAttributes);
 
-    QStringList customFilterAttributes = QStringList::split(' ', Config_getString("QHP_CUST_FILTER_ATTRS"));
+    QStringList customFilterAttributes = QStringList::split(QChar(' '), Config_getString("QHP_CUST_FILTER_ATTRS"));
     for (int i = 0; i < (int)customFilterAttributes.count(); i++)
     {
-      m_doc.openCloseContent("filterAttribute", customFilterAttributes[i]);
+      m_doc.openCloseContent("filterAttribute", customFilterAttributes[i].utf8());
     }
     m_doc.close("customFilter");
   }
@@ -96,7 +97,7 @@ void Qhp::initialize()
   m_doc.open("filterSection");
 
   // Add section attributes
-  QStringList sectionFilterAttributes = QStringList::split(' ',
+  QStringList sectionFilterAttributes = QStringList::split(QChar(' '),
       Config_getString("QHP_SECT_FILTER_ATTRS"));
   if (!sectionFilterAttributes.contains(QString("doxygen")))
   {
@@ -104,7 +105,7 @@ void Qhp::initialize()
   }
   for (int i = 0; i < (int)sectionFilterAttributes.count(); i++)
   {
-    m_doc.openCloseContent("filterAttribute", sectionFilterAttributes[i]);
+    m_doc.openCloseContent("filterAttribute", sectionFilterAttributes[i].utf8());
   }
 
   m_toc.open("toc");
@@ -159,10 +160,12 @@ void Qhp::finalize()
 void Qhp::incContentsDepth()
 {
   m_sectionLevel++;
+  //printf("Qhp::incContentsDepth() %d->%d\n",m_sectionLevel-1,m_sectionLevel);
 }
 
 void Qhp::decContentsDepth()
 {
+  //printf("Qhp::decContentsDepth() %d->%d\n",m_sectionLevel,m_sectionLevel-1);
   if (m_sectionLevel <= 0)
   {
     return;
@@ -172,8 +175,11 @@ void Qhp::decContentsDepth()
 
 void Qhp::addContentsItem(bool /*isDir*/, const char * name, 
                           const char * /*ref*/, const char * file, 
-                          const char * /*anchor*/)
+                          const char * /*anchor*/,bool /* separateIndex */,
+                          bool /* addToNavIndex */,
+                          Definition * /*def*/)
 {
+  //printf("Qhp::addContentsItem(%s) %d\n",name,m_sectionLevel);
   // Backup difference before modification
   int diff = m_prevSectionLevel - m_sectionLevel;
 
@@ -188,10 +194,13 @@ void Qhp::addContentsItem(bool /*isDir*/, const char * name,
 }
 
 void Qhp::addIndexItem(Definition *context,MemberDef *md,
-                       const char *anc,const char *word)
+                       const char *word)
 {
-  (void)anc;
   (void)word;
+  //printf("addIndexItem(%s %s %s\n",
+  //       context?context->name().data():"<none>",
+  //       md?md->name().data():"<none>",
+  //       word);
 
   if (md) // member
   {
@@ -209,7 +218,7 @@ void Qhp::addIndexItem(Definition *context,MemberDef *md,
     QCString level1  = context->name();
     QCString level2  = word ? QCString(word) : md->name();
     QCString contRef = separateMemberPages ? cfname : cfiname;
-    QCString anchor  = anc;
+    QCString anchor  = md->anchor();
 
     QCString ref;
 
@@ -230,15 +239,7 @@ void Qhp::addIndexItem(Definition *context,MemberDef *md,
     // <keyword name="Foo" id="Foo" ref="doc.html"/>
     QCString contRef = context->getOutputFileBase();
     QCString level1  = word ? QCString(word) : context->name();
-    QCString ref;
-    if (anc)
-    {
-      ref = makeRef(contRef,anc);
-    }
-    else
-    {
-      ref = makeFileName(contRef);
-    }
+    QCString ref = makeFileName(contRef);
     const char * attributes[] =
     {
       "name", level1,
@@ -284,7 +285,7 @@ void Qhp::handlePrevSection()
 
   if (m_prevSectionTitle.isNull())
   {
-    return;
+    m_prevSectionTitle=" "; // should not happen...
   }
 
   // We skip "Main Page" as our extra root is pointing to that

@@ -2,7 +2,7 @@
  *
  * $Id: message.cpp,v 1.9 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -113,11 +113,8 @@ void msg(const char *fmt, ...)
   }
 }
 
-static void do_warn(const char *tag, const char *file, int line, const char *fmt, va_list args)
+static void format_warn(const char *file,int line,const char *text)
 {
-  if (!Config_getBool(tag)) return; // warning type disabled
-  char text[40960];
-  vsprintf(text, fmt, args);
   QCString fileSubst = file==0 ? "<unknown>" : file;
   QCString lineSubst; lineSubst.setNum(line);
   QCString textSubst = text;
@@ -133,7 +130,6 @@ static void do_warn(const char *tag, const char *file, int line, const char *fmt
   }
   // substitute markers by actual values
   QCString msgText = 
-    substitute(
       substitute(
         substitute(
           substitute(
@@ -146,12 +142,19 @@ static void do_warn(const char *tag, const char *file, int line, const char *fmt
           "$line",lineSubst
         ),
         "$version",versionSubst
-      ),
-      "%","%%"
-    )+'\n';
+      )+'\n';
 
   // print resulting message
-  fprintf(warnFile,"%s",msgText.data());
+  fwrite(msgText.data(),1,msgText.length(),warnFile);
+}
+
+static void do_warn(const char *tag, const char *file, int line, const char *fmt, va_list args)
+{
+  if (!Config_getBool(tag)) return; // warning type disabled
+  char text[4096];
+  vsnprintf(text, 4096, fmt, args);
+  text[4095]='\0';
+  format_warn(file,line,text);
 }
 
 void warn(const char *file,int line,const char *fmt, ...)
@@ -160,6 +163,12 @@ void warn(const char *file,int line,const char *fmt, ...)
   va_start(args, fmt);
   do_warn("WARNINGS", file, line, fmt, args);
   va_end(args); 
+}
+
+void warn_simple(const char *file,int line,const char *text)
+{
+  if (!Config_getBool("WARNINGS")) return; // warning type disabled
+  format_warn(file,line,text);
 }
 
 void warn_undoc(const char *file,int line,const char *fmt, ...)

@@ -2,7 +2,7 @@
  *
  * $Id: membergroup.h,v 1.13 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,6 +22,7 @@
 #include <qlist.h>
 #include <qfile.h>
 #include "sortdict.h"
+#include "memberlist.h"
 
 #define DOX_NOGROUP -1
 
@@ -29,13 +30,13 @@ class MemberDef;
 class ClassDef;
 class NamespaceDef;
 class FileDef;
-class MemberList;
 class GroupDef;
 class OutputList;
 class Definition;
 class StorageIntf;
 struct ListItemInfo;
 
+/** A class representing a group of members. */
 class MemberGroup 
 {
   public:
@@ -48,19 +49,25 @@ class MemberGroup
     void insertMember(MemberDef *md);
     void setAnchors(ClassDef *);
     void writePlainDeclarations(OutputList &ol,
-               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd);
+               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
+               ClassDef *inheritedFrom,const char *inheritId);
     void writeDeclarations(OutputList &ol,
-               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd);
-
+               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
+               bool showInline=FALSE);
     void writeDocumentation(OutputList &ol,const char *scopeName,
-               Definition *container);
+               Definition *container,bool showEnumValues,bool showInline);
     void writeDocumentationPage(OutputList &ol,const char *scopeName,
                Definition *container);
+    void addGroupedInheritedMembers(OutputList &ol,ClassDef *cd,
+               MemberList::ListType lt,
+               ClassDef *inheritedFrom,const QCString &inheritId);
+
     QCString documentation() { return doc; }
     bool allMembersInSameSection() { return inSameSection; }
     void addToDeclarationSection();
-    int countDecMembers();
+    int countDecMembers(GroupDef *gd=0);
     int countDocMembers();
+    int countGroupedInheritedMembers(MemberList::ListType lt);
     void distributeMemberGroupDocumentation();
     void findSectionsInDocumentation();
     int varCount() const;
@@ -73,6 +80,7 @@ class MemberGroup
     int friendCount() const;
     int numDecMembers() const;
     int numDocMembers() const;
+    int countInheritableMembers(ClassDef *inheritedFrom) const;
     void setInGroup(bool b);
     void addListReferences(Definition *d);
     void setRefItems(const QList<ListItemInfo> *sli);
@@ -99,10 +107,12 @@ class MemberGroup
     QList<ListItemInfo> *m_xrefListItems;
 };
 
+/** A list of MemberGroup objects. */
 class MemberGroupList : public QList<MemberGroup>
 {
 };
 
+/** An iterator for MemberGroup objects in a MemberGroupList. */
 class MemberGroupListIterator : public QListIterator<MemberGroup>
 {
   public:
@@ -110,14 +120,19 @@ class MemberGroupListIterator : public QListIterator<MemberGroup>
       QListIterator<MemberGroup>(l) {}
 };
 
+/** A sorted dictionary of MemberGroup objects. */
 class MemberGroupSDict : public SIntDict<MemberGroup>
 {
   public:
     MemberGroupSDict(int size=17) : SIntDict<MemberGroup>(size) {}
    ~MemberGroupSDict() {}
+    int compareItems(GCI item1,GCI item2)
+    {
+      return ((MemberGroup *)item1)->groupId() - ((MemberGroup*)item2)->groupId();
+    }
 };
 
-
+/** Data collected for a member group */
 struct MemberGroupInfo
 {
   MemberGroupInfo() : m_sli(0) {}
@@ -129,20 +144,5 @@ struct MemberGroupInfo
   QCString compoundName;
   QList<ListItemInfo> *m_sli;
 };
-
-//class MemberGroupDict : public QIntDict<MemberGroup>
-//{
-//  public:
-//    MemberGroupDict(int size) : QIntDict<MemberGroup>(size) {}
-//   ~MemberGroupDict() {}
-//};
-
-//class MemberGroupDictIterator : public QIntDictIterator<MemberGroup>
-//{
-//  public:
-//    MemberGroupDictIterator(const MemberGroupDict &d) : 
-//      QIntDictIterator<MemberGroup>(d) {}
-//   ~MemberGroupDictIterator() {}
-//};
 
 #endif

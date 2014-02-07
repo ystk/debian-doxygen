@@ -3,7 +3,7 @@
  * $Id: dot.h,v 1.14 2001/03/19 19:27:40 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -42,7 +42,7 @@ class DotRunnerQueue;
 
 enum GraphOutputFormat { BITMAP , EPS };
 
-/** @brief Attributes of an edge of a dot graph */
+/** Attributes of an edge of a dot graph */
 struct EdgeInfo
 {
   enum Colors { Blue=0, Green=1, Red=2, Purple=3, Grey=4, Orange=5 };
@@ -56,7 +56,7 @@ struct EdgeInfo
   int m_labColor;
 };
 
-/** @brief A node in a dot graph */
+/** A node in a dot graph */
 class DotNode
 {
   public:
@@ -127,6 +127,7 @@ class DotNode
                       GraphOutputFormat f, 
                       bool lrRank, bool renderParents,
                       bool backArrows,
+                      const QCString &title,
                       QCString &graphStr
                      );
 };
@@ -138,13 +139,13 @@ inline int DotNode::findParent( DotNode *n )
     return m_parents->find(n);
 }
 
-/** @brief Represents a graphical class hierarchy */
+/** Represents a graphical class hierarchy */
 class DotGfxHierarchyTable
 {
   public:
     DotGfxHierarchyTable();
    ~DotGfxHierarchyTable();
-    void writeGraph(FTextStream &t,const char *path,const char *fileName) const;
+    void writeGraph(FTextStream &t,const char *path, const char *fileName) const;
   
   private:
     void addHierarchy(DotNode *n,ClassDef *cd,bool hide);
@@ -156,7 +157,7 @@ class DotGfxHierarchyTable
     DotNodeList    *m_rootSubgraphs;
 };
 
-/** @brief Representation of a class inheritance or dependency graph */
+/** Representation of a class inheritance or dependency graph */
 class DotClassGraph
 {
   public:
@@ -166,7 +167,7 @@ class DotClassGraph
     bool isTooBig() const;
     QCString writeGraph(FTextStream &t,GraphOutputFormat f,const char *path,
                     const char *fileName, const char *relPath, 
-                    bool TBRank=TRUE,bool imageMap=TRUE) const;
+                    bool TBRank=TRUE,bool imageMap=TRUE,int graphId=-1) const;
 
     void writeXML(FTextStream &t);
     void writeDEF(FTextStream &t);
@@ -188,7 +189,7 @@ class DotClassGraph
     bool               m_lrRank;
 };
 
-/** @brief Representation of an include dependency graph */
+/** Representation of an include dependency graph */
 class DotInclDepGraph
 {
   public:
@@ -196,7 +197,7 @@ class DotInclDepGraph
    ~DotInclDepGraph();
     QCString writeGraph(FTextStream &t, GraphOutputFormat f,
                     const char *path,const char *fileName,const char *relPath,
-                    bool writeImageMap=TRUE) const;
+                    bool writeImageMap=TRUE,int graphId=-1) const;
     bool isTrivial() const;
     bool isTooBig() const;
     QCString diskName() const;
@@ -215,7 +216,7 @@ class DotInclDepGraph
     bool            m_inverse;
 };
 
-/** @brief Representation of an call graph */
+/** Representation of an call graph */
 class DotCallGraph
 {
   public:
@@ -223,7 +224,8 @@ class DotCallGraph
    ~DotCallGraph();
     QCString writeGraph(FTextStream &t, GraphOutputFormat f,
                         const char *path,const char *fileName,
-                        const char *relPath,bool writeImageMap=TRUE) const;
+                        const char *relPath,bool writeImageMap=TRUE,
+                        int graphId=-1) const;
     void buildGraph(DotNode *n,MemberDef *md,int distance);
     bool isTrivial() const;
     bool isTooBig() const;
@@ -241,7 +243,7 @@ class DotCallGraph
     Definition *    m_scope;
 };
 
-/** @brief Representation of an directory dependency graph */
+/** Representation of an directory dependency graph */
 class DotDirDeps
 {
   public:
@@ -253,12 +255,13 @@ class DotDirDeps
                         const char *path,
                         const char *fileName,
                         const char *relPath,
-                        bool writeImageMap=TRUE) const;
+                        bool writeImageMap=TRUE,
+                        int graphId=-1) const;
   private:
     DirDef *m_dir;
 };
 
-/** @brief Representation of a group collaboration graph */
+/** Representation of a group collaboration graph */
 class DotGroupCollaboration
 {
   public :
@@ -299,13 +302,13 @@ class DotGroupCollaboration
     ~DotGroupCollaboration();
     QCString writeGraph(FTextStream &t, GraphOutputFormat format,
                     const char *path,const char *fileName,const char *relPath,
-                    bool writeImageMap=TRUE) const;
+                    bool writeImageMap=TRUE,int graphId=-1) const;
     void buildGraph(GroupDef* gd);
     bool isTrivial() const;
   private :
     void addCollaborationMember( Definition* def, QCString& url, EdgeType eType );
     void addMemberList( class MemberList* ml );
-    void writeGraphHeader(FTextStream &t) const;
+    void writeGraphHeader(FTextStream &t,const QCString &title) const;
     Edge* addEdge( DotNode* _pNStart, DotNode* _pNEnd, EdgeType _eType,
                    const QCString& _label, const QCString& _url );
 
@@ -316,11 +319,17 @@ class DotGroupCollaboration
     QList<Edge>     m_edges;
 };
 
-/** @brief Helper class to run dot from doxygen.
+/** Helper class to run dot from doxygen.
  */
 class DotRunner
 {
   public:
+    struct CleanupItem
+    {
+      QCString path;
+      QCString file;
+    };
+
     /** Creates a runner for a dot \a file. */
     DotRunner(const QCString &file,const QCString &fontPath,bool checkResult,
         const QCString &imageName = QCString());
@@ -336,6 +345,8 @@ class DotRunner
 
     /** Runs dot for all jobs added. */
     bool run();
+    CleanupItem cleanup() const { return m_cleanupItem; }
+
   private:
     QList<QCString> m_jobs;
     QCString m_postArgs;
@@ -345,10 +356,11 @@ class DotRunner
     bool m_checkResult;
     QCString m_imageName;
     bool m_cleanUp;
+    CleanupItem m_cleanupItem;
 };
 
-/** @brief Helper class to insert a set of map file into an output file */
-class DotMapConverter
+/** Helper class to insert a set of map file into an output file */
+class DotFilePatcher
 {
   public:
     struct Map
@@ -358,19 +370,27 @@ class DotMapConverter
       bool     urlOnly;
       QCString context;
       QCString label;
+      bool     zoomable;
+      int      graphId;
     };
-    DotMapConverter(const char *patchFile);
+    DotFilePatcher(const char *patchFile);
     int addMap(const QCString &mapFile,const QCString &relPath,
                bool urlOnly,const QCString &context,const QCString &label);
     int addFigure(const QCString &baseName,
                   const QCString &figureName,bool heightCheck);
+    int addSVGConversion(const QCString &relPath,bool urlOnly,
+                         const QCString &context,bool zoomable,int graphId);
+    int addSVGObject(const QCString &baseName, const QCString &figureName,
+                     const QCString &relPath);
     bool run();
+    QCString file() const;
 
   private:
     QList<Map> m_maps;
     QCString m_patchFile;
 };
 
+/** Queue of dot jobs to run. */
 class DotRunnerQueue
 {
   public:
@@ -383,17 +403,20 @@ class DotRunnerQueue
     mutable QMutex  m_mutex;
 };
 
+/** Worker thread to execute a dot run */
 class DotWorkerThread : public QThread
 {
   public:
     DotWorkerThread(int id,DotRunnerQueue *queue);
     void run();
+    void cleanup();
   private:
     int m_id;
     DotRunnerQueue *m_queue;
+    QList<DotRunner::CleanupItem> m_cleanupItems;
 };
 
-/** @brief singleton that manages dot relation actions */
+/** Singleton that manages dot relation actions */
 class DotManager
 {
   public:
@@ -404,13 +427,17 @@ class DotManager
                 const QCString &context,const QCString &label);
     int addFigure(const QCString &file,const QCString &baseName,
                   const QCString &figureName,bool heightCheck);
+    int addSVGConversion(const QCString &file,const QCString &relPath,
+               bool urlOnly,const QCString &context,bool zoomable,int graphId);
+    int addSVGObject(const QCString &file,const QCString &baseName,
+                     const QCString &figureNAme,const QCString &relPath);
     bool run();
 
   private:
     DotManager();
     virtual ~DotManager();
     QList<DotRunner>       m_dotRuns;
-    SDict<DotMapConverter> m_dotMaps;
+    SDict<DotFilePatcher> m_dotMaps;
     static DotManager     *m_theInstance;
     DotRunnerQueue        *m_queue;
     QList<DotWorkerThread> m_workers;
@@ -422,8 +449,10 @@ void generateGraphLegend(const char *path);
 
 void writeDotGraphFromFile(const char *inFile,const char *outDir,
                            const char *outFile,GraphOutputFormat format);
-QCString getDotImageMapFromFile(const QCString& inFile, const QCString& outDir,
-                                const QCString& relPath,const QCString& context);
+void writeDotImageMapFromFile(FTextStream &t,
+                              const QCString& inFile, const QCString& outDir,
+                              const QCString& relPath,const QCString& baseName,
+                              const QCString& context,int graphId=-1);
 
 void writeDotDirDepGraph(FTextStream &t,DirDef *dd);
 

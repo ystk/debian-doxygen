@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -47,6 +47,8 @@
 #include "bufstr.h"
 #include "portable.h"
 #include "bufstr.h"
+#include "arguments.h"
+#include "entry.h"
 
 #define YY_NEVER_INTERACTIVE 1
   
@@ -56,15 +58,250 @@ struct FileState
   FileState(int size) : fileBuf(size), 
                         oldFileBuf(0), oldFileBufPos(0) {}
   int lineNr;
-  //FILE *filePtr;
   BufStr fileBuf;
-  //FILE *oldYYin;
   BufStr *oldFileBuf;
   int oldFileBufPos;
-  //bool isPlainFile;
   YY_BUFFER_STATE bufState;
   QCString fileName;
 };  
+
+/** @brief Singleton that manages the defines available while 
+ *  proprocessing files. 
+ */
+class DefineManager
+{
+  /** Local class used to hold the defines for a single file */
+  class DefinesPerFile
+  {
+    public:
+      /** Creates an empty container for defines */
+      DefinesPerFile() : m_defines(257), m_includedFiles(17)
+      {
+        m_defines.setAutoDelete(TRUE);
+      }
+      /** Destroys the object */
+      virtual ~DefinesPerFile()
+      {
+      }
+      /** Adds a define in the context of a file. Will replace 
+       *  an existing define with the same name (redefinition)
+       *  @param def The Define object to add.
+       */
+      void addDefine(Define *def)
+      {
+	Define *d = m_defines.find(def->name);
+	if (d!=0) // redefine
+	{
+	  m_defines.remove(d->name);
+	}
+	m_defines.insert(def->name,def);
+      }
+      /** Adds an include file for this file 
+       *  @param fileName The name of the include file
+       */
+      void addInclude(const char *fileName)
+      {
+	m_includedFiles.insert(fileName,(void*)0x8);
+      }
+      void collectDefines(DefineDict *dict,QDict<void> &includeStack);
+    private:
+      DefineDict m_defines;
+      QDict<void> m_includedFiles;
+  };
+
+  public:
+    friend class DefinesPerFile;
+    /** Returns a reference to the singleton */
+    static DefineManager &instance()
+    {
+      if (theInstance==0) theInstance = new DefineManager;
+      return *theInstance;
+    }
+    /** Deletes the singleton */
+    static void deleteInstance()
+    {
+      delete theInstance;
+      theInstance = 0;
+    }
+    /** Starts a context in which defines are collected. 
+     *  Called at the start of a new file that is preprocessed.
+     *  @param fileName the name of the file to process.
+     */
+    void startContext(const char *fileName)
+    {
+      //printf("DefineManager::startContext()\n");
+      m_contextDefines.clear();
+      if (fileName==0) return;
+      DefinesPerFile *dpf = m_fileMap.find(fileName);
+      if (dpf==0)
+      {
+	//printf("New file!\n");
+	dpf = new DefinesPerFile;
+	m_fileMap.insert(fileName,dpf);
+      }
+    }
+    /** Ends the context started with startContext() freeing any
+     *  defines collected within in this context.
+     */
+    void endContext()
+    {
+      //printf("DefineManager::endContext()\n");
+      m_contextDefines.clear();
+    }
+    /** Add an included file to the current context.
+     *  If the file has been pre-processed already, all defines are added
+     *  to the context.
+     *  @param fileName The name of the include file to add to the context.
+     */
+    void addFileToContext(const char *fileName)
+    {
+      if (fileName==0) return;
+      //printf("DefineManager::addFileToContext(%s)\n",fileName);
+      DefinesPerFile *dpf = m_fileMap.find(fileName);
+      if (dpf==0)
+      {
+	//printf("New file!\n");
+	dpf = new DefinesPerFile;
+	m_fileMap.insert(fileName,dpf);
+      }
+      else
+      {
+	//printf("existing file!\n");
+	QDict<void> includeStack(17);
+	dpf->collectDefines(&m_contextDefines,includeStack);
+      }
+    }
+
+    /** Add a define to the manager object.
+     *  @param fileName The file in which the define was found
+     *  @param def The Define object to add.
+     */
+    void addDefine(const char *fileName,Define *def)
+    {
+      if (fileName==0) return;
+      //printf("DefineManager::addDefine(%s,%s)\n",fileName,def->name.data());
+      Define *d = m_contextDefines.find(def->name);
+      if (d!=0) // redefine
+      {
+	m_contextDefines.remove(d->name);
+      }
+      m_contextDefines.insert(def->name,def);
+
+      DefinesPerFile *dpf = m_fileMap.find(fileName);
+      if (dpf==0)
+      {
+	dpf = new DefinesPerFile;
+      }
+      dpf->addDefine(def);
+    }
+
+    /** Add an include relation to the manager object.
+     *  @param fromFileName file name in which the include was found.
+     *  @param toFileName file name that is included.
+     */
+    void addInclude(const char *fromFileName,const char *toFileName)
+    {
+      //printf("DefineManager::addInclude(%s,%s)\n",fromFileName,toFileName);
+      if (fromFileName==0 || toFileName==0) return;
+      DefinesPerFile *dpf = m_fileMap.find(fromFileName);
+      if (dpf==0)
+      {
+	dpf = new DefinesPerFile;
+      }
+      dpf->addInclude(toFileName);
+    }
+    /** Returns a Define object given its name or 0 if the Define does
+     *  not exist.
+     */
+    Define *isDefined(const char *name) const
+    {
+      return m_contextDefines.find(name);
+    }
+    /** Returns a reference to the defines found in the current context. */
+    const DefineDict &defineContext() const
+    {
+      return m_contextDefines;
+    }
+  private:
+    static DefineManager *theInstance;
+
+    /** Helper function to collect all define for a given file */
+    void collectDefinesForFile(const char *fileName,DefineDict *dict)
+    {
+      if (fileName==0) return;
+      DefinesPerFile *dpf = m_fileMap.find(fileName);
+      if (dpf)
+      {
+	QDict<void> includeStack(17);
+	dpf->collectDefines(dict,includeStack);
+      }
+    }
+
+    /** Helper function to return the DefinesPerFile object for a given file name. */
+    DefinesPerFile *find(const char *fileName) const
+    {
+      if (fileName==0) return 0;
+      return m_fileMap.find(fileName);
+    }
+
+    /** Creates a new DefineManager object */
+    DefineManager() : m_fileMap(1009), m_contextDefines(1009)
+    {
+      m_fileMap.setAutoDelete(TRUE);
+    }
+
+    /** Destroys the object */
+    virtual ~DefineManager() 
+    {
+    }
+
+    QDict<DefinesPerFile> m_fileMap;
+    DefineDict m_contextDefines;
+};
+
+/** Singleton instance */
+DefineManager *DefineManager::theInstance = 0;
+
+/** Collects all defines for a file and all files that the file includes.
+ *  This function will recursively call itself for each file.
+ *  @param dict The dictionary to fill with the defines. A redefine will
+ *         replace a previous definition.
+ *  @param includeStack The stack of includes, used to stop recursion in
+ *         case there is a cyclic include dependency.
+ */
+void DefineManager::DefinesPerFile::collectDefines(
+                     DefineDict *dict,QDict<void> &includeStack)
+{
+  //printf("DefinesPerFile::collectDefines #defines=%d\n",m_defines.count());
+  {
+    QDictIterator<void> di(m_includedFiles);
+    for (di.toFirst();(di.current());++di)
+    {
+      QCString incFile = di.currentKey();
+      DefinesPerFile *dpf = DefineManager::instance().find(incFile);
+      if (dpf && includeStack.find(incFile)==0) 
+      {
+        //printf("  processing include %s\n",incFile.data());
+	includeStack.insert(incFile,(void*)0x8);
+	dpf->collectDefines(dict,includeStack);
+      }
+    }
+  }
+  {
+    QDictIterator<Define> di(m_defines);
+    Define *def;
+    for (di.toFirst();(def=di.current());++di)
+    {
+      Define *d = dict->find(def->name);
+      if (d!=0) // redefine
+      {
+	dict->remove(d->name);
+      }
+      dict->insert(def->name,def);
+      //printf("  adding define %s\n",def->name.data());
+    }
+  }
+}
 
 /* -----------------------------------------------------------------
  *
@@ -84,6 +321,7 @@ static QCString           g_defName;
 static QCString           g_defText;
 static QCString           g_defLitText;
 static QCString           g_defArgsStr;
+static QCString           g_defExtraSpacing;
 static bool               g_defVarArgs;
 static int                g_level;
 static int                g_lastCContext;
@@ -94,10 +332,10 @@ static int                g_inputBufPos;
 static BufStr            *g_outputBuf;
 static int                g_roundCount;
 static bool               g_quoteArg;
-static DefineDict        *g_fileDefineDict = new DefineDict(10009);
 static DefineDict        *g_expandedDict;
 static int                g_findDefArgContext;
 static bool               g_expectGuard;
+static QCString           g_guardName;
 static QCString           g_lastGuardName;
 static QCString           g_incName;
 static QCString           g_guardExpr;
@@ -114,13 +352,14 @@ static int                g_condCtx;
 static bool               g_skip;
 static QStack<bool>       g_condStack;
 static bool               g_insideCS; // C# has simpler preprocessor
+static bool               g_isSource;
 
 static bool               g_lexInit = FALSE;
 
-DefineDict* getFileDefineDict() 
-{
-  return g_fileDefineDict;
-}
+//DefineDict* getGlobalDefineDict() 
+//{
+//  return g_globalDefineDict;
+//}
 
 static void setFileName(const char *name)
 {
@@ -128,10 +367,16 @@ static void setFileName(const char *name)
   QFileInfo fi(name);
   g_yyFileName=convertToQCString(fi.absFilePath());
   g_yyFileDef=findFileDef(Doxygen::inputNameDict,g_yyFileName,ambig);
+  if (g_yyFileDef==0) // if this is not an input file check if it is an
+                      // include file
+  {
+    g_yyFileDef=findFileDef(Doxygen::includeNameDict,g_yyFileName,ambig);
+  }
   //printf("setFileName(%s) g_yyFileName=%s g_yyFileDef=%p\n",
   //    name,g_yyFileName.data(),g_yyFileDef);
   if (g_yyFileDef && g_yyFileDef->isReference()) g_yyFileDef=0;
   g_insideCS = getLanguageFromFileName(g_yyFileName)==SrcLangExt_CSharp;
+  g_isSource = guessSection(g_yyFileName);
 }
 
 static void incrLevel()
@@ -174,6 +419,7 @@ static void setCaseDone(bool value)
   g_levelGuard[g_level-1]=value;
 }
 
+#if 0
 static bool macroIsAccessible(Define *def)
 {
   //printf("macroIsAccessible(%s) input=%s def=%s\n",
@@ -198,6 +444,13 @@ static bool macroIsAccessible(Define *def)
     //       g_inputFileDef->name().data(),def->name.data(),def->fileDef->name().data(),b);
     return b;
   }
+  if (g_inputFileDef && def && !def->fileName.isEmpty())
+  {
+    bool b = g_inputFileDef->includesByName(def->fileName);
+    //printf("%s: Checking for accessibility of define '%s' (defined in %s): result=%d\n",
+    //       g_inputFileDef->name().data(),def->name.data(),def->fileName.data(),b);
+    return b;
+  }
   //printf("not accessible!\n");
   return FALSE;
 }
@@ -207,14 +460,14 @@ static Define *isDefined(const char *name)
   Define *def=0;
   if (name)
   {
-    def=g_fileDefineDict->find(name);
-    //if ((def=fileDefineCache->findDefine(g_yyFileName,name)) && !def->undef) 
-    //	return def;
+    def=g_globalDefineDict->find(name);
     if (def && def->undef) def=0;
     if (def && !macroIsAccessible(def)) def=0;
   }
+  //printf("isDefined(%s)=%p\n",name,def);
   return def;
 }
+#endif
 
 
 static QDict<void> g_allIncludes(10009);
@@ -312,11 +565,13 @@ static FileState *findFile(const char *fileName,bool localInclude,bool &alreadyI
   while (s)
   {
     QCString absName = (QCString)s+"/"+fileName;
+    //printf("  Looking for %s in %s\n",fileName,s);
     FileState *fs = checkAndOpenFile(absName,alreadyIncluded);
     if (fs)
     {
       setFileName(absName);
       g_yyLineNr=1;
+      //printf("  -> found it\n");
       return fs;
     }
     else if (alreadyIncluded)
@@ -345,7 +600,13 @@ static QCString extractTrailingComment(const char *s)
 	  {
 	    i--;
 	    while (i>0 && !(s[i-1]=='/' && s[i]=='*')) i--;
-	    if (i==0) return s; else return &s[i-1];
+	    if (i==0) 
+	    {
+	      i++;
+	    }
+	    // only /*!< or /**< are treated as a comment for the macro name,
+	    // otherwise the comment is treated as part of the macro definition
+	    return ((s[i+1]=='*' || s[i+1]=='!') && s[i+2]=='<') ? &s[i-1] : ""; 
 	  }
 	  else
 	  {
@@ -777,20 +1038,22 @@ static int getNextId(const QCString &expr,int p,int *l)
     }
     else if (c=='/') // skip C Comment
     {
+      //printf("Found C comment at p=%d\n",p);
       char pc=c;
       if (p<(int)expr.length()) 
       {
-	c=expr.at(++p);
+	c=expr.at(p);
         if (c=='*')  // Start of C comment
         { 
+	  p++;
   	  while (p<(int)expr.length() && !(pc=='*' && c=='/'))
 	  {
 	    pc=c;
-	    c=expr.at(++p);
+	    c=expr.at(p++);
 	  }
-	  p++;
         }
       }
+      //printf("Found end of C comment at p=%d\n",p);
     }
   }
   return -1;
@@ -813,11 +1076,12 @@ static void expandExpression(QCString &expr,QCString *rest,int pos)
   {
     bool replaced=FALSE;
     macroName=expr.mid(p,l);
+    //printf("macroName=%s\n",macroName.data());
     if (p<2 || !(expr.at(p-2)=='@' && expr.at(p-1)=='-')) // no-rescan marker?
     {
       if (g_expandedDict->find(macroName)==0) // expand macro
       {
-	Define *def=isDefined(macroName);
+	Define *def=DefineManager::instance().isDefined(macroName);
 	if (definedTest) // macro name was found after defined 
 	{
 	  if (def) expMacro = " 1 "; else expMacro = " 0 ";
@@ -944,6 +1208,34 @@ QCString removeIdsAndMarkers(const char *s)
 	result+="0L";
 	p++;
 	while ((c=*p) && isId(c)) p++;
+	if (*p=='(') // undefined function macro
+	{
+	  p++;
+	  int count=1;
+	  while ((c=*p++))
+	  {
+	    if (c=='(') count++;
+	    else if (c==')')
+	    {
+	      count--;
+	      if (count==0) break;
+	    }
+	    else if (c=='/')
+	    {
+	      char pc=c;
+	      c=*++p;
+	      if (c=='*') // start of C comment
+	      {
+		while (*p && !(pc=='*' && c=='/')) // search end of comment
+		{
+		  pc=c;
+		  c=*++p;
+		}
+		p++;
+	      }
+	    }
+	  }
+	}
       }
       else if (c=='/') // skip C comments
       {
@@ -1018,11 +1310,7 @@ QCString removeMarkers(const char *s)
 		pc=c;
 		c=*++p;
 	      }
-	      if (*p)
-	      {
-	        result+=c;
-	        p++;
-	      }
+	      if (*p) result+=c,p++;
 	    }
 	  }
 	  break;
@@ -1036,6 +1324,7 @@ QCString removeMarkers(const char *s)
 	      result+=c;
 	      c=*++p;
 	    }
+	    if (*p) result+=c,p++; 
 	  }
 	  break;
 	case '\'': // skip char literals
@@ -1048,6 +1337,7 @@ QCString removeMarkers(const char *s)
 	      result+=c;
 	      c=*++p;
 	    }
+	    if (*p) result+=c,p++; 
 	  }
 	  break;
 	default:
@@ -1101,8 +1391,8 @@ Define *newDefine()
   def->fileDef    = g_yyFileDef;
   def->lineNr     = g_yyLineNr;
   def->varArgs    = g_defVarArgs;
-  //printf("newDefine: %s->%s\n",def->name.data(),
-  //    def->fileDef ? def->fileDef->name().data() : "<none>");
+  //printf("newDefine: %s %s file: %s\n",def->name.data(),def->definition.data(),
+  //    def->fileDef ? def->fileDef->name().data() : def->fileName.data());
   //printf("newDefine: `%s'->`%s'\n",def->name.data(),def->definition.data());
   if (!def->name.isEmpty() && Doxygen::expandAsDefinedDict[def->name])
   {
@@ -1181,7 +1471,8 @@ static inline void outputArray(const char *a,int len)
 
 static void readIncludeFile(const QCString &inc)
 {
-  if (!Config_getBool("SEARCH_INCLUDES")) return; // do not read include files
+  static bool searchIncludes = Config_getBool("SEARCH_INCLUDES");
+  if (!searchIncludes) return; // do not read include files
   uint i=0;
 
   // find the start of the include file name
@@ -1201,10 +1492,58 @@ static void readIncludeFile(const QCString &inc)
     // extract include path+name
     QCString incFileName=inc.mid(s,i-s).stripWhiteSpace();
 
+    QCString dosExt = incFileName.right(4);
+    if (dosExt==".exe" || dosExt==".dll" || dosExt==".tlb")
+    {
+      // skip imported binary files (e.g. M$ type libraries)
+      return;
+    }
+
     QCString oldFileName = g_yyFileName;
     FileDef *oldFileDef  = g_yyFileDef;
     int oldLineNr        = g_yyLineNr;
     //printf("Searching for `%s'\n",incFileName.data());
+
+    // absIncFileName avoids difficulties for incFileName starting with "../" (bug 641336)
+    QCString absIncFileName = incFileName;
+    {
+      static bool searchIncludes = Config_getBool("SEARCH_INCLUDES");
+      QFileInfo fi(g_yyFileName);
+      if (fi.exists())
+      {
+	QCString absName = QCString(fi.dirPath(TRUE).data())+"/"+incFileName;
+        QFileInfo fi2(absName);
+        if (fi2.exists())
+        {
+	  absIncFileName=fi2.absFilePath().utf8();
+	}
+	else if (searchIncludes) // search in INCLUDE_PATH as well
+	{
+	  QStrList &includePath = Config_getList("INCLUDE_PATH");
+	  char *s=includePath.first();
+	  while (s)
+	  {
+	    QFileInfo fi(s);
+	    if (fi.exists() && fi.isDir())
+	    {
+	      QCString absName = QCString(fi.absFilePath().utf8())+"/"+incFileName;
+	      //printf("trying absName=%s\n",absName.data());
+	      QFileInfo fi2(absName);
+	      if (fi2.exists())
+	      {
+		absIncFileName=fi2.absFilePath().utf8();
+		break;
+	      }
+	      //printf( "absIncFileName = %s\n", absIncFileName.data() );
+	    }
+	    s=includePath.next();
+	  }
+	}
+	//printf( "absIncFileName = %s\n", absIncFileName.data() );
+      }
+    }
+    DefineManager::instance().addInclude(g_yyFileName,absIncFileName);
+    DefineManager::instance().addFileToContext(absIncFileName);
 
     // findFile will overwrite g_yyFileDef if found
     FileState *fs;
@@ -1215,19 +1554,29 @@ static void readIncludeFile(const QCString &inc)
       //printf("Found include file!\n");
       if (Debug::isFlagSet(Debug::Preprocessor))
       {
-        for (i=0;i<g_includeStack.count();i++) msg("  ");
-        msg("#include %s: parsing...\n",incFileName.data());
+        for (i=0;i<g_includeStack.count();i++) 
+        {
+          Debug::print(Debug::Preprocessor,0,"  ");
+        }
+        //msg("#include %s: parsing...\n",incFileName.data());
       }
       if (oldFileDef)
       {
         // add include dependency to the file in which the #include was found
-        oldFileDef->addIncludeDependency(g_yyFileDef,incFileName,localInclude,g_isImported);
+	bool ambig;
+	// change to absolute name for bug 641336 
+        FileDef *incFd = findFileDef(Doxygen::inputNameDict,absIncFileName,ambig);
+        oldFileDef->addIncludeDependency(ambig ? 0 : incFd,incFileName,localInclude,g_isImported,FALSE);
         // add included by dependency
         if (g_yyFileDef)
         {
           //printf("Adding include dependency %s->%s\n",oldFileDef->name().data(),incFileName.data());
           g_yyFileDef->addIncludedByDependency(oldFileDef,oldFileDef->docName(),localInclude,g_isImported);
         }
+      }
+      else if (g_inputFileDef)
+      {
+        g_inputFileDef->addIncludeDependency(0,absIncFileName,localInclude,g_isImported,TRUE);
       }
       fs->bufState = YY_CURRENT_BUFFER;
       fs->lineNr   = oldLineNr;
@@ -1254,10 +1603,18 @@ static void readIncludeFile(const QCString &inc)
       if (oldFileDef)
       {
 	bool ambig;
-	FileDef *fd = findFileDef(Doxygen::inputNameDict,incFileName,ambig);
-	//printf("findFileDef(%s)=%p\n",incFileName.data(),fd);
+	//QCString absPath = incFileName;
+	//if (QDir::isRelativePath(incFileName))
+	//{
+	//  absPath = QDir::cleanDirPath(oldFileDef->getPath()+"/"+incFileName);
+	//  //printf("%s + %s -> resolved path %s\n",oldFileDef->getPath().data(),incFileName.data(),absPath.data());
+	//}
+
+	// change to absolute name for bug 641336 
+	FileDef *fd = findFileDef(Doxygen::inputNameDict,absIncFileName,ambig);
+	//printf("%s::findFileDef(%s)=%p\n",oldFileDef->name().data(),incFileName.data(),fd);
 	// add include dependency to the file in which the #include was found
-	oldFileDef->addIncludeDependency(fd,incFileName,localInclude,g_isImported);
+	oldFileDef->addIncludeDependency(ambig ? 0 : fd,incFileName,localInclude,g_isImported,FALSE);
 	// add included by dependency
         if (fd)
         {
@@ -1265,9 +1622,20 @@ static void readIncludeFile(const QCString &inc)
           fd->addIncludedByDependency(oldFileDef,oldFileDef->docName(),localInclude,g_isImported);
         }
       }
+      else if (g_inputFileDef)
+      {
+        g_inputFileDef->addIncludeDependency(0,absIncFileName,localInclude,g_isImported,TRUE);
+      }
       if (Debug::isFlagSet(Debug::Preprocessor))
       {
-        msg("#include %s: not found or already included! skipping...\n",incFileName.data());
+	if (alreadyIncluded)
+	{
+          Debug::print(Debug::Preprocessor,0,"#include %s: already included! skipping...\n",incFileName.data());
+	}
+	else
+	{
+          Debug::print(Debug::Preprocessor,0,"#include %s: not found! skipping...\n",incFileName.data());
+	}
         //printf("error: include file %s not found\n",yytext);
       }
       if (g_curlyCount>0 && !alreadyIncluded) // failed to find #include inside { ... }
@@ -1300,6 +1668,15 @@ static void endCondSection()
     bool *ctx = g_condStack.pop();
     g_skip=*ctx;
   }
+}
+
+static void forceEndCondSection()
+{
+  while (!g_condStack.isEmpty())
+  {
+    g_condStack.pop();
+  }
+  g_skip=FALSE;
 }
 
 static QCString escapeAt(const char *text)
@@ -1425,8 +1802,8 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					      !(
 					         (g_includeStack.isEmpty() || g_curlyCount>0) &&
 					         g_macroExpansion &&
-					         (def=g_fileDefineDict->find(name)) &&
-						 macroIsAccessible(def) &&
+					         (def=DefineManager::instance().isDefined(name)) &&
+						 /*macroIsAccessible(def) &&*/
 					         (!g_expandOnlyPredef || def->isPredefined)
 					       )
 					     )
@@ -1489,7 +1866,8 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 <CopyLine>{ID}/{BN}{0,80}"("		{
   					  g_expectGuard = FALSE;
   					  Define *def=0;
-					  //def=g_fileDefineDict->find(yytext);
+					  //def=g_globalDefineDict->find(yytext);
+					  //def=DefineManager::instance().isDefined(yytext);
 					  //printf("Search for define %s found=%d g_includeStack.isEmpty()=%d "
 					  //       "g_curlyCount=%d g_macroExpansion=%d g_expandOnlyPredef=%d "
 					  //	 "isPreDefined=%d\n",yytext,def ? 1 : 0,
@@ -1498,8 +1876,8 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  //	);
 					  if ((g_includeStack.isEmpty() || g_curlyCount>0) &&
 					      g_macroExpansion &&
-					      (def=g_fileDefineDict->find(yytext)) &&
-				              (def->isPredefined || macroIsAccessible(def)) &&
+					      (def=DefineManager::instance().isDefined(yytext)) &&
+				              /*(def->isPredefined || macroIsAccessible(def)) && */
 					      (!g_expandOnlyPredef || def->isPredefined)
 					     )
 					  {
@@ -1526,9 +1904,9 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
                                           Define *def=0;
   					  if ((g_includeStack.isEmpty() || g_curlyCount>0) && 
 					      g_macroExpansion &&
-					      (def=g_fileDefineDict->find(yytext)) &&
+					      (def=DefineManager::instance().isDefined(yytext)) &&
 					      def->nargs==-1 &&
-				              (def->isPredefined || macroIsAccessible(def)) &&
+				              /*(def->isPredefined || macroIsAccessible(def)) &&*/
 					      (!g_expandOnlyPredef || def->isPredefined)
 					     )
 					  {
@@ -1695,6 +2073,9 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
   					  BEGIN(Start);
 					  g_yyLineNr++;
   					}
+<Command>"pragma"{B}+"once"             {
+                                          g_expectGuard = FALSE;
+                                        }
 <Command>{ID}				{ // unknown directive
 					  BEGIN(IgnoreLine);
 					}
@@ -1706,7 +2087,7 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 <Command>.
 <UndefName>{ID}				{
   					  Define *def;
-  					  if ((def=isDefined(yytext)) 
+  					  if ((def=DefineManager::instance().isDefined(yytext)) 
 					      /*&& !def->isPredefined*/
 					      && !def->nonRecursive
 					     )
@@ -1748,7 +2129,7 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
   					}
 <DefinedExpr1,DefinedExpr2>\\\n		{ g_yyLineNr++; outputChar('\n'); }
 <DefinedExpr1>{ID}			{
-  					  if (isDefined(yytext))
+  					  if (DefineManager::instance().isDefined(yytext) || g_guardName==yytext)
 					    g_guardExpr+=" 1L ";
 					  else
 					    g_guardExpr+=" 0L ";
@@ -1756,7 +2137,7 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  BEGIN(Guard);
   					}
 <DefinedExpr2>{ID}			{
-  					  if (isDefined(yytext))
+  					  if (DefineManager::instance().isDefined(yytext) || g_guardName==yytext)
 					    g_guardExpr+=" 1L ";
 					  else
 					    g_guardExpr+=" 0L ";
@@ -1805,6 +2186,7 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  }
 					}
 <SkipCommand>"endif"			{ 
+					  g_expectGuard = FALSE;
   					  decrLevel();
   				          if (--g_ifcount<0)
   					  {
@@ -1827,11 +2209,15 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  BEGIN(SkipString);
 					}
 <SkipLine>.
-<SkipLine,SkipCommand,SkipCPPBlock,SkipString>"//"[^\n]* {
+<SkipString>"//"/[^\n]*                 { 
+                                        }
+<SkipLine,SkipCommand,SkipCPPBlock>"//"[^\n]* {
   					  g_lastCPPContext=YY_START;
   					  BEGIN(RemoveCPPComment);
 					}
-<SkipLine,SkipCommand,SkipCPPBlock,SkipString>"/*"/[^\n]* {
+<SkipString>"/*"/[^\n]*                 { 
+                                        }
+<SkipLine,SkipCommand,SkipCPPBlock>"/*"/[^\n]* {
 					  g_lastCContext=YY_START;
   					  BEGIN(RemoveCComment);
   					}
@@ -1879,7 +2265,7 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					}
 <EndImport>.				{
   					}
-<DefName>{ID}/"("			{ // define with argument
+<DefName>{ID}/("\\\n")*"("		{ // define with argument
   					  //printf("Define() `%s'\n",yytext);
 					  g_argDict = new QDict<int>(31);
 					  g_argDict->setAutoDelete(TRUE);
@@ -1889,9 +2275,10 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  g_defLitText.resize(0);
 					  g_defName = yytext;
 					  g_defVarArgs = FALSE;
+					  g_defExtraSpacing.resize(0);
 					  BEGIN(DefineArg);
   					}
-<DefName>{ID}{B}+"1"			{ // special case: define with 1 -> can be "guard"
+<DefName>{ID}{B}+"1"/[ \r\t\n]		{ // special case: define with 1 -> can be "guard"
   					  //printf("Define `%s'\n",yytext);
   					  g_argDict = 0;
 					  g_defArgs = -1;
@@ -1899,6 +2286,8 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  g_defName = yytext;
 					  g_defName = g_defName.left(g_defName.length()-1).stripWhiteSpace();
 					  g_defVarArgs = FALSE;
+					  //printf("Guard check: %s!=%s || %d\n",
+					  //    g_defName.data(),g_lastGuardName.data(),g_expectGuard);
 					  if ( g_defName!=g_lastGuardName || !g_expectGuard)
 					  { // define may appear in the output
 					    QCString tmp=(QCString)"#define "+g_defName;
@@ -1912,25 +2301,12 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  }
 					  else // define is a guard => hide
 					  {
+					    //printf("Found a guard %s\n",yytext);
 					    g_defText.resize(0);
 					    g_defLitText.resize(0);
 					    BEGIN(Start);
 					  }
-  					}
-<DefName>{ID}/{B}*			{ // define with content
-  					  //printf("Define `%s'\n",yytext);
-  					  g_argDict = 0;
-					  g_defArgs = -1;
-                                          g_defArgsStr.resize(0);
-					  g_defText.resize(0);
-					  g_defLitText.resize(0);
-					  g_defName = yytext;
-					  g_defVarArgs = FALSE;
-					  QCString tmp=(QCString)"#define "+g_defName+g_defArgsStr;
-					  outputArray(tmp.data(),tmp.length());
-					  g_quoteArg=FALSE;
-					  g_insideComment=FALSE;
-					  BEGIN(DefineText); 
+					  g_expectGuard=FALSE;
   					}
 <DefName>{ID}/{B}*"\n"			{ // empty define
   					  g_argDict = 0;
@@ -1954,16 +2330,36 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  else // define is a guard => hide
 					  {
 					    //printf("Found a guard %s\n",yytext);
+					    g_guardName = yytext;
 					    g_lastGuardName.resize(0);
 					    BEGIN(Start);
 					  }
 					  g_expectGuard=FALSE;
   					}
+<DefName>{ID}/{B}*			{ // define with content
+  					  //printf("Define `%s'\n",yytext);
+  					  g_argDict = 0;
+					  g_defArgs = -1;
+                                          g_defArgsStr.resize(0);
+					  g_defText.resize(0);
+					  g_defLitText.resize(0);
+					  g_defName = yytext;
+					  g_defVarArgs = FALSE;
+					  QCString tmp=(QCString)"#define "+g_defName+g_defArgsStr;
+					  outputArray(tmp.data(),tmp.length());
+					  g_quoteArg=FALSE;
+					  g_insideComment=FALSE;
+					  BEGIN(DefineText); 
+  					}
+<DefineArg>"\\\n"                       {
+  					  g_defExtraSpacing+="\n";
+					  g_yyLineNr++;
+                                        }
 <DefineArg>","{B}*			{ g_defArgsStr+=yytext; }
 <DefineArg>"("{B}*                      { g_defArgsStr+=yytext; }
 <DefineArg>{B}*")"{B}*			{
                                           g_defArgsStr+=yytext; 
-					  QCString tmp=(QCString)"#define "+g_defName+g_defArgsStr;
+					  QCString tmp=(QCString)"#define "+g_defName+g_defArgsStr+g_defExtraSpacing;
 					  outputArray(tmp.data(),tmp.length());
 					  g_quoteArg=FALSE;
 					  g_insideComment=FALSE;
@@ -2064,12 +2460,14 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
   					  outputArray(yytext,yyleng);
   					  BEGIN(g_condCtx);
   					}
-<SkipCComment,SkipCPPComment>[\\@]"cond"[ \t\r]*\n  |
-<CondLine>.				{
+<SkipCComment,SkipCPPComment>[\\@]"cond"[ \t\r]*/\n {
+  					  g_condCtx = YY_START;
   					  outputArray(yytext,yyleng);
-  					  g_yyLineNr+=QCString(yytext).contains('\n');
+  					}
+<CondLine>.				{
+  					  unput(*yytext);
   					  startCondSection(" ");
-					  if (YY_START==CondLine) BEGIN(g_condCtx);
+					  BEGIN(g_condCtx);
   					}
 <SkipCComment,SkipCPPComment>[\\@]"endcond"/[^a-z_A-Z0-9] {
   					  outputArray(yytext,yyleng);
@@ -2213,13 +2611,20 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
 					  {
 					    addDefine();
 					  }
-					  def=g_fileDefineDict->find(g_defName);
+					  def=DefineManager::instance().isDefined(g_defName);
 					  if (def==0) // new define
 					  {
-					    //printf("new define!\n");
-					    g_fileDefineDict->insert(g_defName,newDefine());
+					    //printf("new define '%s'!\n",g_defName.data());
+					    Define *nd = newDefine();
+					    DefineManager::instance().addDefine(g_yyFileName,nd);
+
+					    // also add it to the local file list if it is a source file
+					    //if (g_isSource && g_includeStack.isEmpty())
+					    //{
+					    //  g_fileDefineDict->insert(g_defName,nd);
+					    //}
 					  }
-					  else if (def && macroIsAccessible(def))
+					  else if (def /*&& macroIsAccessible(def)*/)
 					       // name already exists
 					  {
 					    //printf("existing define!\n");
@@ -2261,7 +2666,7 @@ CHARLIT   (("'"\\[0-7]{1,3}"'")|("'"\\."'")|("'"[^'\\\n]{1,4}"'"))
   					    BEGIN(SkipSingleQuote);
 					  }
 					}
-<SkipDoubleQuote>"//"			{ g_defText += yytext; g_defLitText+=yytext; }
+<SkipDoubleQuote>"//"[/]?		{ g_defText += yytext; g_defLitText+=yytext; }
 <SkipDoubleQuote>"/*"			{ g_defText += yytext; g_defLitText+=yytext; }
 <SkipDoubleQuote>\"			{
   					  g_defText += *yytext; g_defLitText+=yytext; 
@@ -2407,7 +2812,7 @@ static void unputChar(const QCString &expr,QCString *rest,uint &pos,char c)
 void addSearchDir(const char *dir)
 {
   QFileInfo fi(dir);
-  if (fi.isDir()) g_pathList->append(fi.absFilePath());
+  if (fi.isDir()) g_pathList->append(fi.absFilePath().utf8());
 } 
 
 void initPreprocessor()
@@ -2421,6 +2826,7 @@ void cleanUpPreprocessor()
 {
   delete g_expandedDict; g_expandedDict=0;
   delete g_pathList; g_pathList=0;
+  DefineManager::deleteInstance();
 }
 
 
@@ -2443,6 +2849,11 @@ void preprocessFile(const char *fileName,BufStr &input,BufStr &output)
   g_expandedDict->clear();
   g_condStack.clear();
   g_condStack.setAutoDelete(TRUE);
+  //g_fileDefineDict->clear();
+
+  setFileName(fileName);
+  g_inputFileDef = g_yyFileDef;
+  DefineManager::instance().startContext(g_yyFileName);
   
   static bool firstTime=TRUE;
   if (firstTime)
@@ -2513,7 +2924,7 @@ void preprocessFile(const char *fileName,BufStr &input,BufStr &output)
 	  def->nonRecursive = nonRecursive;
 	  def->fileDef      = g_yyFileDef;
 	  def->fileName     = fileName;
-	  g_fileDefineDict->insert(def->name,def);
+	  DefineManager::instance().addDefine(g_yyFileName,def);
 	}
 
 	//printf("#define `%s' `%s' #nargs=%d\n",
@@ -2544,7 +2955,7 @@ void preprocessFile(const char *fileName,BufStr &input,BufStr &output)
 	  def->nonRecursive = nonRecursive;
 	  def->fileDef      = g_yyFileDef;
 	  def->fileName     = fileName;
-	  g_fileDefineDict->insert(def->name,def);
+	  DefineManager::instance().addDefine(g_yyFileName,def);
 	}
 	else
 	{
@@ -2555,39 +2966,70 @@ void preprocessFile(const char *fileName,BufStr &input,BufStr &output)
 	//  def->name.data(),def->definition.data(),def->nargs);
       }
     }
-    firstTime=FALSE;
+    //firstTime=FALSE;
   }
  
   g_yyLineNr = 1;
   g_level    = 0;
   g_ifcount  = 0;
-  setFileName(fileName);
-  g_inputFileDef = g_yyFileDef;
 
   BEGIN( Start );
   
-  g_expectGuard = TRUE;
+  g_expectGuard = guessSection(fileName)==Entry::HEADER_SEC;
+  g_guardName.resize(0);
   g_lastGuardName.resize(0);
   g_guardExpr.resize(0);
   
   preYYlex();
   g_lexInit=TRUE;
 
+  // make sure we don't extend a \cond with missing \endcond over multiple files (see bug 624829)
+  forceEndCondSection();
+
+  // remove locally defined macros so they can be redefined in another source file
+  //if (g_fileDefineDict->count()>0)
+  //{
+  //  QDictIterator<Define> di(*g_fileDefineDict);
+  //  Define *d;
+  //  for (di.toFirst();(d=di.current());++di)
+  //  {
+  //    g_globalDefineDict->remove(di.currentKey());
+  //  }
+  //  g_fileDefineDict->clear();
+  //}
+
   if (Debug::isFlagSet(Debug::Preprocessor))
   {
     char *orgPos=output.data()+orgOffset;
     char *newPos=output.data()+output.curPos();
-    msg("Preprocessor output (size: %d bytes):\n",newPos-orgPos);
+    Debug::print(Debug::Preprocessor,0,"Preprocessor output (size: %d bytes):\n",newPos-orgPos);
     int line=1;
-    msg("---------\n00001 ");
+    Debug::print(Debug::Preprocessor,0,"---------\n00001 ");
     while (orgPos<newPos) 
     {
       putchar(*orgPos);
-      if (*orgPos=='\n') printf("%05d ",++line);
+      if (*orgPos=='\n') Debug::print(Debug::Preprocessor,0,"%05d ",++line);
       orgPos++;
     }
-    msg("\n---------\n");
+    Debug::print(Debug::Preprocessor,0,"\n---------\n");
+    if (DefineManager::instance().defineContext().count()>0)
+    {
+      Debug::print(Debug::Preprocessor,0,"Macros accessible in this file:\n");
+      Debug::print(Debug::Preprocessor,0,"---------\n");
+      QDictIterator<Define> di(DefineManager::instance().defineContext());
+      Define *def;
+      for (di.toFirst();(def=di.current());++di)
+      {
+        Debug::print(Debug::Preprocessor,0,"%s ",def->name.data());
+      }
+      Debug::print(Debug::Preprocessor,0,"\n---------\n");
+    }
+    else
+    {
+      Debug::print(Debug::Preprocessor,0,"No macros accessible in this file.\n");
+    }
   }
+  DefineManager::instance().endContext();
 }
 
 void preFreeScanner()

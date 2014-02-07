@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,6 +22,7 @@
 #include "doxygen.h"
 #include "outputgen.h"
 #include "dot.h"
+#include "msc.h"
 #include "util.h"
 #include "rtfstyle.h"
 #include "message.h"
@@ -32,6 +33,24 @@
 
 //#define DBG_RTF(x) m_t << x
 #define DBG_RTF(x) do {} while(0)
+
+static QCString align(DocHtmlCell *cell)
+{
+  HtmlAttribList attrs = cell->attribs();
+  uint i;
+  for (i=0; i<attrs.count(); ++i) 
+  {
+    if (attrs.at(i)->name.lower()=="align")
+    {
+      if (attrs.at(i)->value.lower()=="center") 
+        return "\\qc ";
+      else if (attrs.at(i)->value.lower()=="right") 
+        return "\\qr ";
+      else return "";
+    }
+  }
+  return "";
+}
 
 RTFDocVisitor::RTFDocVisitor(FTextStream &t,CodeOutputInterface &ci,
                              const char *langExt) 
@@ -109,7 +128,9 @@ void RTFDocVisitor::visit(DocSymbol *s)
     case DocSymbol::Amp:     m_t << "&"; break;
     case DocSymbol::Dollar:  m_t << "$"; break;
     case DocSymbol::Hash:    m_t << "#"; break;
+    case DocSymbol::DoubleColon:  m_t << "::"; break;
     case DocSymbol::Percent: m_t << "%"; break;
+    case DocSymbol::Pipe:    m_t << "|"; break;
     case DocSymbol::Copy:    m_t << "(C)"; break;
     case DocSymbol::Tm:      m_t << "(TM)"; break;
     case DocSymbol::Reg:     m_t << "(R)"; break;
@@ -221,6 +242,73 @@ void RTFDocVisitor::visit(DocSymbol *s)
     case DocSymbol::Nbsp:    m_t << "\\~ "; break;
     case DocSymbol::Aelig:   m_t << "\346"; break;
     case DocSymbol::AElig:   m_t << "\306"; break;
+    case DocSymbol::GrkGamma:        m_t << "Gamma "; break;
+    case DocSymbol::GrkDelta:        m_t << "Delta "; break;
+    case DocSymbol::GrkTheta:        m_t << "Theta "; break;
+    case DocSymbol::GrkLambda:       m_t << "Lambda "; break;
+    case DocSymbol::GrkXi:           m_t << "Xi "; break;
+    case DocSymbol::GrkPi:           m_t << "Pi "; break;
+    case DocSymbol::GrkSigma:        m_t << "Sigma "; break;
+    case DocSymbol::GrkUpsilon:      m_t << "Upsilon "; break;
+    case DocSymbol::GrkPhi:          m_t << "Phi "; break;
+    case DocSymbol::GrkPsi:          m_t << "Psi "; break;
+    case DocSymbol::GrkOmega:        m_t << "Omega "; break;
+    case DocSymbol::Grkalpha:        m_t << "alpha "; break;
+    case DocSymbol::Grkbeta:         m_t << "beta "; break;
+    case DocSymbol::Grkgamma:        m_t << "gamma "; break;
+    case DocSymbol::Grkdelta:        m_t << "delta "; break;
+    case DocSymbol::Grkepsilon:      m_t << "epsilon "; break;
+    case DocSymbol::Grkzeta:         m_t << "zeta "; break;
+    case DocSymbol::Grketa:          m_t << "eta "; break;
+    case DocSymbol::Grktheta:        m_t << "theta "; break;
+    case DocSymbol::Grkiota:         m_t << "iota "; break;
+    case DocSymbol::Grkkappa:        m_t << "kappa "; break;
+    case DocSymbol::Grklambda:       m_t << "lambda "; break;
+    case DocSymbol::Grkmu:           m_t << "mu "; break;
+    case DocSymbol::Grknu:           m_t << "nu "; break;
+    case DocSymbol::Grkxi:           m_t << "xi "; break;
+    case DocSymbol::Grkpi:           m_t << "pi "; break;
+    case DocSymbol::Grkrho:          m_t << "rho "; break;
+    case DocSymbol::Grksigma:        m_t << "sigma "; break;
+    case DocSymbol::Grktau:          m_t << "tau "; break;
+    case DocSymbol::Grkupsilon:      m_t << "upsilon "; break;
+    case DocSymbol::Grkphi:          m_t << "phi "; break;
+    case DocSymbol::Grkchi:          m_t << "chi "; break;
+    case DocSymbol::Grkpsi:          m_t << "psi "; break;
+    case DocSymbol::Grkomega:        m_t << "omega "; break;
+    case DocSymbol::Grkvarsigma:     m_t << "sigma "; break;
+    case DocSymbol::Section:         m_t << "\247"; break;
+    case DocSymbol::Degree:          m_t << "\260"; break;
+    case DocSymbol::Prime:           m_t << "'"; break;
+    case DocSymbol::DoublePrime:     m_t << "\""; break;
+    case DocSymbol::Infinity:        m_t << "inf "; break;
+    case DocSymbol::EmptySet:        m_t << "empty "; break;
+    case DocSymbol::PlusMinus:       m_t << "\261"; break;
+    case DocSymbol::Times:           m_t << "\327"; break;
+    case DocSymbol::Minus:           m_t << "-"; break;
+    case DocSymbol::CenterDot:       m_t << "."; break;
+    case DocSymbol::Partial:         m_t << "partial "; break;
+    case DocSymbol::Nabla:           m_t << "nabla "; break;
+    case DocSymbol::SquareRoot:      m_t << "sqrt "; break;
+    case DocSymbol::Perpendicular:   m_t << "perp "; break;
+    case DocSymbol::Sum:             m_t << "sum "; break;
+    case DocSymbol::Integral:        m_t << "int "; break;
+    case DocSymbol::Product:         m_t << "prod "; break;
+    case DocSymbol::Similar:         m_t << "~"; break;
+    case DocSymbol::Approx:          m_t << "approx "; break;
+    case DocSymbol::NotEqual:        m_t << "!="; break;
+    case DocSymbol::Equivalent:      m_t << "equiv "; break;
+    case DocSymbol::Proportional:    m_t << "propto "; break;
+    case DocSymbol::LessEqual:       m_t << "<="; break;
+    case DocSymbol::GreaterEqual:    m_t << ">="; break;
+    case DocSymbol::LeftArrow:       m_t << "<-"; break;
+    case DocSymbol::RightArrow:      m_t << "->"; break;
+    case DocSymbol::SetIn:           m_t << "in "; break;
+    case DocSymbol::SetNotIn:        m_t << "notin "; break;
+    case DocSymbol::LeftCeil:        m_t << "lceil "; break;
+    case DocSymbol::RightCeil:       m_t << "rceil "; break;
+    case DocSymbol::LeftFloor:       m_t << "lfloor "; break;
+    case DocSymbol::RightFloor:      m_t << "rfloor "; break;
     default:
                              err("error: unknown symbol found\n");
   }
@@ -326,13 +414,18 @@ void RTFDocVisitor::visit(DocVerbatim *s)
 {
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visit(DocVerbatim)}\n");
+  QCString lang = m_langExt;
+  if (!s->language().isEmpty()) // explicit language setting
+  {
+    lang = s->language();
+  }
   switch(s->type())
   {
     case DocVerbatim::Code: // fall though
       m_t << "{" << endl;
       m_t << "\\par" << endl;
       m_t << rtf_Style_Reset << getStyle("CodeExample");
-      Doxygen::parserManager->getParser(m_langExt)
+      Doxygen::parserManager->getParser(lang)
                             ->parseCode(m_ci,s->context(),s->text(),
                                         s->isExample(),s->exampleFile());
       //m_t << "\\par" << endl; 
@@ -345,6 +438,9 @@ void RTFDocVisitor::visit(DocVerbatim *s)
       filter(s->text(),TRUE);
       //m_t << "\\par" << endl; 
       m_t << "}" << endl;
+      break;
+    case DocVerbatim::RtfOnly: 
+      m_t << s->text(); 
       break;
     case DocVerbatim::HtmlOnly: 
     case DocVerbatim::LatexOnly: 
@@ -432,13 +528,13 @@ void RTFDocVisitor::visit(DocInclude *inc)
   DBG_RTF("{\\comment RTFDocVisitor::visit(DocInclude)}\n");
   switch(inc->type())
   {
-   case DocInclude::IncWithLines:
+     case DocInclude::IncWithLines:
       { 
          m_t << "{" << endl;
          m_t << "\\par" << endl;
          m_t << rtf_Style_Reset << getStyle("CodeExample");
          QFileInfo cfi( inc->file() );
-         FileDef fd( cfi.dirPath(), cfi.fileName() );
+         FileDef fd( cfi.dirPath().utf8(), cfi.fileName().utf8() );
          Doxygen::parserManager->getParser(inc->extension())
                                ->parseCode(m_ci,inc->context(),
                                            inc->text(),
@@ -448,7 +544,7 @@ void RTFDocVisitor::visit(DocInclude *inc)
          m_t << "}" << endl;
       }
       break;
-   case DocInclude::Include: 
+    case DocInclude::Include: 
       m_t << "{" << endl;
       m_t << "\\par" << endl;
       m_t << rtf_Style_Reset << getStyle("CodeExample");
@@ -470,6 +566,19 @@ void RTFDocVisitor::visit(DocInclude *inc)
       filter(inc->text());
       m_t << "\\par";
       m_t << "}" << endl;
+      break;
+    case DocInclude::Snippet:
+      m_t << "{" << endl;
+      if (!m_lastIsPara) m_t << "\\par" << endl;
+      m_t << rtf_Style_Reset << getStyle("CodeExample");
+      Doxygen::parserManager->getParser(inc->extension())
+                            ->parseCode(m_ci,
+                                        inc->context(),
+                                        extractBlock(inc->text(),inc->blockId()),
+                                        inc->isExample(),
+                                        inc->exampleFile()
+                                       );
+      m_t << "}";
       break;
   }
   m_lastIsPara=TRUE;
@@ -540,6 +649,30 @@ void RTFDocVisitor::visit(DocIndexEntry *i)
 void RTFDocVisitor::visit(DocSimpleSectSep *)
 {
 }
+
+void RTFDocVisitor::visit(DocCite *cite)
+{
+  if (m_hide) return;
+  DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocCite)}\n");
+  if (!cite->file().isEmpty()) 
+  {
+    startLink(cite->ref(),cite->file(),cite->anchor());
+  }
+  else
+  {
+    m_t << "{\\b ";
+  }
+  filter(cite->text());
+  if (!cite->file().isEmpty()) 
+  {
+    endLink(cite->ref());
+  }
+  else
+  {
+    m_t << "}";
+  }
+}
+
 
 //--------------------------------------
 // visitor functions for compound nodes
@@ -661,6 +794,8 @@ void RTFDocVisitor::visitPre(DocSimpleSect *s)
       m_t << theTranslator->trPrecondition(); break;
     case DocSimpleSect::Post:
       m_t << theTranslator->trPostcondition(); break;
+    case DocSimpleSect::Copyright:
+      m_t << theTranslator->trCopyright(); break;
     case DocSimpleSect::Invar:
       m_t << theTranslator->trInvariant(); break;
     case DocSimpleSect::Remark:
@@ -748,6 +883,8 @@ void RTFDocVisitor::visitPre(DocSection *s)
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocSection)}\n");
   if (!m_lastIsPara) m_t << "\\par" << endl;
+  m_t << "{\\bkmkstart " << rtfFormatBmkStr(s->file()+"_"+s->anchor()) << "}" << endl;
+  m_t << "{\\bkmkend " << rtfFormatBmkStr(s->file()+"_"+s->anchor()) << "}" << endl;
   m_t << "{{" // start section
       << rtf_Style_Reset;
   QCString heading;
@@ -883,7 +1020,8 @@ void RTFDocVisitor::visitPost(DocHtmlTable *)
 {
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocHtmlTable)}\n");
-  m_t << "\\pard" << endl;
+  m_t << "\\pard\\plain" << endl;
+  m_t << "\\par" << endl;
   m_lastIsPara=TRUE;
 }
 
@@ -911,6 +1049,10 @@ void RTFDocVisitor::visitPre(DocHtmlRow *r)
          "\\trbrdrv\\brdrs\\brdrw10 "<< endl;
   for (i=0;i<r->numCells();i++)
   {
+    if (r->isHeading())
+    {
+      m_t << "\\clcbpat16"; // set cell shading to light grey (color 16 in the clut)
+    }
     m_t << "\\clvertalt\\clbrdrt\\brdrs\\brdrw10 "
            "\\clbrdrl\\brdrs\\brdrw10 "
            "\\clbrdrb\\brdrs\\brdrw10 "
@@ -932,11 +1074,11 @@ void RTFDocVisitor::visitPost(DocHtmlRow *)
   m_lastIsPara=FALSE;
 }
 
-void RTFDocVisitor::visitPre(DocHtmlCell *)
+void RTFDocVisitor::visitPre(DocHtmlCell *c)
 {
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocHtmlCell)}\n");
-  m_t << "{";
+  m_t << "{" << align(c);
   m_lastIsPara=FALSE;
 }
 
@@ -951,25 +1093,25 @@ void RTFDocVisitor::visitPost(DocHtmlCell *)
 void RTFDocVisitor::visitPre(DocInternal *)
 {
   if (m_hide) return;
-  DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocInternal)}\n");
-  m_t << "{"; // start desc
-  m_t << "{\\b "; // start bold
-  m_t << theTranslator->trForInternalUseOnly();
-  m_t << "}"; // end bold
-  m_t << "\\par" << endl;
-  incIndentLevel();
-  m_t << rtf_Style_Reset << getStyle("DescContinue");
-  m_lastIsPara=FALSE;
+  //DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocInternal)}\n");
+  //m_t << "{"; // start desc
+  //m_t << "{\\b "; // start bold
+  //m_t << theTranslator->trForInternalUseOnly();
+  //m_t << "}"; // end bold
+  //m_t << "\\par" << endl;
+  //incIndentLevel();
+  //m_t << rtf_Style_Reset << getStyle("DescContinue");
+  //m_lastIsPara=FALSE;
 }
 
 void RTFDocVisitor::visitPost(DocInternal *) 
 {
   if (m_hide) return;
-  DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocInternal)}\n");
-  m_t << "\\par";
-  decIndentLevel();
-  m_t << "}"; // end desc
-  m_lastIsPara=TRUE;
+  //DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocInternal)}\n");
+  //m_t << "\\par";
+  //decIndentLevel();
+  //m_t << "}"; // end desc
+  //m_lastIsPara=TRUE;
 }
 
 void RTFDocVisitor::visitPre(DocHRef *href)
@@ -1080,6 +1222,21 @@ void RTFDocVisitor::visitPost(DocDotFile *)
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocDotFile)}\n");
   popEnabled();
 }
+void RTFDocVisitor::visitPre(DocMscFile *df)
+{
+  DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocMscFile)}\n");
+  writeMscFile(df->file());
+
+  // hide caption since it is not supported at the moment
+  pushEnabled();
+  m_hide=TRUE;
+}
+
+void RTFDocVisitor::visitPost(DocMscFile *) 
+{
+  DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocMscFile)}\n");
+  popEnabled();
+}
 
 void RTFDocVisitor::visitPre(DocLink *lnk)
 {
@@ -1099,7 +1256,16 @@ void RTFDocVisitor::visitPre(DocRef *ref)
 {
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocRef)}\n");
-  if (!ref->file().isEmpty()) startLink(ref->ref(),ref->file(),ref->anchor());
+  // when ref->isSubPage()==TRUE we use ref->file() for HTML and
+  // ref->anchor() for LaTeX/RTF
+  if (ref->isSubPage())
+  {
+    startLink(ref->ref(),0,ref->anchor());
+  }
+  else
+  {
+    if (!ref->file().isEmpty()) startLink(ref->ref(),ref->file(),ref->anchor());
+  }
   if (!ref->hasLinkText()) filter(ref->targetTitle());
 }
 
@@ -1108,7 +1274,7 @@ void RTFDocVisitor::visitPost(DocRef *ref)
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocRef)}\n");
   if (!ref->file().isEmpty()) endLink(ref->ref());
-  m_t << " ";
+  //m_t << " ";
 }
 
 
@@ -1191,42 +1357,142 @@ void RTFDocVisitor::visitPre(DocParamSect *s)
   m_t << ":";
   m_t << "\\par";
   m_t << "}" << endl;
-  incIndentLevel();
+  bool useTable = s->type()==DocParamSect::Param ||
+                  s->type()==DocParamSect::RetVal ||
+                  s->type()==DocParamSect::Exception ||
+                  s->type()==DocParamSect::TemplateParam;
+  if (!useTable)
+  {
+    incIndentLevel();
+  }
   m_t << rtf_Style_Reset << getStyle("DescContinue");
   m_lastIsPara=TRUE;
 }
 
-void RTFDocVisitor::visitPost(DocParamSect *)
+void RTFDocVisitor::visitPost(DocParamSect *s)
 {
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocParamSect)}\n");
   //m_t << "\\par" << endl;
-  decIndentLevel();
+  bool useTable = s->type()==DocParamSect::Param ||
+                  s->type()==DocParamSect::RetVal ||
+                  s->type()==DocParamSect::Exception ||
+                  s->type()==DocParamSect::TemplateParam;
+  if (!useTable)
+  {
+    decIndentLevel();
+  }
   m_t << "}" << endl;
 }
 
 void RTFDocVisitor::visitPre(DocParamList *pl)
 {
+  static int columnPos[4][5] = 
+  { { 2, 25, 100, 100, 100 }, // no inout, no type
+    { 3, 14,  35, 100, 100 }, // inout, no type
+    { 3, 25,  50, 100, 100 }, // no inout, type
+    { 4, 14,  35, 55,  100 }, // inout, type
+  };
+  int config=0;
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocParamList)}\n");
 
-  // Put in the direction: in/out/in,out if specified.
-  if (pl->direction()!=DocParamSect::Unspecified)
+  DocParamSect::Type parentType = DocParamSect::Unknown;
+  DocParamSect *sect = 0;
+  if (pl->parent() && pl->parent()->kind()==DocNode::Kind_ParamSect)
   {
-    m_t << "[";
-    if (pl->direction()==DocParamSect::In)
+    parentType = ((DocParamSect*)pl->parent())->type();
+    sect=(DocParamSect*)pl->parent();
+  }
+  bool useTable = parentType==DocParamSect::Param ||
+                  parentType==DocParamSect::RetVal ||
+                  parentType==DocParamSect::Exception ||
+                  parentType==DocParamSect::TemplateParam;
+  if (sect && sect->hasInOutSpecifier()) config+=1;
+  if (sect && sect->hasTypeSpecifier())  config+=2;
+  if (useTable)
+  {
+    int i;
+    m_t << "\\trowd \\trgaph108\\trleft426\\tblind426"
+         "\\trbrdrt\\brdrs\\brdrw10\\brdrcf15 "
+         "\\trbrdrl\\brdrs\\brdrw10\\brdrcf15 "
+         "\\trbrdrb\\brdrs\\brdrw10\\brdrcf15 "
+         "\\trbrdrr\\brdrs\\brdrw10\\brdrcf15 "
+         "\\trbrdrh\\brdrs\\brdrw10\\brdrcf15 "
+         "\\trbrdrv\\brdrs\\brdrw10\\brdrcf15 "<< endl;
+    for (i=0;i<columnPos[config][0];i++)
     {
-      m_t << "in";
+      m_t << "\\clvertalt\\clbrdrt\\brdrs\\brdrw10\\brdrcf15 "
+           "\\clbrdrl\\brdrs\\brdrw10\\brdrcf15 "
+           "\\clbrdrb\\brdrs\\brdrw10\\brdrcf15 "
+           "\\clbrdrr \\brdrs\\brdrw10\\brdrcf15 "
+           "\\cltxlrtb "
+           "\\cellx" << (rtf_pageWidth*columnPos[config][i+1]/100) << endl;
     }
-    else if (pl->direction()==DocParamSect::Out)
+    m_t << "\\pard \\widctlpar\\intbl\\adjustright" << endl;
+  }
+
+  if (sect && sect->hasInOutSpecifier())
+  {
+    if (useTable)
     {
-      m_t << "out";
+      m_t << "{";
     }
-    else if (pl->direction()==DocParamSect::InOut)
+
+    // Put in the direction: in/out/in,out if specified.
+    if (pl->direction()!=DocParamSect::Unspecified)
     {
-      m_t << "in,out";
+      if (pl->direction()==DocParamSect::In)
+      {
+        m_t << "in";
+      }
+      else if (pl->direction()==DocParamSect::Out)
+      {
+        m_t << "out";
+      }
+      else if (pl->direction()==DocParamSect::InOut)
+      {
+        m_t << "in,out";
+      }
     }
-    m_t << "] ";
+
+    if (useTable)
+    {
+      m_t << "\\cell }";
+    }
+  }
+
+  if (sect && sect->hasTypeSpecifier())
+  {
+    if (useTable)
+    {
+      m_t << "{";
+    }
+    QListIterator<DocNode> li(pl->paramTypes());
+    DocNode *type;
+    bool first=TRUE;
+    for (li.toFirst();(type=li.current());++li)
+    {
+      if (!first) m_t << " | "; else first=FALSE;
+      if (type->kind()==DocNode::Kind_Word)
+      {
+        visit((DocWord*)type); 
+      }
+      else if (type->kind()==DocNode::Kind_LinkedWord)
+      {
+        visit((DocLinkedWord*)type); 
+      }
+    }
+    if (useTable)
+    {
+      m_t << "\\cell }";
+    }
+  }
+  
+
+  if (useTable)
+  {
+    m_t << "{";
   }
 
   m_t << "{\\i ";
@@ -1248,14 +1514,41 @@ void RTFDocVisitor::visitPre(DocParamList *pl)
     }
   }
   m_t << "} ";
+
+  if (useTable)
+  {
+    m_t << "\\cell }{";
+  }
   m_lastIsPara=TRUE;
 }
 
-void RTFDocVisitor::visitPost(DocParamList *)
+void RTFDocVisitor::visitPost(DocParamList *pl)
 {
   if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocParamList)}\n");
-  m_t << "\\par" << endl;
+
+  DocParamSect::Type parentType = DocParamSect::Unknown;
+  //DocParamSect *sect = 0;
+  if (pl->parent() && pl->parent()->kind()==DocNode::Kind_ParamSect)
+  {
+    parentType = ((DocParamSect*)pl->parent())->type();
+    //sect=(DocParamSect*)pl->parent();
+  }
+  bool useTable = parentType==DocParamSect::Param ||
+                  parentType==DocParamSect::RetVal ||
+                  parentType==DocParamSect::Exception ||
+                  parentType==DocParamSect::TemplateParam;
+  if (useTable)
+  {
+    m_t << "\\cell }" << endl;
+    //m_t << "\\pard \\widctlpar\\intbl\\adjustright" << endl;
+    m_t << "{\\row }" << endl;
+  }
+  else
+  {
+    m_t << "\\par" << endl;
+  }
+
   m_lastIsPara=TRUE;
 }
 
@@ -1334,23 +1627,48 @@ void RTFDocVisitor::visitPost(DocInternalRef *)
 
 void RTFDocVisitor::visitPre(DocCopy *)
 {
+  if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocCopy)}\n");
 }
 
 void RTFDocVisitor::visitPost(DocCopy *)
 {
+  if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocCopy)}\n");
 }
 
 void RTFDocVisitor::visitPre(DocText *)
 {
+  if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocText)}\n");
 }
 
 void RTFDocVisitor::visitPost(DocText *)
 {
+  if (m_hide) return;
   DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocText)}\n");
 }
+
+void RTFDocVisitor::visitPre(DocHtmlBlockQuote *)
+{
+  if (m_hide) return;
+  DBG_RTF("{\\comment RTFDocVisitor::visitPre(DocHtmlBlockQuote)}\n");
+  if (!m_lastIsPara) m_t << "\\par" << endl;
+  m_t << "{"; // start desc
+  incIndentLevel();
+  m_t << rtf_Style_Reset << getStyle("DescContinue"); 
+}
+
+void RTFDocVisitor::visitPost(DocHtmlBlockQuote *)
+{
+  if (m_hide) return;
+  DBG_RTF("{\\comment RTFDocVisitor::visitPost(DocHtmlBlockQuote)}\n");
+  if (!m_lastIsPara) m_t << "\\par" << endl;
+  decIndentLevel();
+  m_t << "}"; // end desc
+  m_lastIsPara=TRUE;
+}
+
 
 //static char* getMultiByte(int c)
 //{
@@ -1414,9 +1732,12 @@ void RTFDocVisitor::startLink(const QCString &ref,const QCString &file,const QCS
     {
       refName+=file;
     }
-    if (anchor)
+    if (!file.isEmpty() && anchor)
     {
       refName+='_';
+    }
+    if (anchor)
+    {
       refName+=anchor;
     }
 
@@ -1487,7 +1808,7 @@ void RTFDocVisitor::writeMscFile(const QCString &fileName)
     baseName=baseName.right(baseName.length()-i-1);
   } 
   QCString outDir = Config_getString("RTF_OUTPUT");
-  writeMscGraphFromFile(fileName,outDir,baseName,MSC_BITMAP);
+  writeMscGraphFromFile(fileName+".msc",outDir,baseName,MSC_BITMAP);
   if (!m_lastIsPara) m_t << "\\par" << endl;
   m_t << "{" << endl;
   m_t << rtf_Style_Reset;

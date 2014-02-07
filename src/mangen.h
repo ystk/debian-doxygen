@@ -2,7 +2,7 @@
  *
  * $Id: htmlgen.h,v 1.15 1998/11/28 11:33:19 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,6 +22,7 @@
 
 class QFile;
 
+/** Generator for Man page output. */
 class ManGenerator : public OutputGenerator
 {
   public:
@@ -34,9 +35,9 @@ class ManGenerator : public OutputGenerator
     void enable() 
     { if (genStack->top()) active=*genStack->top(); else active=TRUE; }
     void disable() { active=FALSE; }
-    void enableIf(OutputType o)  { if (o==Man) active=TRUE;  }
-    void disableIf(OutputType o) { if (o==Man) active=FALSE; }
-    void disableIfNot(OutputType o) { if (o!=Man) active=FALSE; }
+    void enableIf(OutputType o)  { if (o==Man) enable(); }
+    void disableIf(OutputType o) { if (o==Man) disable(); }
+    void disableIfNot(OutputType o) { if (o!=Man) disable(); }
     bool isEnabled(OutputType o) { return (o==Man && active); } 
     OutputGenerator *get(OutputType o) { return (o==Man) ? this : 0; }
 
@@ -44,7 +45,8 @@ class ManGenerator : public OutputGenerator
 
     static void init();
     void startFile(const char *name,const char *manName,const char *title);
-    void writeFooter() {}
+    void writeSearchInfo() {}
+    void writeFooter(const char *) {}
     void endFile();
     void clearBuffer();
 
@@ -88,8 +90,8 @@ class ManGenerator : public OutputGenerator
     void endHtmlLink();
     void startTypewriter() { t << "\\fC"; firstCol=FALSE; }
     void endTypewriter()   { t << "\\fP"; firstCol=FALSE; }
-    void startGroupHeader();
-    void endGroupHeader();
+    void startGroupHeader(int);
+    void endGroupHeader(int);
     void startMemberSections() {}
     void endMemberSections() {}
     void startHeaderSection() {}
@@ -106,12 +108,14 @@ class ManGenerator : public OutputGenerator
     void endMemberDocList() {}
     void startMemberList();
     void endMemberList();
+    void startInlineHeader();
+    void endInlineHeader();
     void startAnonTypeScope(int);
     void endAnonTypeScope(int);
-    void startMemberItem(int);
+    void startMemberItem(const char *,int,const char *);
     void endMemberItem();
     void startMemberTemplateParams() {}
-    void endMemberTemplateParams() {}
+    void endMemberTemplateParams(const char *) {}
 
     void startMemberGroupHeader(bool);
     void endMemberGroupHeader();
@@ -125,7 +129,7 @@ class ManGenerator : public OutputGenerator
     void startCodeFragment();
     void endCodeFragment();
     void writeLineNumber(const char *,const char *,const char *,int l) { t << l << " "; }
-    void startCodeLine() {}
+    void startCodeLine(bool) {}
     void endCodeLine() { codify("\n"); col=0; }
     void startEmphasis() { t << "\\fI"; firstCol=FALSE; }
     void endEmphasis()   { t << "\\fP"; firstCol=FALSE; }
@@ -137,7 +141,7 @@ class ManGenerator : public OutputGenerator
     void endDescItem();
     void lineBreak(const char *) { t << "\n.br" << endl; }
     void writeChar(char c);
-    void startMemberDoc(const char *,const char *,const char *,const char *);
+    void startMemberDoc(const char *,const char *,const char *,const char *,bool);
     void endMemberDoc(bool);
     void startDoxyAnchor(const char *,const char *,const char *,const char *,const char *);
     void endDoxyAnchor(const char *,const char *) {}
@@ -155,8 +159,10 @@ class ManGenerator : public OutputGenerator
     void endCenter()          {}
     void startSmall()         {}
     void endSmall()           {}
-    void startMemberDescription() { t << "\n.RI \"\\fI"; firstCol=FALSE; }
+    void startMemberDescription(const char *,const char *) { t << "\n.RI \"\\fI"; firstCol=FALSE; }
     void endMemberDescription()   { t << "\\fP\""; firstCol=FALSE; }
+    void writeInheritedSectionTitle(const char *,const char *,const char *,
+                      const char *,const char *,const char *) {}
     void startDescList(SectionTypes);
     void endDescList()        {}
     void startSimpleSect(SectionTypes,const char *,const char *,const char *);
@@ -178,7 +184,11 @@ class ManGenerator : public OutputGenerator
     void endPageRef(const char *,const char *) {}
     void startQuickIndices() {}
     void endQuickIndices() {}
-    void writeQuickLinks(bool,HighlightedItem) {}
+    void writeSplitBar(const char *) {}
+    void writeNavigationPath(const char *) {}
+    void writeLogo() {}
+    void writeQuickLinks(bool,HighlightedItem,const char *) {}
+    void writeSummaryLink(const char *,const char *,const char *,bool) {}
     void startContents() {}
     void endContents() {}
     void writeNonBreakableSpace(int n) { int i; for (i=0;i<n;i++) t << " "; }
@@ -228,6 +238,19 @@ class ManGenerator : public OutputGenerator
     void startConstraintDocs();
     void endConstraintDocs();
     void endConstraintList();
+
+    void startMemberDocSimple();
+    void endMemberDocSimple();
+    void startInlineMemberType();
+    void endInlineMemberType();
+    void startInlineMemberName();
+    void endInlineMemberName();
+    void startInlineMemberDoc();
+    void endInlineMemberDoc();
+
+    void startLabels();
+    void writeLabel(const char *l,bool isLast);
+    void endLabels();
 
     void writeCodeAnchor(const char *) {}
     void linkableSymbol(int,const char *,Definition *,Definition *) {}

@@ -3,7 +3,7 @@
  * $Id: diagram.cpp,v 1.30 2001/03/19 19:27:40 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -33,6 +33,108 @@
 #include "doxygen.h"
 #include "portable.h"
 #include "index.h"
+
+//-----------------------------------------------------------------------------
+
+class DiagramItemList;
+
+/** Class representing a single node in the built-in class diagram */
+class DiagramItem 
+{
+  public:
+    DiagramItem(DiagramItem *p,int number,ClassDef *cd,
+                Protection prot,Specifier virt,const char *ts);
+   ~DiagramItem();
+    QCString label() const;
+    QCString fileName() const;
+    DiagramItem *parentItem() { return parent; } 
+    DiagramItemList *getChildren() { return children; }
+    void move(int dx,int dy) { x+=dx; y+=dy; }
+    int xPos() const { return x; }
+    int yPos() const { return y; }
+    int avgChildPos() const;
+    int numChildren() const;
+    void addChild(DiagramItem *di);
+    int number() const { return num; }
+    Protection protection() const { return prot; }
+    Specifier virtualness() const { return virt; }
+    void putInList() { inList=TRUE; }
+    bool isInList() const { return inList; } 
+    ClassDef *getClassDef() const { return classDef; }
+  private:
+    DiagramItemList *children;
+    DiagramItem *parent;
+    int x,y;
+    int num;
+    Protection prot;
+    Specifier virt;
+    QCString templSpec;
+    bool inList;
+    ClassDef *classDef;
+};
+
+/** Class representing a list of DiagramItem object. */
+class DiagramItemList : public QList<DiagramItem>
+{
+  public:
+    DiagramItemList() : QList<DiagramItem>() {}
+   ~DiagramItemList() {}
+};
+
+/** Class representing a row in the built-in class diagram */
+class DiagramRow : public QList<DiagramItem> 
+{
+  public:
+    DiagramRow(TreeDiagram *d,int l) : QList<DiagramItem>() 
+    { 
+      diagram=d; 
+      level=l;
+      setAutoDelete(TRUE); 
+    }
+    void insertClass(DiagramItem *parent,ClassDef *cd,bool doBases,
+                     Protection prot,Specifier virt,const char *ts);
+    uint number() { return level; }
+  private:
+    TreeDiagram *diagram;
+    uint level;
+};
+
+/** Class representing iterator for the rows in the built-in class diagram. */
+class DiagramRowIterator : public QListIterator<DiagramRow>
+{
+  public:
+    DiagramRowIterator(const QList<DiagramRow> &d) 
+      : QListIterator<DiagramRow>(d) {}
+};
+
+/** Class represeting the tree layout for the built-in class diagram. */
+class TreeDiagram : public QList<DiagramRow>
+{
+  public:
+    TreeDiagram(ClassDef *root,bool doBases);
+   ~TreeDiagram();
+    void computeLayout();
+    uint computeRows();
+    //uint computeCols();
+    void moveChildren(DiagramItem *root,int dx);
+    void computeExtremes(uint *labelWidth,uint *xpos);
+    void drawBoxes(FTextStream &t,Image *image,
+                   bool doBase,bool bitmap,
+                   uint baseRows,uint superRows,
+                   uint cellWidth,uint cellHeight,
+                   QCString relPath="",
+                   bool generateMap=TRUE);
+    void drawConnectors(FTextStream &t,Image *image,
+                   bool doBase,bool bitmap,
+                   uint baseRows,uint superRows,
+                   uint cellWidth,uint cellheight);
+  private:
+    bool layoutTree(DiagramItem *root,int row);
+    TreeDiagram &operator=(const TreeDiagram &);
+    TreeDiagram(const TreeDiagram &);
+};
+
+
 
 //-----------------------------------------------------------------------------
 
@@ -164,7 +266,17 @@ static void writeMapArea(FTextStream &t,ClassDef *cd,QCString relPath,
     }
     t << "href=\"";
     t << externalRef(relPath,ref,TRUE);
-    t << cd->getOutputFileBase() << Doxygen::htmlFileExtension << "\" ";
+    t << cd->getOutputFileBase() << Doxygen::htmlFileExtension;
+    if (!cd->anchor().isEmpty())
+    {
+      t << "#" << cd->anchor();
+    }
+    t << "\" ";
+    QCString tooltip = cd->briefDescriptionAsTooltip();
+    if (!tooltip.isEmpty())
+    {
+      t << "title=\"" << tooltip << "\" ";
+    }
     t << "alt=\"" << convertToXML(cd->displayName()); 
     t << "\" shape=\"rect\" coords=\"" << x << "," << y << ",";
     t << (x+w) << "," << (y+h) << "\"/>" << endl;
@@ -199,7 +311,12 @@ QCString DiagramItem::label() const
   {
     // we use classDef->name() here and not diplayName() in order
     // to get the name used in the inheritance relation.
-    result=insertTemplateSpecifierInScope(classDef->name(),templSpec);
+    QCString n = classDef->name();
+    if (n.right(2)=="-g" || n.right(2)=="-p")
+    {
+      n = n.left(n.length()-2);
+    }
+    result=insertTemplateSpecifierInScope(n,templSpec);
   }
   else
   {
@@ -349,7 +466,7 @@ bool TreeDiagram::layoutTree(DiagramItem *root,int r)
     DiagramItem *di=dil->first();
     while (di && !moved && !di->isInList())
     {
-      moved = moved || layoutTree(di,r+1);
+      moved = layoutTree(di,r+1);
       di=dil->next();
     }
   }

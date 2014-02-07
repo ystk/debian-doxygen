@@ -1,5 +1,5 @@
 #
-# This file was generated from qtools.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from qtools.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 TEMPLATE	= lib
@@ -104,3 +104,4 @@ win32:TMAKE_CXXFLAGS += -DQT_NODLL
 win32-g++:TMAKE_CXXFLAGS += -D__CYGWIN__ -DALL_STATIC
 OBJECTS_DIR = ../objects
 DESTDIR = ../lib
+TMAKE_MOC = /usr/bin/moc

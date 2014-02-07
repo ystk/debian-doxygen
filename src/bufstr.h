@@ -3,7 +3,7 @@
  * $Id: bufstr.h,v 1.85 2000/11/18 12:58:19 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 

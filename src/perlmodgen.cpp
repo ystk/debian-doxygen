@@ -3,7 +3,7 @@
  *
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  * Authors: Dimitri van Heesch, Miguel Lobo.
  *
  * Permission to use, copy, modify, and distribute this software and its
@@ -30,6 +30,7 @@
 #include <qdict.h>
 #include <qfile.h>
 #include "ftextstream.h"
+#include "arguments.h"
 
 #define PERLOUTPUT_MAX_INDENTATION 40
 
@@ -297,6 +298,7 @@ public:
   void visit(DocFormula *);
   void visit(DocIndexEntry *);
   void visit(DocSimpleSectSep *);
+  void visit(DocCite *);
 
   //--------------------------------------
   // visitor functions for compound nodes
@@ -350,6 +352,8 @@ public:
   void visitPost(DocImage *);
   void visitPre(DocDotFile *);
   void visitPost(DocDotFile *);
+  void visitPre(DocMscFile *);
+  void visitPost(DocMscFile *);
   void visitPre(DocLink *);
   void visitPost(DocLink *);
   void visitPre(DocRef *);
@@ -372,6 +376,8 @@ public:
   void visitPost(DocCopy *);
   void visitPre(DocText *);
   void visitPost(DocText *);
+  void visitPre(DocHtmlBlockQuote *);
+  void visitPost(DocHtmlBlockQuote *);
 
 private:
 
@@ -530,7 +536,9 @@ void PerlModDocVisitor::visit(DocSymbol *sy)
     case DocSymbol::Amp:     c = '&'; break;
     case DocSymbol::Dollar:  c = '$'; break;
     case DocSymbol::Hash:    c = '#'; break;
+    case DocSymbol::DoubleColon: s = "::"; break;
     case DocSymbol::Percent: c = '%'; break;
+    case DocSymbol::Pipe:    c = '|'; break;
     case DocSymbol::Quot:    c = '"'; break;
     case DocSymbol::Lsquo:   s = "\\\'"; break;
     case DocSymbol::Rsquo:   s = "\\\'"; break;
@@ -555,6 +563,73 @@ void PerlModDocVisitor::visit(DocSymbol *sy)
     case DocSymbol::Apos:    s = "\\\'"; break;
     case DocSymbol::Aelig:   symbol = "aelig"; break;
     case DocSymbol::AElig:   symbol = "AElig"; break;
+    case DocSymbol::GrkGamma:      symbol = "Gamma"; break;
+    case DocSymbol::GrkDelta:      symbol = "Delta"; break;
+    case DocSymbol::GrkTheta:      symbol = "Theta"; break;
+    case DocSymbol::GrkLambda:     symbol = "Lambda"; break;
+    case DocSymbol::GrkXi:         symbol = "Xi"; break;
+    case DocSymbol::GrkPi:         symbol = "Pi"; break;
+    case DocSymbol::GrkSigma:      symbol = "Sigma"; break;
+    case DocSymbol::GrkUpsilon:    symbol = "Upsilon"; break;
+    case DocSymbol::GrkPhi:        symbol = "Phi"; break;
+    case DocSymbol::GrkPsi:        symbol = "Psi"; break;
+    case DocSymbol::GrkOmega:      symbol = "Omega"; break;
+    case DocSymbol::Grkalpha:      symbol = "alpha"; break;
+    case DocSymbol::Grkbeta:       symbol = "beta"; break;
+    case DocSymbol::Grkgamma:      symbol = "gamma"; break;
+    case DocSymbol::Grkdelta:      symbol = "delta"; break;
+    case DocSymbol::Grkepsilon:    symbol = "epsilon"; break;
+    case DocSymbol::Grkzeta:       symbol = "zeta"; break;
+    case DocSymbol::Grketa:        symbol = "eta"; break;
+    case DocSymbol::Grktheta:      symbol = "theta"; break;
+    case DocSymbol::Grkiota:       symbol = "iota"; break;
+    case DocSymbol::Grkkappa:      symbol = "kappa"; break;
+    case DocSymbol::Grklambda:     symbol = "lambda"; break;
+    case DocSymbol::Grkmu:         symbol = "mu"; break;
+    case DocSymbol::Grknu:         symbol = "nu"; break;
+    case DocSymbol::Grkxi:         symbol = "xi"; break;
+    case DocSymbol::Grkpi:         symbol = "pi"; break;
+    case DocSymbol::Grkrho:        symbol = "rho"; break;
+    case DocSymbol::Grksigma:      symbol = "sigma"; break;
+    case DocSymbol::Grktau:        symbol = "tau"; break;
+    case DocSymbol::Grkupsilon:    symbol = "upsilon"; break;
+    case DocSymbol::Grkphi:        symbol = "phi"; break;
+    case DocSymbol::Grkchi:        symbol = "chi"; break;
+    case DocSymbol::Grkpsi:        symbol = "psi"; break;
+    case DocSymbol::Grkomega:      symbol = "omega"; break;
+    case DocSymbol::Grkvarsigma:   symbol = "sigma"; break;
+    case DocSymbol::Section:       symbol = "sect"; break;
+    case DocSymbol::Degree:        symbol = "deg"; break;
+    case DocSymbol::Prime:         s = "\\\'"; break;
+    case DocSymbol::DoublePrime:   c = '"'; break;
+    case DocSymbol::Infinity:      symbol = "inf"; break;
+    case DocSymbol::EmptySet:      symbol = "empty"; break;
+    case DocSymbol::PlusMinus:     s = "+/-"; break;
+    case DocSymbol::Times:         c = '*'; break;
+    case DocSymbol::Minus:         c = '-'; break;
+    case DocSymbol::CenterDot:     c = '.'; break;
+    case DocSymbol::Partial:       symbol = "partial"; break;
+    case DocSymbol::Nabla:         symbol = "nabla"; break;
+    case DocSymbol::SquareRoot:    symbol = "sqrt"; break;
+    case DocSymbol::Perpendicular: symbol = "perp"; break;
+    case DocSymbol::Sum:           symbol = "sum"; break;
+    case DocSymbol::Integral:      symbol = "int"; break;
+    case DocSymbol::Product:       symbol = "prod"; break;
+    case DocSymbol::Similar:       c = '~'; break;
+    case DocSymbol::Approx:        symbol = "approx"; break;
+    case DocSymbol::NotEqual:      s = "!="; break;
+    case DocSymbol::Equivalent:    symbol = "equiv"; break;
+    case DocSymbol::Proportional:  symbol = "propto"; break;
+    case DocSymbol::LessEqual:     s = "<="; break;
+    case DocSymbol::GreaterEqual:  s = ">="; break;
+    case DocSymbol::LeftArrow:     s = "<-"; break;
+    case DocSymbol::RightArrow:    s = "->"; break;
+    case DocSymbol::SetIn:         symbol = "in"; break;
+    case DocSymbol::SetNotIn:      symbol = "notin"; break;
+    case DocSymbol::LeftCeil:      symbol = "lceil"; break;
+    case DocSymbol::RightCeil:     symbol = "rceil"; break;
+    case DocSymbol::LeftFloor:     symbol = "lfloor"; break;
+    case DocSymbol::RightFloor:    symbol = "rfloor"; break;
     case DocSymbol::Unknown: err("error: unknown symbol found\n");
                              break;
   }
@@ -633,6 +708,7 @@ void PerlModDocVisitor::visit(DocVerbatim *s)
     return;
   case DocVerbatim::Verbatim:	type = "preformatted"; break;
   case DocVerbatim::HtmlOnly:	type = "htmlonly"; break;
+  case DocVerbatim::RtfOnly:	type = "rtfonly"; break;
   case DocVerbatim::ManOnly:	type = "manonly"; break;
   case DocVerbatim::LatexOnly:	type = "latexonly"; break;
   case DocVerbatim::XmlOnly:	type = "xmlonly"; break;
@@ -679,6 +755,7 @@ void PerlModDocVisitor::visit(DocInclude *inc)
   case DocInclude::DontInclude:	return;
   case DocInclude::HtmlInclude:	type = "htmlonly"; break;
   case DocInclude::VerbInclude:	type = "preformatted"; break;
+  case DocInclude::Snippet: return;
   }
   openItem(type);
   m_output.addFieldQuotedString("content", inc->text());
@@ -733,6 +810,14 @@ void PerlModDocVisitor::visit(DocIndexEntry *)
 void PerlModDocVisitor::visit(DocSimpleSectSep *)
 {
 }
+
+void PerlModDocVisitor::visit(DocCite *cite)
+{
+  openItem("cite");
+  m_output.addFieldQuotedString("text", cite->text());
+  closeItem();
+}
+
 
 //--------------------------------------
 // visitor functions for compound nodes
@@ -805,6 +890,7 @@ void PerlModDocVisitor::visitPre(DocSimpleSect *s)
   case DocSimpleSect::Warning:		type = "warning"; break;
   case DocSimpleSect::Pre:		type = "pre"; break;
   case DocSimpleSect::Post:		type = "post"; break;
+  case DocSimpleSect::Copyright:	type = "copyright"; break;
   case DocSimpleSect::Invar:		type = "invariant"; break;
   case DocSimpleSect::Remark:		type = "remark"; break;
   case DocSimpleSect::Attention:	type = "attention"; break;
@@ -1094,6 +1180,20 @@ void PerlModDocVisitor::visitPost(DocDotFile *)
   m_output.add("</dotfile>");
 #endif
 }
+void PerlModDocVisitor::visitPre(DocMscFile *)
+{
+#if 0
+  m_output.add("<mscfile name=\""); m_output.add(df->file()); m_output.add("\">");
+#endif
+}
+
+void PerlModDocVisitor::visitPost(DocMscFile *)
+{
+#if 0
+  m_output.add("<mscfile>");
+#endif
+}
+
 
 void PerlModDocVisitor::visitPre(DocLink *lnk)
 {
@@ -1272,6 +1372,18 @@ void PerlModDocVisitor::visitPost(DocText *)
 {
 }
 
+void PerlModDocVisitor::visitPre(DocHtmlBlockQuote *)
+{
+  openItem("blockquote");
+  openSubBlock("content");
+}
+
+void PerlModDocVisitor::visitPost(DocHtmlBlockQuote *)
+{
+  closeSubBlock();
+  closeItem();
+}
+
 static void addTemplateArgumentList(ArgumentList *al,PerlModOutput &output,const char *)
 {
   QCString indentStr;
@@ -1362,7 +1474,7 @@ static QCString pathDoxyExec;
 void setPerlModDoxyfile(const QCString &qs)
 {
   pathDoxyfile = qs;
-  pathDoxyExec = QDir::currentDirPath();
+  pathDoxyExec = QDir::currentDirPath().utf8();
 }
 
 class PerlModGenerator
@@ -1514,6 +1626,11 @@ void PerlModGenerator::generatePerlModForMember(MemberDef *md,Definition *)
     }
     m_output.closeList();
   }
+  else if (md->argsString()!=0) 
+  {
+    m_output.addFieldQuotedString("arguments", md->argsString());
+  }
+
   if (!md->initializer().isEmpty())
     m_output.addFieldQuotedString("initializer", md->initializer());
   
@@ -1675,7 +1792,7 @@ void PerlModGenerator::generatePerlModForClass(ClassDef *cd)
     m_output.closeList();
   }
 
-  ClassSDict *cl = cd->getInnerClasses();
+  ClassSDict *cl = cd->getClassSDict();
   if (cl)
   {
     m_output.openList("inner");
@@ -2108,7 +2225,7 @@ bool PerlModGenerator::createOutputDir(QDir &perlModDir)
   QCString outputDirectory = Config_getString("OUTPUT_DIRECTORY");
   if (outputDirectory.isEmpty())
   {
-    outputDirectory=QDir::currentDirPath();
+    outputDirectory=QDir::currentDirPath().utf8();
   }
   else
   {
@@ -2129,7 +2246,7 @@ bool PerlModGenerator::createOutputDir(QDir &perlModDir)
       }
       dir.cd(outputDirectory);
     }
-    outputDirectory=dir.absPath();
+    outputDirectory=dir.absPath().utf8();
   }
 
   QDir dir(outputDirectory);
@@ -2822,20 +2939,21 @@ void PerlModGenerator::generate()
 
   bool perlmodLatex = Config_getBool("PERLMOD_LATEX");
 
-  pathDoxyDocsPM = perlModDir.absPath() + "/DoxyDocs.pm";
-  pathDoxyStructurePM = perlModDir.absPath() + "/DoxyStructure.pm";
-  pathMakefile = perlModDir.absPath() + "/Makefile";
-  pathDoxyRules = perlModDir.absPath() + "/doxyrules.make";
+  QCString perlModAbsPath = perlModDir.absPath().utf8();
+  pathDoxyDocsPM = perlModAbsPath + "/DoxyDocs.pm";
+  pathDoxyStructurePM = perlModAbsPath + "/DoxyStructure.pm";
+  pathMakefile = perlModAbsPath + "/Makefile";
+  pathDoxyRules = perlModAbsPath + "/doxyrules.make";
 
   if (perlmodLatex) {
-    pathDoxyStructureTex = perlModDir.absPath() + "/doxystructure.tex";
-    pathDoxyFormatTex = perlModDir.absPath() + "/doxyformat.tex";
-    pathDoxyLatexTex = perlModDir.absPath() + "/doxylatex.tex";
-    pathDoxyLatexDVI = perlModDir.absPath() + "/doxylatex.dvi";
-    pathDoxyLatexPDF = perlModDir.absPath() + "/doxylatex.pdf";
-    pathDoxyDocsTex = perlModDir.absPath() + "/doxydocs.tex";
-    pathDoxyLatexPL = perlModDir.absPath() + "/doxylatex.pl";
-    pathDoxyLatexStructurePL = perlModDir.absPath() + "/doxylatex-structure.pl";
+    pathDoxyStructureTex = perlModAbsPath + "/doxystructure.tex";
+    pathDoxyFormatTex = perlModAbsPath + "/doxyformat.tex";
+    pathDoxyLatexTex = perlModAbsPath + "/doxylatex.tex";
+    pathDoxyLatexDVI = perlModAbsPath + "/doxylatex.dvi";
+    pathDoxyLatexPDF = perlModAbsPath + "/doxylatex.pdf";
+    pathDoxyDocsTex = perlModAbsPath + "/doxydocs.tex";
+    pathDoxyLatexPL = perlModAbsPath + "/doxylatex.pl";
+    pathDoxyLatexStructurePL = perlModAbsPath + "/doxylatex-structure.pl";
   }
 
   if (!(generatePerlModOutput()

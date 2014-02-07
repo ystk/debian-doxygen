@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -82,7 +82,9 @@ void ManDocVisitor::visit(DocSymbol *s)
     case DocSymbol::Amp:     m_t << "&"; break;
     case DocSymbol::Dollar:  m_t << "$"; break;
     case DocSymbol::Hash:    m_t << "#"; break;
+    case DocSymbol::DoubleColon: m_t << "::"; break;
     case DocSymbol::Percent: m_t << "%"; break;
+    case DocSymbol::Pipe:    m_t << "|"; break;
     case DocSymbol::Copy:    m_t << "(C)"; break;
     case DocSymbol::Tm:      m_t << "(TM)"; break;
     case DocSymbol::Reg:     m_t << "(R)"; break;
@@ -105,7 +107,8 @@ void ManDocVisitor::visit(DocSymbol *s)
     case DocSymbol::Ring:    m_t << s->letter() << "\\*o"; break;
     case DocSymbol::Nbsp:    m_t << " "; break;
     default:
-                             err("error: unknown symbol found\n");
+         // unsupport symbol for man page :-(
+         break;
   }
   m_firstCol=FALSE;
 }
@@ -218,6 +221,7 @@ void ManDocVisitor::visit(DocVerbatim *s)
     case DocVerbatim::HtmlOnly: 
     case DocVerbatim::XmlOnly: 
     case DocVerbatim::LatexOnly: 
+    case DocVerbatim::RtfOnly: 
     case DocVerbatim::Dot: 
     case DocVerbatim::Msc: 
       /* nothing */ 
@@ -241,7 +245,7 @@ void ManDocVisitor::visit(DocInclude *inc)
          m_t << ".PP" << endl;
          m_t << ".nf" << endl;
          QFileInfo cfi( inc->file() );
-         FileDef fd( cfi.dirPath(), cfi.fileName() );
+         FileDef fd( cfi.dirPath().utf8(), cfi.fileName().utf8() );
          Doxygen::parserManager->getParser(inc->extension())
                                ->parseCode(m_ci,inc->context(),
                                            inc->text(),
@@ -275,6 +279,22 @@ void ManDocVisitor::visit(DocInclude *inc)
       m_t << ".PP" << endl;
       m_t << ".nf" << endl;
       m_t << inc->text();
+      if (!m_firstCol) m_t << endl;
+      m_t << ".fi" << endl;
+      m_t << ".PP" << endl;
+      m_firstCol=TRUE;
+      break;
+    case DocInclude::Snippet:
+      if (!m_firstCol) m_t << endl;
+      m_t << ".PP" << endl;
+      m_t << ".nf" << endl;
+      Doxygen::parserManager->getParser(inc->extension())
+                            ->parseCode(m_ci,
+                                        inc->context(),
+                                        extractBlock(inc->text(),inc->blockId()),
+                                        inc->isExample(),
+                                        inc->exampleFile()
+                                       );
       if (!m_firstCol) m_t << endl;
       m_t << ".fi" << endl;
       m_t << ".PP" << endl;
@@ -340,6 +360,17 @@ void ManDocVisitor::visit(DocIndexEntry *)
 void ManDocVisitor::visit(DocSimpleSectSep *)
 {
 }
+
+void ManDocVisitor::visit(DocCite *cite)
+{
+  if (m_hide) return;
+  m_t << "\\fB";
+  if (cite->file().isEmpty()) m_t << "[";
+  filter(cite->text());
+  if (cite->file().isEmpty()) m_t << "]";
+  m_t << "\\fP";
+}
+
 
 //--------------------------------------
 // visitor functions for compound nodes
@@ -444,6 +475,8 @@ void ManDocVisitor::visitPre(DocSimpleSect *s)
       m_t << theTranslator->trPrecondition(); break;
     case DocSimpleSect::Post:
       m_t << theTranslator->trPostcondition(); break;
+    case DocSimpleSect::Copyright:
+      m_t << theTranslator->trCopyright(); break;
     case DocSimpleSect::Invar:
       m_t << theTranslator->trInvariant(); break;
     case DocSimpleSect::Remark:
@@ -660,19 +693,19 @@ void ManDocVisitor::visitPost(DocHtmlCell *)
 void ManDocVisitor::visitPre(DocInternal *)
 {
   if (m_hide) return;
-  if (!m_firstCol) m_t << endl;
-  m_t << ".PP" << endl;
-  m_t << "\\fB" << theTranslator->trForInternalUseOnly() << "\\fP" << endl;
-  m_t << ".RS 4" << endl;
+  //if (!m_firstCol) m_t << endl;
+  //m_t << ".PP" << endl;
+  //m_t << "\\fB" << theTranslator->trForInternalUseOnly() << "\\fP" << endl;
+  //m_t << ".RS 4" << endl;
 }
 
 void ManDocVisitor::visitPost(DocInternal *) 
 {
   if (m_hide) return;
-  if (!m_firstCol) m_t << endl;
-  m_t << ".RE" << endl;
-  m_t << ".PP" << endl;
-  m_firstCol=TRUE;
+  //if (!m_firstCol) m_t << endl;
+  //m_t << ".RE" << endl;
+  //m_t << ".PP" << endl;
+  //m_firstCol=TRUE;
 }
 
 void ManDocVisitor::visitPre(DocHRef *)
@@ -718,6 +751,14 @@ void ManDocVisitor::visitPre(DocDotFile *)
 void ManDocVisitor::visitPost(DocDotFile *) 
 {
 }
+void ManDocVisitor::visitPre(DocMscFile *)
+{
+}
+
+void ManDocVisitor::visitPost(DocMscFile *) 
+{
+}
+
 
 void ManDocVisitor::visitPre(DocLink *)
 {
@@ -917,6 +958,27 @@ void ManDocVisitor::visitPost(DocText *)
 {
 }
 
+void ManDocVisitor::visitPre(DocHtmlBlockQuote *)
+{
+  if (m_hide) return;
+  if (!m_firstCol)
+  { 
+    m_t << endl;
+    m_t << ".PP" << endl;
+  }
+  m_t << ".RS 4" << endl; // TODO: add support for nested block quotes
+}
+
+void ManDocVisitor::visitPost(DocHtmlBlockQuote *)
+{
+  if (m_hide) return;
+  if (!m_firstCol) m_t << endl;
+  m_t << ".RE" << endl;
+  m_t << ".PP" << endl;
+  m_firstCol=TRUE;
+}
+
+
 void ManDocVisitor::filter(const char *str)
 { 
   if (str)
@@ -927,6 +989,7 @@ void ManDocVisitor::filter(const char *str)
     {
       switch(c)
       {
+        case '.':  m_t << "\\&."; break; // see  bug652277
         case '\\': m_t << "\\\\"; break;
         case '"':  c = '\''; // fall through
         default: m_t << c; break;

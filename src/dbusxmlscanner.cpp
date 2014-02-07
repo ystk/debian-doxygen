@@ -26,6 +26,7 @@
 
 #include "message.h"
 #include "util.h"
+#include "arguments.h"
 
 // -----------------------------------------------------------------------
 // Convenience defines:
@@ -42,7 +43,7 @@
     while (0)
 
 #define DOC_ERROR(msg) \
-    warn_doc_error(m_fileName.utf8().data(), lineNumber(), msg.utf8().data())
+    warn_doc_error(m_fileName.data(), lineNumber(), msg.data())
 
 #define COND_DOC_ERROR(cond, msg) \
     do {\
@@ -63,6 +64,7 @@
 
 const QString EXTENSION_URI("http://psiamp.org/dtd/doxygen_dbusxml.dtd");
 
+/** DBus implementation of the generic QXmlDefaultHandler. */
 class DBusXMLHandler : public QXmlDefaultHandler
 {
 public:
@@ -105,7 +107,7 @@ public:
                       const QXmlAttributes &attributes)
     {
         // add to elements stack:
-        m_elementStack.append(new ElementData(qName));
+        m_elementStack.append(new ElementData(qName.utf8()));
 
         // First we need a node.
         if (DBUS("node"))
@@ -113,9 +115,9 @@ public:
             CONDITION(!m_currentNode.isEmpty(), "Node inside a node.");
 
             const int idx(indexOf(attributes, "name"));
-            COND_DOC_ERROR(idx < 0, QString("Anonymous node found."));
+            COND_DOC_ERROR(idx < 0, QCString("Anonymous node found."));
 
-            m_currentNode = attributes.value(idx);
+            m_currentNode = attributes.value(idx).utf8();
             // A node is actually of little interest, so do nothing here.
             return true;
         }
@@ -136,7 +138,7 @@ public:
             m_currentInterface->section = Entry::CLASS_SEC;
             m_currentInterface->spec |= Entry::Interface;
             m_currentInterface->type = "Interface";
-            m_currentInterface->name = substitute(attributes.value(idx), ".", "::");
+            m_currentInterface->name = substitute(attributes.value(idx).utf8(), ".", "::");
 
             openScopes(m_currentInterface);
 
@@ -158,7 +160,7 @@ public:
             m_currentMethod = createEntry();
 
             m_currentMethod->section = Entry::FUNCTION_SEC;
-            m_currentMethod->name = attributes.value(idx);
+            m_currentMethod->name = attributes.value(idx).utf8();
             m_currentMethod->mtype = Method;
             m_currentMethod->type = "void";
 
@@ -191,10 +193,10 @@ public:
             }
 
             m_currentArgument = new Argument;
-            m_currentArgument->type = getType(attributes);
-            m_currentArgument->name = attributes.value(name_idx);
+            m_currentArgument->type = getType(attributes).utf8();
+            m_currentArgument->name = attributes.value(name_idx).utf8();
             if (direction_idx >= 0)
-            { m_currentArgument->attrib = attributes.value(direction_idx); }
+            { m_currentArgument->attrib = attributes.value(direction_idx).utf8(); }
             else
             {
                 if (m_currentMethod->mtype == Signal)
@@ -236,9 +238,9 @@ public:
                 attributes.value(access_idx) == "readwrite")
             { m_currentProperty->spec |= Entry::Writable; }
 
-            m_currentProperty->name = attributes.value(name_idx);
+            m_currentProperty->name = attributes.value(name_idx).utf8();
             m_currentProperty->mtype = Property;
-            m_currentProperty->type = getType(attributes);
+            m_currentProperty->type = getType(attributes).utf8();
         }
 
         if (EXTENSION("namespace"))
@@ -265,7 +267,7 @@ public:
             Entry * current_struct = createEntry();
             current_struct->section = Entry::CLASS_SEC;
             current_struct->spec = Entry::Struct;
-            current_struct->name = attributes.value(idx);
+            current_struct->name = attributes.value(idx).utf8();
 
             openScopes(current_struct);
 
@@ -285,11 +287,11 @@ public:
             createEntry();
 
             m_currentEntry->section = Entry::VARIABLE_SEC;
-            m_currentEntry->name = attributes.value(name_idx);
-            m_currentEntry->type = getType(attributes);
+            m_currentEntry->name = attributes.value(name_idx).utf8();
+            m_currentEntry->type = getType(attributes).utf8();
 
             QString type(getDBusType(m_currentEntry->type));
-            m_structStack.last()->type.append(type);
+            m_structStack.last()->type.append(type.utf8());
         }
 
         if (EXTENSION("enum") || EXTENSION("flagset"))
@@ -309,13 +311,13 @@ public:
 
             m_currentEnum = createEntry();
             m_currentEnum->section = Entry::ENUM_SEC;
-            m_currentEnum->name = attributes.value(name_idx);
+            m_currentEnum->name = attributes.value(name_idx).utf8();
 
             openScopes(m_currentEnum);
 
             m_currentEnum->type = m_currentEntry->name + " enum";
 
-            addNamedType(type);
+            addNamedType(type.utf8());
         }
 
         if (EXTENSION("value"))
@@ -330,10 +332,10 @@ public:
             createEntry();
 
             m_currentEntry->section = Entry::VARIABLE_SEC;
-            m_currentEntry->name = attributes.value(name_idx);
+            m_currentEntry->name = attributes.value(name_idx).utf8();
             m_currentEntry->type = m_currentEnum->name; // "@"; // enum marker!
             if (value_idx >= 0)
-            { m_currentEntry->initializer = attributes.value(value_idx); }
+            { m_currentEntry->initializer = attributes.value(value_idx).utf8(); }
         }
 
         return true;
@@ -346,15 +348,15 @@ public:
         // Clean up elements stack:
         // Since we made sure to get the elements in the proper order when
         // adding we do not need to do so again here.
-        COND_DOC_ERROR(m_elementStack.last()->element != qName,
+        COND_DOC_ERROR(m_elementStack.last()->element != qName.utf8(),
                        QString("Malformed XML: Unexpected closing element found.").
-                       arg(m_elementStack.last()->element));
+                       arg(m_elementStack.last()->element).utf8());
         m_elementStack.removeLast();
 
         // Interface:
         if (DBUS("interface"))
         {
-            CONDITION(m_currentInterface, "end of interface found without start.");
+            CONDITION(!m_currentInterface, "end of interface found without start.");
             m_currentInterface->endBodyLine = lineNumber();
             closeScopes();
             m_currentInterface = 0;
@@ -362,8 +364,8 @@ public:
 
         if (DBUS("method") || DBUS("signal"))
         {
-            CONDITION(m_currentMethod, "end of method found without start.");
-            CONDITION(m_currentInterface, "end of method found outside interface.");
+            CONDITION(!m_currentMethod, "end of method found without start.");
+            CONDITION(!m_currentInterface, "end of method found outside interface.");
             m_currentMethod->endBodyLine = lineNumber();
             m_currentInterface->addSubEntry(m_currentMethod);
             m_currentMethod = 0;
@@ -371,8 +373,8 @@ public:
 
         if (DBUS("property"))
         {
-            CONDITION(m_currentMethod, "end of property found without start.");
-            CONDITION(m_currentInterface, "end of property found outside interface.");
+            CONDITION(!m_currentProperty, "end of property found without start.");
+            CONDITION(!m_currentInterface, "end of property found outside interface.");
             m_currentProperty->endBodyLine = lineNumber();
             m_currentInterface->addSubEntry(m_currentProperty);
             m_currentProperty = 0;
@@ -380,7 +382,7 @@ public:
 
         if (DBUS("arg"))
         {
-            CONDITION(m_currentMethod, "end of arg found outside method.");
+            CONDITION(!m_currentMethod, "end of arg found outside method.");
             m_currentMethod->argList->append(m_currentArgument);
             m_currentArgument = 0;
         }
@@ -388,7 +390,7 @@ public:
         if (EXTENSION("namespace"))
         {
             Entry * current = m_namespaceStack.last();
-            CONDITION(current, "end of namespace without start.");
+            CONDITION(!current, "end of namespace without start.");
             m_namespaceStack.removeLast();
 
             current->endBodyLine = lineNumber();
@@ -398,7 +400,7 @@ public:
         if (EXTENSION("struct"))
         {
             StructData * data = m_structStack.last();
-            CONDITION(data, "end of struct without start.");
+            CONDITION(!data, "end of struct without start.");
 
             data->entry->endBodyLine = lineNumber();
 
@@ -407,7 +409,7 @@ public:
             current_type.append(data->type);
             current_type.append(QString(")"));
 
-            addNamedType(current_type);
+            addNamedType(current_type.utf8());
 
             closeScopes();
 
@@ -417,13 +419,13 @@ public:
         if (EXTENSION("member"))
         {
            StructData * data = m_structStack.last();
-           CONDITION(data, "end of struct without start");
+           CONDITION(!data, "end of member outside struct.");
            data->entry->addSubEntry(m_currentEntry);
         }
 
         if (EXTENSION("enum") || EXTENSION("flagset"))
         {
-            CONDITION(m_currentEnum, "end of enum without start");
+            CONDITION(!m_currentEnum, "end of enum without start.");
             m_currentEnum->endBodyLine = lineNumber();
             closeScopes();
 
@@ -432,7 +434,7 @@ public:
 
         if (EXTENSION("value"))
         {
-            CONDITION(m_currentEntry, "end of value without start");
+            CONDITION(!m_currentEntry, "end of value without start");
             m_currentEntry->endBodyLine = lineNumber();
 
             m_currentEnum->addSubEntry(m_currentEntry);
@@ -449,9 +451,9 @@ public:
         if (m_currentComment)
         { handleComment(); }
 
-        m_currentComment = new CommentData(m_fileName, lineNumber(), comment_);
+        m_currentComment = new CommentData(m_fileName, lineNumber(), comment_.utf8());
 
-        if (!m_currentComment->shouldIgnore)
+        if (m_currentComment->shouldIgnore)
         {
             delete m_currentComment;
             m_currentComment = 0;
@@ -482,7 +484,7 @@ public:
 
         while (parseCommentBlock(m_parser,
                                  m_currentEntry,
-                                 text, m_fileName.utf8().data(), 
+                                 text, m_fileName.data(), 
                                  lineNr,
                                  brief, m_currentComment->isJavaStyle,
                                  false,
@@ -509,7 +511,7 @@ public:
         Entry * current = createEntry();
         current->reset();
 
-        current->name    = m_fileName.utf8();
+        current->name    = m_fileName;
         current->section = Entry::SOURCE_SEC;
 
         // Open/Close the scope to do the bookkeeping:
@@ -532,21 +534,7 @@ private:
                             const QString & qName,
                             const QString & element)
     {
-        // isNull happens in startelement if no URI is used.
-        if (namespaceURI.isNull())
-        { return false; }
-
-        // We are in a endElement: URI is always empty there:-(
-        if (namespaceURI.isEmpty())
-        { return qName == m_scopeStack.last()->extensionPrefix + element; }
-
-        // startElemennt: We need to save the qName prefix
-        // since endElement will forget about the namespaceURi:-(
-        if (namespaceURI == EXTENSION_URI)
-        {
-            int pos = qName.find(':');
-            m_scopeStack.last()->extensionPrefix = qName.left(pos + 1);
-        }
+        (void)qName;
 
         return namespaceURI == EXTENSION_URI && localName == element;
     }
@@ -564,20 +552,20 @@ private:
         const int type_idx(indexOf(attributes, "type"));
         const int named_type_idx(indexOf(attributes, "named-type"));
 
-        QString type;
+        QCString type;
 
         if (named_type_idx >= 0)
         {
-            type = attributes.value(named_type_idx);
-            if (!type.startsWith("::"))
-            { type = getCurrentScope(attributes.value(named_type_idx)); }
+            type = attributes.value(named_type_idx).utf8();
+            if (type.left(2)!="::")
+            { type = getCurrentScope(attributes.value(named_type_idx).utf8()); }
             else
             { type = type.mid(2); }
             if (m_namedTypeMap.contains(type))
             {
                 if (type_idx >= 0)
                 {
-                    const QString dbus_type(attributes.value(type_idx));
+                    const QCString dbus_type(attributes.value(type_idx).utf8());
                     if (dbus_type != m_namedTypeMap[type])
                     {
                         DOC_ERROR(QString("Type \"%1\" does not match up with "
@@ -595,7 +583,7 @@ private:
 
         if (type_idx >= 0)
         {
-            type = attributes.value(type_idx);
+            type = attributes.value(type_idx).utf8();
 
             QRegExp reg_exp(QCString("(a?[ybnqiuxdtsogv]|a[{]sv[}])"));
             if (reg_exp.match(type.data()))
@@ -607,9 +595,9 @@ private:
         return QString();
     }
 
-    QString getDBusType(const QString & type)
+    QString getDBusType(const QCString & type)
     {
-        QString scoped_type = type;
+        QCString scoped_type = type;
         if (!scoped_type.contains("::"))
         { scoped_type = getCurrentScope(type); }
 
@@ -619,9 +607,9 @@ private:
         { return type; }
     }
 
-    void addNamedType(const QString type)
+    void addNamedType(const QCString &type)
     {
-        QString scoped_name(getCurrentScope());
+        QCString scoped_name(getCurrentScope());
 
         if (m_namedTypeMap.contains(scoped_name))
         {
@@ -632,9 +620,9 @@ private:
         m_namedTypeMap.insert(scoped_name, type);
     }
 
-    QString getCurrentScope(const QString & type = QString())
+    QCString getCurrentScope(const QCString & type = QCString())
     {
-        QString scoped_name;
+        QCString scoped_name;
         if (!m_scopeStack.isEmpty())
         {
             scoped_name = m_scopeStack.last()->scope->name;
@@ -703,7 +691,7 @@ private:
             m_scopeStack.append(new ScopeData(current_namespace, m_scopeCount));
         }
 
-        QString scoped_name(getCurrentScope());
+        QCString scoped_name(getCurrentScope());
         if (!scoped_name.isEmpty())
         { scoped_name.append("::"); }
         scoped_name.append(object->name.mid(last_scope_separator_pos));
@@ -720,10 +708,10 @@ private:
     Entry * openNamespace(const QString & name)
     {
         Entry * current_namespace = createEntry();
-        QString scoped_name(getCurrentScope());
+        QCString scoped_name(getCurrentScope());
         if (!scoped_name.isEmpty())
         { scoped_name.append("::"); }
-        scoped_name.append(name);
+        scoped_name.append(name.utf8());
         current_namespace->name = scoped_name;
         current_namespace->section = Entry::NAMESPACE_SEC;
         current_namespace->type = "namespace" ;
@@ -746,18 +734,17 @@ private:
     ParserInterface * m_parser;
 
     QXmlLocator m_locator;
-    QString m_currentNode; // Nodes can not be nested, no entry necessary.
+    QCString m_currentNode; // Nodes can not be nested, no entry necessary.
 
     struct ElementData
     {
-        ElementData(const QString & e) :
+        ElementData(const QCString & e) :
             element(e)
         { }
         ~ElementData() { }
 
-        QString element; //*< The element name
-        QString extensionPrefix; //*< The prefix used for our extension.
-        QString text; //*< The actual xml code.
+        QCString element; //*< The element name
+        QCString text; //*< The actual xml code.
     };
     QList<ElementData> m_elementStack;
 
@@ -775,7 +762,7 @@ private:
         StructData(Entry * e) : entry(e) { }
         ~StructData() { }
 
-        QString type;
+        QCString type;
         Entry * entry;
     };
     QList<StructData> m_structStack; // Structs can be nested.
@@ -789,25 +776,24 @@ private:
         ~ScopeData() { }
 
         Entry * scope;
-        QString extensionPrefix;
         int count;
     };
     QList<ScopeData> m_scopeStack; // Scopes are nested.
 
-    QString m_fileName;
+    QCString m_fileName;
 
     struct CommentData
     {
-        CommentData(const QString & f, const int l, const QString & t) :
+        CommentData(const QCString & f, const int l, const QCString & t) :
             isJavaStyle(false),
             isQtStyle(false),
             line(l),
             fileName(f)
         {
-            isJavaStyle = t.startsWith(QChar('*'));
-            isQtStyle = t.startsWith(QChar('!'));
+            isJavaStyle = t.length()>0 && t.at(0)=='*';
+            isQtStyle = t.length()>0 && t.at(0)=='!';
             shouldIgnore = (!isJavaStyle && !isQtStyle);
-            associateWithPrevious = (t.at(1) == QChar('<'));
+            associateWithPrevious = (t.length()>1 && t.at(1)=='<');
             if (associateWithPrevious)
             { text = t.mid(2); }
             else
@@ -815,13 +801,13 @@ private:
         }
         ~CommentData() { }
 
-        QString text;
+        QCString text;
         bool isJavaStyle;
         bool isQtStyle;
         bool shouldIgnore;
         bool associateWithPrevious;
         int line;
-        QString fileName;
+        QCString fileName;
     };
     CommentData * m_currentComment;
 
@@ -829,7 +815,7 @@ private:
 
     QString m_errorString;
 
-    QMap<QString, QString> m_namedTypeMap;
+    QMap<QCString, QCString> m_namedTypeMap;
 };
 
 // -----------------------------------------------------------------------
@@ -860,7 +846,7 @@ void DBusXMLScanner::parseInput(const char * fileName,
     handler.setSection();
     reader.parse(inputSource);
 
-    if (handler.errorString())
+    if (!handler.errorString().isEmpty())
     { err("DBus XML Parser: Error at line %d: %s\n", 
         handler.locator()->lineNumber(),handler.errorString().utf8().data()); }
 

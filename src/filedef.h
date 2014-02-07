@@ -2,7 +2,7 @@
  *
  * $Id: filedef.h,v 1.32 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -40,26 +40,26 @@ class MemberGroupSDict;
 class PackageDef;
 class DirDef;
 
+/** Class representing the data associated with a \#include statement. */
 struct IncludeInfo
 {
-  IncludeInfo() { fileDef=0; local=FALSE; }
+  IncludeInfo() { fileDef=0; local=FALSE; indirect=FALSE; }
   ~IncludeInfo() {}
   FileDef *fileDef;
   QCString includeName;
   bool local;
   bool imported;
+  bool indirect;
 };
 
-/*! \class FileDef filedef.h
-    \brief A File definition.
-    
-    An object of this class contains all file information that is gathered.
-    This includes the members and compounds defined in the file.
-    
-    The member writeDocumentation() can be used to generate the page of
-    documentation to HTML and LaTeX.
-*/
-
+/** A model of a file symbol. 
+ *   
+ *  An object of this class contains all file information that is gathered.
+ *  This includes the members and compounds defined in the file.
+ *   
+ *  The member writeDocumentation() can be used to generate the page of
+ *  documentation to HTML and LaTeX.
+ */
 class FileDef : public Definition
 {
   friend class FileName;
@@ -79,14 +79,13 @@ class FileDef : public Definition
       else 
         return Definition::name(); 
     } 
-
-    QCString fileName() const
-    {
-      return filename;
-    }
+    QCString displayName(bool=TRUE) const { return name(); }
+    QCString fileName() const { return filename; }
     
     QCString getOutputFileBase() const 
     { return convertNameToFile(diskname); }
+    QCString anchor() const
+    { return QCString(); }
 
     QCString getFileBase() const
     { return diskname; }
@@ -124,8 +123,8 @@ class FileDef : public Definition
     }
     bool isIncluded(const QCString &name) const;
 
-    bool isJava() const { return m_isJava; }
-    bool isCSharp() const { return m_isCSharp; }
+    //bool isJava() const { return m_isJava; }
+    //bool isCSharp() const { return m_isCSharp; }
 
     void writeDocumentation(OutputList &ol);
     void writeMemberPages(OutputList &ol);
@@ -155,7 +154,7 @@ class FileDef : public Definition
     bool generateSourceFile() const;
     void sortMemberLists();
 
-    void addIncludeDependency(FileDef *fd,const char *incName,bool local,bool imported);
+    void addIncludeDependency(FileDef *fd,const char *incName,bool local,bool imported,bool indirect);
     void addIncludedByDependency(FileDef *fd,const char *incName,bool local,bool imported);
     QList<IncludeInfo> *includeFileList() const { return includeList; }
     QList<IncludeInfo> *includedByFileList() const { return includedByList; }
@@ -167,7 +166,8 @@ class FileDef : public Definition
 
     void addListReferences();
     bool isDocumentationFile() const;
-    bool includes(FileDef *incFile,QDict<FileDef> *includedFiles) const;
+    //bool includes(FileDef *incFile,QDict<FileDef> *includedFiles) const;
+    //bool includesByName(const QCString &name) const;
 
     MemberList *getMemberList(MemberList::ListType lt) const;
     const QList<MemberList> &getMemberLists() const { return m_memberLists; }
@@ -198,6 +198,7 @@ class FileDef : public Definition
     void writeSourceLink(OutputList &ol);
     void writeNamespaceDeclarations(OutputList &ol,const QCString &title);
     void writeClassDeclarations(OutputList &ol,const QCString &title);
+    void writeInlineClasses(OutputList &ol);
     void startMemberDeclarations(OutputList &ol);
     void endMemberDeclarations(OutputList &ol);
     void startMemberDocumentation(OutputList &ol);
@@ -219,8 +220,6 @@ class FileDef : public Definition
     QIntDict<Definition> *srcDefDict;
     QIntDict<MemberDef>  *srcMemberDict;
     bool                  isSource;
-    bool                  m_isJava;
-    bool                  m_isCSharp;
     QCString              fileVersion;
     PackageDef           *package;
     DirDef               *dir;
@@ -231,7 +230,7 @@ class FileDef : public Definition
     bool                  m_subGrouping;
 };
 
-
+/** Class representing a list of FileDef objects. */
 class FileList : public QList<FileDef>
 {
   public:
@@ -271,6 +270,7 @@ class OutputNameDict : public QDict<FileList>
 
 class Directory;
 
+/** Class representing an entry (file or sub directory) in a directory */
 class DirEntry
 {
   public:
@@ -301,6 +301,7 @@ class DirEntry
     bool m_isLast;
 };
 
+/** Class representing a directory tree of DirEntry objects. */
 class Directory : public DirEntry
 {
   public:
@@ -317,7 +318,6 @@ class Directory : public DirEntry
     QList<DirEntry> m_children;
 };
 
-//void generateFileTree(QTextStream &t);
 void generateFileTree();
 
 #endif

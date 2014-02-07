@@ -2,7 +2,7 @@
  *
  * $Id: namespacedef.cpp,v 1.27 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -57,7 +57,6 @@ NamespaceDef::NamespaceDef(const char *df,int dl,
   memberGroupSDict->setAutoDelete(TRUE);
   visited=FALSE;
   m_subGrouping=Config_getBool("SUBGROUPING");
-  m_isCSharp = df && getLanguageFromFileName(df)==SrcLangExt_CSharp;
 }
 
 NamespaceDef::~NamespaceDef()
@@ -238,10 +237,13 @@ void NamespaceDef::writeDetailedDescription(OutputList &ol,const QCString &title
       !documentation().isEmpty()
      )
   {
-    ol.writeRuler();
     ol.pushGeneratorState();
-    ol.disableAllBut(OutputGenerator::Html);
-      ol.writeAnchor(0,"_details"); 
+      ol.disable(OutputGenerator::Html);
+      ol.writeRuler();
+    ol.popGeneratorState();
+    ol.pushGeneratorState();
+      ol.disableAllBut(OutputGenerator::Html);
+      ol.writeAnchor(0,"details"); 
     ol.popGeneratorState();
     ol.startGroupHeader();
     ol.parseText(title);
@@ -274,7 +276,7 @@ void NamespaceDef::writeDetailedDescription(OutputList &ol,const QCString &title
 
 void NamespaceDef::writeBriefDescription(OutputList &ol)
 {
-  if (!briefDescription().isEmpty()) 
+  if (!briefDescription().isEmpty() && Config_getBool("BRIEF_MEMBER_DESC"))
   {
     ol.startParagraph();
     ol.parseDoc(briefFile(),briefLine(),this,0,
@@ -289,7 +291,7 @@ void NamespaceDef::writeBriefDescription(OutputList &ol)
        )
     {
       ol.disableAllBut(OutputGenerator::Html);
-      ol.startTextLink(0,"_details");
+      ol.startTextLink(0,"details");
       ol.parseText(theTranslator->trMore());
       ol.endTextLink();
     }
@@ -338,6 +340,11 @@ void NamespaceDef::writeClassDeclarations(OutputList &ol,const QCString &title)
   if (classSDict) classSDict->writeDeclaration(ol,0,title,TRUE);
 }
 
+void NamespaceDef::writeInlineClasses(OutputList &ol)
+{
+  if (classSDict) classSDict->writeDocumentation(ol,this);
+}
+
 void NamespaceDef::writeNamespaceDeclarations(OutputList &ol,const QCString &title)
 {
   if (namespaceSDict) namespaceSDict->writeDeclaration(ol,title,TRUE);
@@ -348,6 +355,7 @@ void NamespaceDef::writeMemberGroups(OutputList &ol)
   /* write user defined member groups */
   if (memberGroupSDict)
   {
+    memberGroupSDict->sort();
     MemberGroupSDict::Iterator mgli(*memberGroupSDict);
     MemberGroup *mg;
     for (;(mg=mgli.current());++mgli)
@@ -389,7 +397,8 @@ void NamespaceDef::writeSummaryLinks(OutputList &ol)
     {
       LayoutDocEntrySection *ls = (LayoutDocEntrySection*)lde;
       QCString label = lde->kind()==LayoutDocEntry::NamespaceClasses ? "nested-classes" : "namespaces";
-      writeSummaryLink(ol,label,ls->title,first);
+      ol.writeSummaryLink(0,label,ls->title,first);
+      first=FALSE;
     }
     else if (lde->kind()== LayoutDocEntry::MemberDecl)
     {
@@ -397,7 +406,8 @@ void NamespaceDef::writeSummaryLinks(OutputList &ol)
       MemberList * ml = getMemberList(lmd->type);
       if (ml && ml->declVisible())
       {
-        writeSummaryLink(ol,ml->listTypeAsString(),lmd->title,first);
+        ol.writeSummaryLink(0,ml->listTypeAsString(),lmd->title,first);
+        first=FALSE;
       }
     }
   }
@@ -410,14 +420,17 @@ void NamespaceDef::writeSummaryLinks(OutputList &ol)
 
 void NamespaceDef::writeDocumentation(OutputList &ol)
 {
-  bool fortranOpt = Config_getBool("OPTIMIZE_FOR_FORTRAN");
+  static bool generateTreeView = Config_getBool("GENERATE_TREEVIEW");
+  //static bool outputJava = Config_getBool("OPTIMIZE_OUTPUT_JAVA");
+  //static bool fortranOpt = Config_getBool("OPTIMIZE_FOR_FORTRAN");
+  SrcLangExt lang = getLanguage();
 
   QCString pageTitle;
-  if (Config_getBool("OPTIMIZE_OUTPUT_JAVA"))
+  if (lang==SrcLangExt_Java || lang==SrcLangExt_CSharp)
   {
     pageTitle = theTranslator->trPackage(displayName());
   }
-  else if (fortranOpt)
+  else if (lang==SrcLangExt_Fortran)
   {
     pageTitle = theTranslator->trModuleReference(displayName());
   }
@@ -425,12 +438,17 @@ void NamespaceDef::writeDocumentation(OutputList &ol)
   {
     pageTitle = theTranslator->trNamespaceReference(displayName());
   }
-  startFile(ol,getOutputFileBase(),name(),pageTitle,HLI_NamespaceVisible,TRUE);
-  if (getOuterScope()!=Doxygen::globalScope)
+  startFile(ol,getOutputFileBase(),name(),pageTitle,HLI_NamespaceVisible,!generateTreeView);
+
+  if (!generateTreeView)
   {
-    writeNavigationPath(ol);
+    if (getOuterScope()!=Doxygen::globalScope)
+    {
+      writeNavigationPath(ol);
+    }
+    ol.endQuickIndices();
   }
-  ol.endQuickIndices();
+
   startTitle(ol,getOutputFileBase(),this);
   ol.parseText(pageTitle);
   addGroupListToTitle(ol,this);
@@ -501,6 +519,9 @@ void NamespaceDef::writeDocumentation(OutputList &ol)
       case LayoutDocEntry::MemberDefStart: 
         startMemberDocumentation(ol);
         break; 
+      case LayoutDocEntry::NamespaceInlineClasses:
+        writeInlineClasses(ol);
+        break;
       case LayoutDocEntry::MemberDef: 
         {
           LayoutDocEntryMemberDef *lmd = (LayoutDocEntryMemberDef*)lde;
@@ -519,13 +540,16 @@ void NamespaceDef::writeDocumentation(OutputList &ol)
       case LayoutDocEntry::ClassCollaborationGraph:
       case LayoutDocEntry::ClassAllMembersLink:
       case LayoutDocEntry::ClassUsedFiles:
+      case LayoutDocEntry::ClassInlineClasses:
       case LayoutDocEntry::FileClasses:
       case LayoutDocEntry::FileNamespaces:
       case LayoutDocEntry::FileIncludes:
       case LayoutDocEntry::FileIncludeGraph:
       case LayoutDocEntry::FileIncludedByGraph: 
       case LayoutDocEntry::FileSourceLink:
+      case LayoutDocEntry::FileInlineClasses:
       case LayoutDocEntry::GroupClasses: 
+      case LayoutDocEntry::GroupInlineClasses: 
       case LayoutDocEntry::GroupNamespaces:
       case LayoutDocEntry::GroupDirs: 
       case LayoutDocEntry::GroupNestedGroups: 
@@ -543,7 +567,9 @@ void NamespaceDef::writeDocumentation(OutputList &ol)
 
   //---------------------------------------- end flexible part -------------------------------
 
-  endFile(ol);
+  ol.endContents();
+
+  endFileWithNavPath(this,ol);
 
   if (generateTagFile)
   {
@@ -570,7 +596,7 @@ void NamespaceDef::writeMemberPages(OutputList &ol)
   {
     if (ml->listType()&MemberList::documentationLists)
     {
-      ml->writeDocumentationPage(ol,name(),this);
+      ml->writeDocumentationPage(ol,displayName(),this);
     }
   }
   ol.popGeneratorState();
@@ -607,7 +633,7 @@ void NamespaceDef::writeQuickMemberLinks(OutputList &ol,MemberDef *currentMd) co
           if (createSubDirs) ol.writeString("../../");
           ol.writeString(md->getOutputFileBase()+Doxygen::htmlFileExtension+"#"+md->anchor());
           ol.writeString("\">");
-          ol.writeString(md->localName());
+          ol.writeString(convertToHtml(md->localName()));
           ol.writeString("</a>");
         }
         ol.writeString("</td></tr>\n");
@@ -689,12 +715,14 @@ Definition *NamespaceDef::findInnerCompound(const char *n)
 
 void NamespaceDef::addListReferences()
 {
-  bool fortranOpt = Config_getBool("OPTIMIZE_FOR_FORTRAN");
+  //bool fortranOpt = Config_getBool("OPTIMIZE_FOR_FORTRAN");
   {
     LockingPtr< QList<ListItemInfo> > xrefItems = xrefListItems();
     addRefItem(xrefItems.pointer(),
         qualifiedName(),
-        fortranOpt?theTranslator->trModule(TRUE,TRUE):theTranslator->trNamespace(TRUE,TRUE),
+        getLanguage()==SrcLangExt_Fortran ? 
+          theTranslator->trModule(TRUE,TRUE) : 
+          theTranslator->trNamespace(TRUE,TRUE),
         getOutputFileBase(),displayName(),
         0
         );
@@ -716,14 +744,28 @@ void NamespaceDef::addListReferences()
   }
 }
 
-QCString NamespaceDef::displayName() const
+QCString NamespaceDef::displayName(bool includeScope) const
+{
+  QCString result=includeScope ? name() : localName();
+  SrcLangExt lang = getLanguage();
+  QCString sep = getLanguageSpecificSeparator(lang);
+  if (sep!="::")
+  {
+    result = substitute(result,"::",sep);
+  }
+  //printf("NamespaceDef::displayName() %s->%s lang=%d\n",name().data(),result.data(),lang);
+  return result; 
+}
+
+QCString NamespaceDef::localName() const
 {
   QCString result=name();
-  if (Config_getBool("OPTIMIZE_OUTPUT_JAVA"))
+  int i=result.findRev("::");
+  if (i!=-1)
   {
-    result = substitute(result,"::",".");
+    result=result.mid(i+2);
   }
-  return result; 
+  return result;
 }
 
 void NamespaceDef::combineUsingRelations()
@@ -782,7 +824,12 @@ bool NamespaceSDict::declVisible() const
 
 void NamespaceSDict::writeDeclaration(OutputList &ol,const char *title,bool localName)
 {
+ 
+
   if (count()==0) return; // no namespaces in the list
+
+  if (Config_getBool("OPTIMIZE_OUTPUT_VHDL")) return;
+ 
 
   SDict<NamespaceDef>::Iterator ni(*this);
   NamespaceDef *nd;
@@ -795,22 +842,8 @@ void NamespaceSDict::writeDeclaration(OutputList &ol,const char *title,bool loca
 
   // write list of namespaces
   ol.startMemberHeader("namespaces");
-  bool javaOpt    = Config_getBool("OPTIMIZE_OUTPUT_JAVA");
-  bool fortranOpt = Config_getBool("OPTIMIZE_FOR_FORTRAN");
-#if 0
-  if (javaOpt)
-  {
-    ol.parseText(theTranslator->trPackages());
-  }
-  else if (fortranOpt)
-  {
-    ol.parseText(theTranslator->trModules());
-  }
-  else
-  {
-    ol.parseText(theTranslator->trNamespaces());
-  }
-#endif
+  //bool javaOpt    = Config_getBool("OPTIMIZE_OUTPUT_JAVA");
+  //bool fortranOpt = Config_getBool("OPTIMIZE_FOR_FORTRAN");
   ol.parseText(title);
   ol.endMemberHeader();
   ol.startMemberList();
@@ -818,12 +851,13 @@ void NamespaceSDict::writeDeclaration(OutputList &ol,const char *title,bool loca
   {
     if (nd->isLinkable())
     {
-      ol.startMemberItem(0);
-      if (javaOpt)
+      SrcLangExt lang = nd->getLanguage();
+      ol.startMemberItem(nd->getOutputFileBase(),0);
+      if (lang==SrcLangExt_Java || lang==SrcLangExt_CSharp)
       {
         ol.docify("package ");
       }
-      else if (fortranOpt)
+      else if (lang==SrcLangExt_Fortran)
       {
         ol.docify("module ");
       }
@@ -849,11 +883,9 @@ void NamespaceSDict::writeDeclaration(OutputList &ol,const char *title,bool loca
       ol.endMemberItem();
       if (!nd->briefDescription().isEmpty() && Config_getBool("BRIEF_MEMBER_DESC"))
       {
-        ol.startParagraph();
-        ol.startMemberDescription();
-        ol.parseDoc(nd->briefFile(),nd->briefLine(),nd,0,nd->briefDescription(),FALSE,FALSE);
+        ol.startMemberDescription(nd->getOutputFileBase());
+        ol.parseDoc(nd->briefFile(),nd->briefLine(),nd,0,nd->briefDescription(),FALSE,FALSE,0,TRUE);
         ol.endMemberDescription();
-        ol.endParagraph();
       }
     }
   }
@@ -934,7 +966,7 @@ void NamespaceDef::writeMemberDeclarations(OutputList &ol,MemberList::ListType l
 void NamespaceDef::writeMemberDocumentation(OutputList &ol,MemberList::ListType lt,const QCString &title)
 {
   MemberList * ml = getMemberList(lt);
-  if (ml) ml->writeDocumentation(ol,name(),this,title);
+  if (ml) ml->writeDocumentation(ol,displayName(),this,title);
 }
 
 
@@ -943,19 +975,17 @@ bool NamespaceDef::isLinkableInProject() const
   int i = name().findRev("::");
   if (i==-1) i=0; else i+=2;
   static bool extractAnonNs = Config_getBool("EXTRACT_ANON_NSPACES");
-  static bool showNamespaces = Config_getBool("SHOW_NAMESPACES");
   if (extractAnonNs &&                             // extract anonymous ns
-      name().mid(i,20)=="anonymous_namespace{" &&  // correct prefix
-      showNamespaces)                              // not disabled by config
+      name().mid(i,20)=="anonymous_namespace{"     // correct prefix
+     )                                             // not disabled by config
   {
     return TRUE;
   }
   return !name().isEmpty() && name().at(i)!='@' && // not anonymous
-    (hasDocumentation() || m_isCSharp) &&  // documented
+    (hasDocumentation() || getLanguage()==SrcLangExt_CSharp) &&  // documented
     !isReference() &&      // not an external reference
     !isHidden() &&         // not hidden
-    !isArtificial() &&     // or artificial
-    showNamespaces;        // not disabled by config
+    !isArtificial();       // or artificial
 }
 
 bool NamespaceDef::isLinkable() const

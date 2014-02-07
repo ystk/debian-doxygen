@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -23,7 +23,7 @@
 #include <qdict.h>
 #include <qstack.h>
 
-#include "entry.h"
+#include "types.h"
 #include "definition.h"
 #include "sortdict.h"
 
@@ -40,12 +40,7 @@ class QTextStream;
 class ArgumentList;
 class MemberDefImpl;
 
-struct SourceReference
-{
-  FileDef *fd;
-  QCString anchor;
-};
-
+/** A model of a class/file/namespace member symbol. */
 class MemberDef : public Definition
 {
   public:
@@ -128,6 +123,7 @@ class MemberDef : public Definition
     bool isEnumValue() const;
     bool isTypedef() const;
     bool isFunction() const;
+    bool isFunctionPtr() const;
     bool isDefine() const;
     bool isFriend() const;
     bool isDCOP() const;
@@ -156,6 +152,9 @@ class MemberDef : public Definition
     bool isCopy() const;
     bool isAssign() const;
     bool isRetain() const;
+    bool isWeak() const;
+    bool isStrong() const;
+    bool isUnretained() const;
     bool isNew() const;
     bool isSealed() const;
     bool isImplementation() const;
@@ -183,7 +182,8 @@ class MemberDef : public Definition
     bool isDocumentedFriendClass() const;
 
     MemberDef *reimplements() const;
-    LockingPtr<MemberList> reimplementedBy() const;
+    LockingPtr< MemberList > reimplementedBy() const;
+    bool isReimplementedBy(ClassDef *cd) const;
 
     //int inbodyLine() const;
     //QCString inbodyFile() const;
@@ -195,7 +195,7 @@ class MemberDef : public Definition
     MemberDef *getAnonymousEnumType() const;
     bool isDocsForDefinition() const;
     MemberDef *getEnumScope() const;
-    LockingPtr<MemberList> enumFieldList() const;
+    LockingPtr< MemberList > enumFieldList() const;
 
     bool hasExamples();
     LockingPtr<ExampleSDict> getExamples() const;
@@ -235,6 +235,8 @@ class MemberDef : public Definition
     MemberDef *getGroupAlias() const;
 
     ClassDef *category() const;
+
+    QCString displayName(bool=TRUE) const;
 
     //-----------------------------------------------------------------------------------
     // ----  setters -----
@@ -296,6 +298,8 @@ class MemberDef : public Definition
     void setDeclArgumentList(ArgumentList *al);
     void setDefinitionTemplateParameterLists(QList<ArgumentList> *lists);
     void setTypeConstraints(ArgumentList *al);
+    void setType(const char *t);
+    void setAccessorType(ClassDef *cd,const char *t);
 
     // namespace related members
     void setNamespace(NamespaceDef *nd);
@@ -330,7 +334,13 @@ class MemberDef : public Definition
     void copyArgumentNames(MemberDef *bmd);
 
     void setCategory(ClassDef *);
-    
+
+    void setDocumentation(const char *d,const char *docFile,int docLine,bool stripWhiteSpace=TRUE);
+    void setBriefDescription(const char *b,const char *briefFile,int briefLine);
+    void setInbodyDocumentation(const char *d,const char *inbodyFile,int inbodyLine);
+
+    void setHidden(bool b);
+
     //-----------------------------------------------------------------------------------
     // --- actions ----
     //-----------------------------------------------------------------------------------
@@ -338,10 +348,12 @@ class MemberDef : public Definition
     // output generation
     void writeDeclaration(OutputList &ol,
                    ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
-                   bool inGroup); 
+                   bool inGroup,ClassDef *inheritFrom=0,const char *inheritId=0); 
     void writeDocumentation(MemberList *ml,OutputList &ol,
                             const char *scopeName,Definition *container,
-                            bool inGroup,bool showEnumValues=FALSE);
+                            bool inGroup,bool showEnumValues=FALSE,bool
+                            showInline=FALSE);
+    void writeMemberDocSimple(OutputList &ol,Definition *container);
     void warnIfUndocumented();
     
     MemberDef *createTemplateInstanceMember(ArgumentList *formalArgs,
@@ -365,6 +377,16 @@ class MemberDef : public Definition
     void _computeLinkableInProject();
     void _computeIsConstructor();
     void _computeIsDestructor();
+    void _getLabels(QStrList &sl,Definition *container) const;
+    void _writeCallGraph(OutputList &ol);
+    void _writeCallerGraph(OutputList &ol);
+    void _writeReimplements(OutputList &ol);
+    void _writeReimplementedBy(OutputList &ol);
+    void _writeExamples(OutputList &ol);
+    void _writeTypeConstraints(OutputList &ol);
+    void _writeEnumValues(OutputList &ol,Definition *container,
+                          const QCString &cfname,const QCString &ciname,
+                          const QCString &cname);
 
     static int s_indentLevel;
     // disable copying of member defs

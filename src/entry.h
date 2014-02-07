@@ -2,7 +2,7 @@
  *
  * $Id: entry.h,v 1.36 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -20,9 +20,9 @@
 
 #include "qtbc.h"
 #include <qlist.h>
+#include "types.h"
 
 #include <qgstring.h>
-#include "util.h"
 
 struct SectionInfo;
 class QFile;
@@ -30,20 +30,10 @@ class EntryNav;
 class FileDef;
 class FileStorage;
 class StorageIntf;
+class ArgumentList;
+struct ListItemInfo;
 
-enum Protection { Public, Protected, Private, Package } ;
-enum Specifier { Normal, Virtual, Pure } ;
-enum MethodTypes { Method, Signal, Slot, DCOP, Property, Event };
-enum RelatesType { Simple, Duplicate, MemberOf };
-enum Relationship { Member, Related, Foreign };
-
-struct ListItemInfo
-{
-  QCString type;
-  int itemId;
-};
-
-/*! \brief This class stores information about an inheritance relation
+/** This class stores information about an inheritance relation
  */ 
 struct BaseInfo 
 {
@@ -55,85 +45,8 @@ struct BaseInfo
   Specifier  virt; //!< virtualness
 };
 
-/*! \brief This class contains the information about the argument of a
- *         function or template
- *
- */
-struct Argument
-{
-  /*! Construct a new argument. */
-  Argument() {}
-  /*! Copy an argument (does a deep copy of all strings). */
-  Argument(const Argument &a) 
-  { 
-    attrib=a.attrib.copy();
-    type=a.type.copy(); 
-    name=a.name.copy(); 
-    defval=a.defval.copy(); 
-    docs=a.docs.copy();
-    array=a.array.copy();
-  }
-  /*! Assignment of an argument (does a deep copy of all strings). */
-  Argument &operator=(const Argument &a)
-  {
-    if (this!=&a)
-    {
-      attrib=a.attrib.copy();
-      type=a.type.copy(); 
-      name=a.name.copy(); 
-      defval=a.defval.copy(); 
-      docs=a.docs.copy();
-      array=a.array.copy();
-    }
-    return *this;
-  }
-  /*! return TRUE if this argument is documentation and the argument has a
-   *  non empty name.
-   */
-  bool hasDocumentation() const 
-  { 
-    return !name.isEmpty() && !docs.isEmpty(); 
-  }
-  
-  QCString attrib;   /*!< Argument's attribute (IDL only) */
-  QCString type;     /*!< Argument's type */
-  QCString canType;  /*!< Cached value of canonical type (after type resolution). Empty initially. */
-  QCString name;     /*!< Argument's name (may be empty) */
-  QCString array;    /*!< Argument's array specifier (may be empty) */
-  QCString defval;   /*!< Argument's default value (may be empty) */
-  QCString docs;     /*!< Argument's documentation (may be empty) */
-};
-
-/*! \brief This class represents an function or template argument list. 
- *
- *  This class also stores some information about member that is typically
- *  put after the argument list, such as wether the member is const, 
- *  volatile or pure virtual.
- */
-class ArgumentList : public QList<Argument> 
-{
-  public:
-    /*! Creates an empty argument list */
-    ArgumentList() : QList<Argument>(), 
-                     constSpecifier(FALSE),
-                     volatileSpecifier(FALSE),
-                     pureSpecifier(FALSE)
-                     { setAutoDelete(TRUE); }
-    /*! Destroys the argument list */
-   ~ArgumentList() {}
-    bool hasDocumentation() const;
-    /*! Does the member modify the state of the class? default: FALSE. */
-    bool constSpecifier;
-    /*! Is the member volatile? default: FALSE. */
-    bool volatileSpecifier;
-    /*! Is this a pure virtual member? default: FALSE */
-    bool pureSpecifier;
-};
-
-typedef QListIterator<Argument> ArgumentListIterator;
-
-/*! \brief This struct is used to capture the tag file information 
- *         for an Entry. 
+/** This struct is used to capture the tag file information 
+ *  for an Entry. 
  */
 struct TagInfo 
 {
@@ -142,45 +55,8 @@ struct TagInfo
   QCString anchor;
 };
 
-struct Grouping 
-{
-  enum GroupPri_t 
-  {
-    GROUPING_LOWEST,
-    GROUPING_AUTO_WEAK = 
-      GROUPING_LOWEST,     //!< membership in group was defined via \@weakgroup 
-    GROUPING_AUTO_ADD,     //!< membership in group was defined via \@add[to]group 
-    GROUPING_AUTO_DEF,     //!< membership in group was defined via \@defgroup
-    GROUPING_AUTO_HIGHEST = GROUPING_AUTO_DEF,
-    GROUPING_INGROUP,      //!< membership in group was defined by \@ingroup
-    GROUPING_HIGHEST = GROUPING_INGROUP
-  };
-
-  static const char *getGroupPriName( GroupPri_t priority )
-  {
-    switch( priority )
-    {
-      case GROUPING_AUTO_WEAK:
-        return "@weakgroup";
-      case GROUPING_AUTO_ADD:
-        return "@addtogroup";
-      case GROUPING_AUTO_DEF:
-        return "@defgroup";
-      case GROUPING_INGROUP:
-        return "@ingroup";
-    }	    
-    return "???";
-  }
-
-  Grouping( const char *gn, GroupPri_t p ) : groupname(gn), pri(p) {}
-  Grouping( const Grouping &g ) : groupname(g.groupname), pri(g.pri) {}
-  QCString groupname;   //!< name of the group
-  GroupPri_t pri;       //!< priority of this definition
-
-};
-
-/*! \brief Represents an unstructured piece of information, about an
- *         entity found in the sources. 
+/** Represents an unstructured piece of information, about an
+ *  entity found in the sources. 
  *
  *  parseMain() in scanner.l will generate a tree of these
  *  entries.
@@ -239,28 +115,34 @@ class Entry
     };
     enum MemberSpecifier
     {
-      Inline    = 0x000001,
-      Explicit  = 0x000002,
-      Mutable   = 0x000004,
-      Settable  = 0x000008,
-      Gettable  = 0x000010,
-      Readable  = 0x000020,
-      Writable  = 0x000040,
-      Final     = 0x000080,
-      Abstract  = 0x000100,
-      Addable   = 0x000200,
-      Removable = 0x000400,
-      Raisable  = 0x000800,
-      Override  = 0x001000,
-      New       = 0x002000,
-      Sealed    = 0x004000,
-      Initonly  = 0x008000,
-      Optional  = 0x010000,
-      Required  = 0x020000,
-      NonAtomic = 0x040000,
-      Copy      = 0x080000,
-      Retain    = 0x100000,
-      Assign    = 0x200000
+      Inline      = 0x00000001,
+      Explicit    = 0x00000002,
+      Mutable     = 0x00000004,
+      Settable    = 0x00000008,
+      Gettable    = 0x00000010,
+      Readable    = 0x00000020,
+      Writable    = 0x00000040,
+      Final       = 0x00000080,
+      Abstract    = 0x00000100,
+      Addable     = 0x00000200,
+      Removable   = 0x00000400,
+      Raisable    = 0x00000800,
+      Override    = 0x00001000,
+      New         = 0x00002000,
+      Sealed      = 0x00004000,
+      Initonly    = 0x00008000,
+      Optional    = 0x00010000,
+      Required    = 0x00020000,
+      NonAtomic   = 0x00040000,
+      Copy        = 0x00080000,
+      Retain      = 0x00100000,
+      Assign      = 0x00200000,
+      Strong      = 0x00400000,
+      Weak        = 0x00800000,
+      Unretained  = 0x01000000,
+      Composition = 0x02000000,
+      Aggregation = 0x04000000,
+      Association = 0x08000000
     };
     enum ClassSpecifier
     {
@@ -275,7 +157,8 @@ class Entry
       Protocol       = 0x0100,
       Category       = 0x0200,
       SealedClass    = 0x0400,
-      AbstractClass  = 0x0800
+      AbstractClass  = 0x0800,
+      Enum           = 0x1000  // for Java-style enums
     };
     enum GroupDocType
     {
@@ -286,23 +169,43 @@ class Entry
 
     Entry();
     Entry(const Entry &);
-    ~Entry();
+   ~Entry();
+
+    /*! Returns the static size of the Entry (so excluding any dynamic memory) */
     int getSize();
+
     void addSpecialListItem(const char *listName,int index);
     void createNavigationIndex(EntryNav *rootNav,FileStorage *storage,FileDef *fd);
 
     // while parsing a file these function can be used to navigate/build the tree
     void setParent(Entry *parent) { m_parent = parent; }
+
+    /*! Returns the parent for this Entry or 0 if this entry has no parent. */
     Entry *parent() const { return m_parent; }
+
+    /*! Returns the list of children for this Entry 
+     *  @see addSubEntry() and removeSubEntry()
+     */
     const QList<Entry> *children() const { return m_sublist; }
 
-    /*! Adds entry \e as a child to this entry */
-    void	addSubEntry (Entry* e) ;
+    /*! Adds entry \a e as a child to this entry */
+    void addSubEntry (Entry* e) ;
+
+    /*! Removes entry \a e from the list of children. 
+     *  Returns a pointer to the entry or 0 if the entry was not a child. 
+     *  Note the entry will not be deleted.
+     */ 
+    Entry *removeSubEntry(Entry *e);
+
     /*! Restore the state of this Entry to the default value it has
      *  at construction time. 
      */
     void reset();
+
+    /*! Serialize this entry to a persistent storage stream. */
     void marshall(StorageIntf *);
+
+    /*! Reinitialize this entry from a persistent storage stream. */
     void unmarshall(StorageIntf *);
 
   public:
@@ -363,6 +266,7 @@ class Entry
     bool        artificial;   //!< Artificially introduced item
     GroupDocType groupDocType;
 
+
     static int  num;          //!< counts the total number of entries
 
     /// return the command name used to define GROUPDOC_SEC
@@ -398,6 +302,11 @@ class Entry
     Entry &operator=(const Entry &); 
 };
 
+/** Wrapper for a node in the Entry tree.
+ *
+ *  Allows navigating through the Entry tree and load and storing Entry
+ *  objects persistently to disk.
+ */
 class EntryNav
 {
   public:
@@ -413,6 +322,7 @@ class EntryNav
 
     Entry *entry() const { return m_info; }
     int section() const { return m_section; }
+    SrcLangExt lang() const { return m_lang; }
     const QCString &type() const { return m_type; }
     const QCString &name() const { return m_name; }
     TagInfo *tagInfo() const { return m_tagInfo; }
@@ -432,6 +342,7 @@ class EntryNav
     QCString	 m_name;        //!< member name
     TagInfo     *m_tagInfo;      //!< tag file info
     FileDef     *m_fileDef;
+    SrcLangExt   m_lang;         //!< programming language in which this entry was found
 
     Entry       *m_info;
     int64        m_offset;

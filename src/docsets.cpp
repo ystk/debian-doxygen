@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -13,12 +13,11 @@
  *
  */
 
+#include <qfile.h>
 #include "docsets.h"
 #include "config.h"
 #include "message.h"
 #include "doxygen.h"
-#include <qfile.h>
-
 
 DocSets::DocSets() : m_nodes(17), m_scopes(17)
 {
@@ -48,6 +47,8 @@ void DocSets::initialize()
   if (publisherId.isEmpty()) publisherId="PublisherId";
   QCString publisherName = Config_getString("DOCSET_PUBLISHER_NAME");
   if (publisherName.isEmpty()) publisherName="PublisherName";
+  QCString projectNumber = Config_getString("PROJECT_NUMBER");
+  if (projectNumber.isEmpty()) projectNumber="ProjectNumber";
 
   // -- write Makefile
   {
@@ -116,7 +117,9 @@ void DocSets::initialize()
         "     <key>CFBundleName</key>\n" 
         "     <string>" << projectName << "</string>\n" 
         "     <key>CFBundleIdentifier</key>\n"
-        "     <string>" << bundleId << ".docset</string>\n" 
+        "     <string>" << bundleId << "</string>\n" 
+        "     <key>CFBundleVersion</key>\n"
+        "     <string>" << projectNumber << "</string>\n"
         "     <key>DocSetFeedName</key>\n" 
         "     <string>" << feedName << "</string>\n"
         "     <key>DocSetPublisherIdentifier</key>\n"
@@ -135,7 +138,8 @@ void DocSets::initialize()
     err("Could not open file %s for writing\n",notes.data());
     exit(1);
   }
-  QCString indexName=Config_getBool("GENERATE_TREEVIEW")?"main":"index";
+  //QCString indexName=Config_getBool("GENERATE_TREEVIEW")?"main":"index";
+  QCString indexName="index";
   m_nts.setDevice(m_nf);
   m_nts << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
   m_nts << "<DocSetNodes version=\"1.0\">" << endl;
@@ -162,7 +166,10 @@ void DocSets::initialize()
 
 void DocSets::finalize()
 {
-  m_nts << indent() << " </Node>" << endl;
+  if (!m_firstNode.at(m_dc-1))
+  {
+    m_nts << indent() << " </Node>" << endl;
+  }
   m_dc--;
   m_nts << "      </Subnodes>" << endl;
   m_nts << "    </Node>" << endl;
@@ -210,7 +217,10 @@ void DocSets::addContentsItem(bool isDir,
                               const char *name, 
                               const char *ref, 
                               const char *file,
-                              const char *anchor)
+                              const char *anchor,
+                              bool /* separateIndex */,
+                              bool /* addToNavIndex */,
+                              Definition * /*def*/)
 {
   (void)isDir;
   if (file && ref==0)
@@ -222,7 +232,9 @@ void DocSets::addContentsItem(bool isDir,
     m_firstNode.at(m_dc-1)=FALSE;
     m_nts << indent() << " <Node>" << endl;
     m_nts << indent() << "  <Name>" << convertToXML(name) << "</Name>" << endl;
-    m_nts << indent() << "  <Path>" << file << Doxygen::htmlFileExtension << "</Path>" << endl;
+    m_nts << indent() << "  <Path>";
+    m_nts << file << Doxygen::htmlFileExtension;
+    m_nts << "</Path>" << endl;
     if (anchor)
     {
       m_nts << indent() << "  <Anchor>" << anchor << "</Anchor>" << endl;
@@ -230,12 +242,9 @@ void DocSets::addContentsItem(bool isDir,
   }
 }
 
-void DocSets::addIndexItem(Definition *context,MemberDef *md,
-                           const char *anchor,const char *word)
+void DocSets::addIndexItem(Definition *context,MemberDef *md,const char *)
 {
-  (void)anchor;
-  (void)word;
-  if (md==0 || context==0) return; // TODO: also index non members...
+  if (md==0 && context==0) return;
 
   FileDef *fd      = 0;
   ClassDef *cd     = 0;
@@ -256,7 +265,14 @@ void DocSets::addIndexItem(Definition *context,MemberDef *md,
   // determine language
   QCString lang;
   SrcLangExt langExt = SrcLangExt_Cpp;
-  if (fd) langExt = getLanguageFromFileName(fd->name());
+  if (md) 
+  {
+    langExt = md->getLanguage();
+  }
+  else if (context) 
+  {
+    langExt = context->getLanguage();
+  }
   switch (langExt)
   {
     case SrcLangExt_Cpp:
@@ -279,10 +295,12 @@ void DocSets::addIndexItem(Definition *context,MemberDef *md,
     case SrcLangExt_Java:    lang="java"; break;       // Java
     case SrcLangExt_JS:      lang="javascript"; break; // Javascript
     case SrcLangExt_Python:  lang="python"; break;     // Python
-    case SrcLangExt_F90:     lang="fortran"; break;    // Fortran
+    case SrcLangExt_Fortran: lang="fortran"; break;    // Fortran
     case SrcLangExt_VHDL:    lang="vhdl"; break;       // VHDL
     case SrcLangExt_XML:     lang="xml"; break;        // DBUS XML
-    case SrcLangExt_Unknown: lang="unknown"; break;   // should not happen!
+    case SrcLangExt_Tcl:     lang="tcl"; break;        // Tcl
+    case SrcLangExt_Markdown:lang="markdown"; break;   // Markdown
+    case SrcLangExt_Unknown: lang="unknown"; break;    // should not happen!
   }
 
   if (md)
@@ -346,6 +364,16 @@ void DocSets::addIndexItem(Definition *context,MemberDef *md,
       case MemberDef::Event:
         type="event"; break;
     }
+    cd = md->getClassDef();
+    nd = md->getNamespaceDef();
+    if (cd) 
+    {
+      scope = cd->qualifiedName();
+    }
+    else if (nd)
+    {
+      scope = nd->name();
+    }
     writeToken(m_tts,md,type,lang,scope,md->anchor());
   }
   else if (context && context->isLinkable())
@@ -407,7 +435,7 @@ void DocSets::addIndexItem(Definition *context,MemberDef *md,
     }
     if (m_scopes.find(context->getOutputFileBase())==0)
     {
-      writeToken(m_tts,context,type,lang,0,0,decl);
+      writeToken(m_tts,context,type,lang,scope,0,decl);
       m_scopes.append(context->getOutputFileBase(),(void*)0x8);
     }
   }
@@ -423,7 +451,7 @@ void DocSets::writeToken(FTextStream &t,
 {
   t << "  <Token>" << endl;
   t << "    <TokenIdentifier>" << endl;
-  QString name = d->name();
+  QCString name = d->name();
   if (name.right(2)=="-p")  name=name.left(name.length()-2);
   t << "      <Name>" << convertToXML(name) << "</Name>" << endl;
   if (!lang.isEmpty())

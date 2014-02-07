@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -65,6 +65,7 @@ class PrintDocVisitor : public DocVisitor
 	case DocSymbol::Dollar:  printf("$"); break;
 	case DocSymbol::Hash:    printf("#"); break;
 	case DocSymbol::Percent: printf("%%"); break;
+	case DocSymbol::Pipe:    printf("|"); break;
 	case DocSymbol::Copy:    printf("&copy;"); break;
 	case DocSymbol::Apos:    printf("'"); break;
 	case DocSymbol::Quot:    printf("\""); break;
@@ -85,6 +86,73 @@ class PrintDocVisitor : public DocVisitor
 	case DocSymbol::Nbsp:    printf("&nbsp;"); break;
 	case DocSymbol::Aelig:   printf("&aelig;"); break;
 	case DocSymbol::AElig:   printf("&AElig;"); break;
+    case DocSymbol::GrkGamma:      printf("&Gamma;"); break;
+    case DocSymbol::GrkDelta:      printf("&Delta;"); break;
+    case DocSymbol::GrkTheta:      printf("&Theta;"); break;
+    case DocSymbol::GrkLambda:     printf("&Lambda;"); break;
+    case DocSymbol::GrkXi:         printf("&Xi;"); break;
+    case DocSymbol::GrkPi:         printf("&Pi;"); break;
+    case DocSymbol::GrkSigma:      printf("&Sigma;"); break;
+    case DocSymbol::GrkUpsilon:    printf("&Upsilon;"); break;
+    case DocSymbol::GrkPhi:        printf("&Phi;"); break;
+    case DocSymbol::GrkPsi:        printf("&Psi;"); break;
+    case DocSymbol::GrkOmega:      printf("&Omega;"); break;
+    case DocSymbol::Grkalpha:      printf("&alpha;"); break;
+    case DocSymbol::Grkbeta:       printf("&beta;"); break;
+    case DocSymbol::Grkgamma:      printf("&gamma;"); break;
+    case DocSymbol::Grkdelta:      printf("&delta;"); break;
+    case DocSymbol::Grkepsilon:    printf("&epsilon;"); break;
+    case DocSymbol::Grkzeta:       printf("&zeta;"); break;
+    case DocSymbol::Grketa:        printf("&eta;"); break;
+    case DocSymbol::Grktheta:      printf("&theta;"); break;
+    case DocSymbol::Grkiota:       printf("&iota;"); break;
+    case DocSymbol::Grkkappa:      printf("&kappa;"); break;
+    case DocSymbol::Grklambda:     printf("&lambda;"); break;
+    case DocSymbol::Grkmu:         printf("&mu;"); break;
+    case DocSymbol::Grknu:         printf("&nu;"); break;
+    case DocSymbol::Grkxi:         printf("&xi;"); break;
+    case DocSymbol::Grkpi:         printf("&pi;"); break;
+    case DocSymbol::Grkrho:        printf("&rho;"); break;
+    case DocSymbol::Grksigma:      printf("&sigma;"); break;
+    case DocSymbol::Grktau:        printf("&tau;"); break;
+    case DocSymbol::Grkupsilon:    printf("&upsilon;"); break;
+    case DocSymbol::Grkphi:        printf("&phi;"); break;
+    case DocSymbol::Grkchi:        printf("&chi;"); break;
+    case DocSymbol::Grkpsi:        printf("&psi;"); break;
+    case DocSymbol::Grkomega:      printf("&omega;"); break;
+    case DocSymbol::Grkvarsigma:   printf("&sigmaf;"); break;
+    case DocSymbol::Section:       printf("&sect;"); break;
+    case DocSymbol::Degree:        printf("&deg;"); break;
+    case DocSymbol::Prime:         printf("&prime;"); break;
+    case DocSymbol::DoublePrime:   printf("&Prime;"); break;
+    case DocSymbol::Infinity:      printf("&infin;"); break;
+    case DocSymbol::EmptySet:      printf("&empty;"); break;
+    case DocSymbol::PlusMinus:     printf("&plusmn;"); break;
+    case DocSymbol::Times:         printf("&times;"); break;
+    case DocSymbol::Minus:         printf("&minus;"); break;
+    case DocSymbol::CenterDot:     printf("&sdot;"); break;
+    case DocSymbol::Partial:       printf("&part;"); break;
+    case DocSymbol::Nabla:         printf("&nabla;"); break;
+    case DocSymbol::SquareRoot:    printf("&radic;"); break;
+    case DocSymbol::Perpendicular: printf("&perp;"); break;
+    case DocSymbol::Sum:           printf("&sum;"); break;
+    case DocSymbol::Integral:      printf("&int;"); break;
+    case DocSymbol::Product:       printf("&prod;"); break;
+    case DocSymbol::Similar:       printf("&sim;"); break;
+    case DocSymbol::Approx:        printf("&asymp;"); break;
+    case DocSymbol::NotEqual:      printf("&ne;"); break;
+    case DocSymbol::Equivalent:    printf("&equiv;"); break;
+    case DocSymbol::Proportional:  printf("&prop;"); break;
+    case DocSymbol::LessEqual:     printf("&le;"); break;
+    case DocSymbol::GreaterEqual:  printf("&ge;"); break;
+    case DocSymbol::LeftArrow:     printf("&larr;"); break;
+    case DocSymbol::RightArrow:    printf("&rarr;"); break;
+    case DocSymbol::SetIn:         printf("&isin;"); break;
+    case DocSymbol::SetNotIn:      printf("&notin;"); break;
+    case DocSymbol::LeftCeil:      printf("&lceil;"); break;
+    case DocSymbol::RightCeil:     printf("&rceil;"); break;
+    case DocSymbol::LeftFloor:     printf("&lfloor;"); break;
+    case DocSymbol::RightFloor:    printf("&rfloor;"); break;
 	default:
 	  printf("Error: unknown symbol found\n");
       }
@@ -149,6 +217,7 @@ class PrintDocVisitor : public DocVisitor
         case DocVerbatim::Code: printf("<code>"); break;
         case DocVerbatim::Verbatim: printf("<verbatim>"); break;
         case DocVerbatim::HtmlOnly: printf("<htmlonly>"); break;
+        case DocVerbatim::RtfOnly: printf("<rtfonly>"); break;
         case DocVerbatim::ManOnly: printf("<manonly>"); break;
         case DocVerbatim::LatexOnly: printf("<latexonly>"); break;
         case DocVerbatim::XmlOnly: printf("<xmlonly>"); break;
@@ -161,6 +230,7 @@ class PrintDocVisitor : public DocVisitor
         case DocVerbatim::Code: printf("</code>"); break;
         case DocVerbatim::Verbatim: printf("</verbatim>"); break;
         case DocVerbatim::HtmlOnly: printf("</htmlonly>"); break;
+        case DocVerbatim::RtfOnly: printf("</rtfonly>"); break;
         case DocVerbatim::ManOnly: printf("</manonly>"); break;
         case DocVerbatim::LatexOnly: printf("</latexonly>"); break;
         case DocVerbatim::XmlOnly: printf("</xmlonly>"); break;
@@ -184,6 +254,7 @@ class PrintDocVisitor : public DocVisitor
         case DocInclude::DontInclude: printf("dontinclude"); break;
         case DocInclude::HtmlInclude: printf("htmlinclude"); break;
         case DocInclude::VerbInclude: printf("verbinclude"); break;
+        case DocInclude::Snippet: printf("snippet"); break;
       }
       printf("\"/>");
     }
@@ -214,6 +285,15 @@ class PrintDocVisitor : public DocVisitor
     {
       indent_leaf();
       printf("<simplesectsep/>");
+    }
+    void visit(DocCite *cite)
+    {
+      indent_leaf();
+      printf("<cite ref=\"%s\" file=\"%s\" "
+             "anchor=\"%s\" text=\"%s\""
+             "/>\n",
+             cite->ref().data(),cite->file().data(),cite->anchor().data(),
+             cite->text().data());
     }
 
     //--------------------------------------
@@ -289,6 +369,7 @@ class PrintDocVisitor : public DocVisitor
 	case DocSimpleSect::Warning: printf("warning"); break;
 	case DocSimpleSect::Pre: printf("pre"); break;
 	case DocSimpleSect::Post: printf("post"); break;
+	case DocSimpleSect::Copyright: printf("copyright"); break;
 	case DocSimpleSect::Invar: printf("invar"); break;
 	case DocSimpleSect::Remark: printf("remark"); break;
 	case DocSimpleSect::Attention: printf("attention"); break;
@@ -409,7 +490,7 @@ class PrintDocVisitor : public DocVisitor
     {
       indent_pre();
       printf("<table rows=\"%d\" cols=\"%d\">\n",
-          t->numRows(),t->numCols());
+          t->numRows(),t->numColumns());
     }
     void visitPost(DocHtmlTable *) 
     {
@@ -502,6 +583,16 @@ class PrintDocVisitor : public DocVisitor
     {
       indent_post();
       printf("</dotfile>\n");
+    }
+    void visitPre(DocMscFile *df)
+    {
+      indent_pre();
+      printf("<mscfile src=\"%s\">\n",df->name().data());
+    }
+    void visitPost(DocMscFile *) 
+    {
+      indent_post();
+      printf("</mscfile>\n");
     }
     void visitPre(DocLink *lnk)
     {
@@ -646,6 +737,16 @@ class PrintDocVisitor : public DocVisitor
     {
       indent_post();
       printf("</text>\n");
+    }
+    void visitPre(DocHtmlBlockQuote *)
+    {
+      indent_pre();
+      printf("<blockquote>\n");
+    }
+    void visitPost(DocHtmlBlockQuote *)
+    {
+      indent_post();
+      printf("</blockquote>\n");
     }
 
   private:

@@ -1,5 +1,5 @@
 #
-# This file was generated from xmlparse.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from xmlparse.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 TEMPLATE     =	app.t
@@ -22,3 +22,4 @@ DEPENDPATH                 += ../include
 unix:TARGETDEPS             = ../lib/libdoxmlparser.a
 win32:TARGETDEPS            = ..\lib\doxmlparser.lib
 
+TMAKE_MOC = /usr/bin/moc

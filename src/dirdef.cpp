@@ -1,4 +1,4 @@
-#include <md5.h>
+#include "md5.h"
 
 #include "dirdef.h"
 #include "filename.h"
@@ -22,6 +22,7 @@ DirDef::DirDef(const char *path) : Definition(path,1,path)
   m_dispName = stripFromPath(path);
   // get short name (last part of path)
   m_shortName = path;
+  m_diskName = path;
   if (m_shortName.at(m_shortName.length()-1)=='/')
   { // strip trailing /
     m_shortName = m_shortName.left(m_shortName.length()-1);
@@ -49,7 +50,7 @@ DirDef::~DirDef()
 
 bool DirDef::isLinkableInProject() const 
 { 
-  return !isReference() && Config_getBool("SHOW_DIRECTORIES"); 
+  return !isReference(); 
 }
 
 bool DirDef::isLinkable() const 
@@ -105,8 +106,9 @@ static QCString encodeDirName(const QCString &anchor)
 
 QCString DirDef::getOutputFileBase() const
 {
-  return "dir_"+encodeDirName(name());
-  //return QCString().sprintf("dir_%06d",m_dirCount);
+  //printf("DirDef::getOutputFileBase() %s->dir_%s\n",
+  //    m_diskName.data(),encodeDirName(m_diskName).data());
+  return "dir_"+encodeDirName(m_diskName);
 }
 
 void DirDef::writeDetailedDescription(OutputList &ol,const QCString &title)
@@ -114,10 +116,13 @@ void DirDef::writeDetailedDescription(OutputList &ol,const QCString &title)
   if ((!briefDescription().isEmpty() && Config_getBool("REPEAT_BRIEF")) || 
       !documentation().isEmpty())
   {
-    ol.writeRuler();
     ol.pushGeneratorState();
-    ol.disableAllBut(OutputGenerator::Html);
-      ol.writeAnchor(0,"_details");
+      ol.disable(OutputGenerator::Html);
+      ol.writeRuler();
+    ol.popGeneratorState();
+    ol.pushGeneratorState();
+      ol.disableAllBut(OutputGenerator::Html);
+      ol.writeAnchor(0,"details");
     ol.popGeneratorState();
     ol.startGroupHeader();
     ol.parseText(title);
@@ -152,7 +157,7 @@ void DirDef::writeDetailedDescription(OutputList &ol,const QCString &title)
 
 void DirDef::writeBriefDescription(OutputList &ol)
 {
-  if (!briefDescription().isEmpty()) 
+  if (!briefDescription().isEmpty() && Config_getBool("BRIEF_MEMBER_DESC"))
   {
     ol.startParagraph();
     ol.parseDoc(briefFile(),briefLine(),this,0,briefDescription(),TRUE,FALSE);
@@ -166,7 +171,7 @@ void DirDef::writeBriefDescription(OutputList &ol)
        )
     {
       ol.disableAllBut(OutputGenerator::Html);
-      ol.startTextLink(0,"_details");
+      ol.startTextLink(0,"details");
       ol.parseText(theTranslator->trMore());
       ol.endTextLink();
     }
@@ -184,19 +189,18 @@ void DirDef::writeBriefDescription(OutputList &ol)
 void DirDef::writeDirectoryGraph(OutputList &ol)
 {
   // write graph dependency graph
-  if (/*Config_getBool("DIRECTORY_GRAPH") &&*/ Config_getBool("HAVE_DOT"))
+  if (Config_getBool("DIRECTORY_GRAPH") && Config_getBool("HAVE_DOT"))
   {
     DotDirDeps dirDep(this);
     if (!dirDep.isTrivial())
     {
       msg("Generating dependency graph for directory %s\n",displayName().data());
       ol.disable(OutputGenerator::Man);
-      ol.startParagraph();
+      //ol.startParagraph();
       ol.startDirDepGraph();
-      //TODO: ol.parseText(theTranslator->trDirDepGraph());
-      ol.parseText((QCString)"Directory dependency graph for "+displayName()+":");
+      ol.parseText(theTranslator->trDirDepGraph(displayName()));
       ol.endDirDepGraph(dirDep);
-      ol.endParagraph();
+      //ol.endParagraph();
       ol.enableAll();
     }
   }
@@ -214,7 +218,7 @@ void DirDef::writeSubDirList(OutputList &ol)
     DirDef *dd=m_subdirs.first();
     while (dd)
     {
-      ol.startMemberItem(0);
+      ol.startMemberItem(dd->getOutputFileBase(),0);
       ol.parseText(theTranslator->trDir(FALSE,TRUE)+" ");
       ol.insertMemberAlign();
       ol.writeObjectLink(dd->getReference(),dd->getOutputFileBase(),0,dd->shortName());
@@ -225,17 +229,15 @@ void DirDef::writeSubDirList(OutputList &ol)
       }
       if (!dd->briefDescription().isEmpty() && Config_getBool("BRIEF_MEMBER_DESC"))
       {
-        ol.startParagraph();
-        ol.startMemberDescription();
+        ol.startMemberDescription(dd->getOutputFileBase());
         ol.parseDoc(briefFile(),briefLine(),dd,0,dd->briefDescription(),
             FALSE, // indexWords
             FALSE, // isExample
             0,     // exampleName
-            FALSE, // single line
+            TRUE,  // single line
             TRUE   // link from index
            );
         ol.endMemberDescription();
-        ol.endParagraph();
       }
       dd=m_subdirs.next();
     }
@@ -256,7 +258,7 @@ void DirDef::writeFileList(OutputList &ol)
     FileDef *fd=m_fileList->first();
     while (fd)
     {
-      ol.startMemberItem(0);
+      ol.startMemberItem(fd->getOutputFileBase(),0);
       ol.docify(theTranslator->trFile(FALSE,TRUE)+" ");
       ol.insertMemberAlign();
       if (fd->isLinkable())
@@ -288,17 +290,15 @@ void DirDef::writeFileList(OutputList &ol)
       ol.endMemberItem();
       if (!fd->briefDescription().isEmpty() && Config_getBool("BRIEF_MEMBER_DESC"))
       {
-        ol.startParagraph();
-        ol.startMemberDescription();
+        ol.startMemberDescription(fd->getOutputFileBase());
         ol.parseDoc(briefFile(),briefLine(),fd,0,fd->briefDescription(),
             FALSE, // indexWords
             FALSE, // isExample
             0,     // exampleName
-            FALSE, // single line
+            TRUE,  // single line
             TRUE   // link from index
            );
         ol.endMemberDescription();
-        ol.endParagraph();
       }
       fd=m_fileList->next();
     }
@@ -318,16 +318,19 @@ void DirDef::endMemberDeclarations(OutputList &ol)
 
 void DirDef::writeDocumentation(OutputList &ol)
 {
+  static bool generateTreeView = Config_getBool("GENERATE_TREEVIEW");
   ol.pushGeneratorState();
   
   QCString shortTitle=theTranslator->trDirReference(m_shortName);
   QCString title=theTranslator->trDirReference(m_dispName);
-  startFile(ol,getOutputFileBase(),name(),title,HLI_None,TRUE);
+  startFile(ol,getOutputFileBase(),name(),title,HLI_None,!generateTreeView);
 
-  // write navigation path
-  writeNavigationPath(ol);
-
-  ol.endQuickIndices();
+  if (!generateTreeView)
+  {
+    // write navigation path
+    writeNavigationPath(ol);
+    ol.endQuickIndices();
+  }
 
   startTitle(ol,getOutputFileBase());
   ol.pushGeneratorState();
@@ -382,6 +385,7 @@ void DirDef::writeDocumentation(OutputList &ol)
         }
         break;
       case LayoutDocEntry::ClassIncludes:
+      case LayoutDocEntry::ClassInlineClasses:
       case LayoutDocEntry::ClassInheritanceGraph:
       case LayoutDocEntry::ClassNestedClasses:
       case LayoutDocEntry::ClassCollaborationGraph:
@@ -389,13 +393,16 @@ void DirDef::writeDocumentation(OutputList &ol)
       case LayoutDocEntry::ClassUsedFiles:
       case LayoutDocEntry::NamespaceNestedNamespaces:
       case LayoutDocEntry::NamespaceClasses:
+      case LayoutDocEntry::NamespaceInlineClasses:
       case LayoutDocEntry::FileClasses:
       case LayoutDocEntry::FileNamespaces:
       case LayoutDocEntry::FileIncludes:
       case LayoutDocEntry::FileIncludeGraph:
       case LayoutDocEntry::FileIncludedByGraph: 
       case LayoutDocEntry::FileSourceLink:
+      case LayoutDocEntry::FileInlineClasses:
       case LayoutDocEntry::GroupClasses: 
+      case LayoutDocEntry::GroupInlineClasses: 
       case LayoutDocEntry::GroupNamespaces:
       case LayoutDocEntry::GroupDirs: 
       case LayoutDocEntry::GroupNestedGroups: 
@@ -422,35 +429,12 @@ void DirDef::writeDocumentation(OutputList &ol)
     Doxygen::tagFile << "  </compound>" << endl;
   }
 
-  endFile(ol); 
-  ol.popGeneratorState();
+  ol.endContents();
 
-
-}
-
-#if 0
-void DirDef::writePathFragment(OutputList &ol) const
-{
-  if (m_parent)
-  {
-    m_parent->writePathFragment(ol);
-    ol.writeString("&nbsp;/&nbsp;");
-  }
-  ol.writeObjectLink(getReference(),getOutputFileBase(),0,shortName());
-}
-
-void DirDef::writeNavigationPath(OutputList &ol)
-{
-  ol.pushGeneratorState();
-  ol.disableAllBut(OutputGenerator::Html);
-
-  ol.writeString("<div class=\"nav\">\n");
-  writePathFragment(ol);
-  ol.writeString("</div>\n");
+  endFileWithNavPath(this,ol);
 
   ol.popGeneratorState();
 }
-#endif
 
 void DirDef::setLevel()
 {
@@ -675,7 +659,7 @@ static void writePartialDirPath(OutputList &ol,const DirDef *root,const DirDef *
   if (target->parent()!=root) 
   {
     writePartialDirPath(ol,root,target->parent());
-    ol.writeString("&nbsp;/&nbsp;");
+    ol.writeString("&#160;/&#160;");
   }
   ol.writeObjectLink(target->getReference(),target->getOutputFileBase(),0,target->shortName());
 }
@@ -685,7 +669,7 @@ static void writePartialFilePath(OutputList &ol,const DirDef *root,const FileDef
   if (fd->getDirDef() && fd->getDirDef()!=root)
   {
     writePartialDirPath(ol,root,fd->getDirDef());
-    ol.writeString("&nbsp;/&nbsp;");
+    ol.writeString("&#160;/&#160;");
   }
   if (fd->isLinkable())
   {
@@ -701,6 +685,7 @@ static void writePartialFilePath(OutputList &ol,const DirDef *root,const FileDef
 
 void DirRelation::writeDocumentation(OutputList &ol)
 {
+  static bool generateTreeView = Config_getBool("GENERATE_TREEVIEW");
   ol.pushGeneratorState();
   ol.disableAllBut(OutputGenerator::Html);
 
@@ -710,28 +695,24 @@ void DirRelation::writeDocumentation(OutputList &ol)
   QCString title=theTranslator->trDirRelation(
                  m_src->displayName()+" -> "+
                  m_dst->dir()->shortName());
-  startFile(ol,getOutputFileBase(),getOutputFileBase(),title);
+  startFile(ol,getOutputFileBase(),getOutputFileBase(),
+            title,HLI_None,!generateTreeView,m_src->getOutputFileBase());
 
-  // write navigation path
-  m_src->writeNavigationPath(ol);
+  if (!generateTreeView)
+  {
+    // write navigation path
+    m_src->writeNavigationPath(ol);
+    ol.endQuickIndices();
+  }
   ol.startContents();
 
-  //startTitle(ol,getOutputFileBase());
-  //  ol.parseText(shortTitle);
-  //endTitle(ol,getOutputFileBase(),title);
   ol.writeString("<h3>"+shortTitle+"</h3>");
-  
   ol.writeString("<table class=\"dirtab\">");
   ol.writeString("<tr class=\"dirtab\">");
-  // TODO: translate me! "File in %s"
   ol.writeString("<th class=\"dirtab\">");
   ol.parseText(theTranslator->trFileIn(m_src->pathFragment()));
-  //m_src->writePathFragment(ol);
   ol.writeString("</th>");
-  // TODO: translate me! "Includes file in %s"
   ol.writeString("<th class=\"dirtab\">");
-  //ol.writeString("Includes file in ");
-  //m_dst->dir()->writePathFragment(ol);
   ol.parseText(theTranslator->trIncludesFileIn(m_dst->dir()->pathFragment()));
   ol.writeString("</th>");
   ol.writeString("</tr>");
@@ -750,13 +731,96 @@ void DirRelation::writeDocumentation(OutputList &ol)
     ol.writeString("</tr>");
   }
   ol.writeString("</table>");
+
+  ol.endContents();
   
-  endFile(ol); 
+  endFileWithNavPath(m_src,ol);
+
   ol.popGeneratorState();
 }
 
 //----------------------------------------------------------------------
 // external functions
+
+/** In order to create stable, but unique directory names,
+ *  we compute the common part of the path shared by all directories.
+ */
+static void computeCommonDirPrefix()
+{
+  QCString path;
+  DirDef *dir;
+  DirSDict::Iterator sdi(*Doxygen::directories);
+  if (Doxygen::directories->count()>0) // we have at least one dir
+  {
+    // start will full path of first dir
+    sdi.toFirst();
+    dir=sdi.current();
+    path=dir->name();
+    int i=path.findRev('/',path.length()-2);
+    path=path.left(i+1);
+    bool done=FALSE;
+    if (i==-1) 
+    {
+      path="";
+    }
+    else
+    {
+      while (!done)
+      {
+        int l = path.length();
+        int count=0;
+        for (sdi.toFirst();(dir=sdi.current());++sdi)
+        {
+          QCString dirName = dir->name();
+          if (dirName.length()>path.length())
+          {
+            if (strncmp(dirName,path,l)!=0) // dirName does not start with path
+            {
+              int i=path.findRev('/',l-2);
+              if (i==-1) // no unique prefix -> stop
+              {
+                path="";
+                done=TRUE;
+              }
+              else // restart with shorter path
+              {
+                path=path.left(i+1);
+                break;
+              }
+            }
+          }
+          else // dir is shorter than path -> take path of dir as new start
+          {
+            path=dir->name();
+            int i=path.findRev('/',l-2);
+            if (i==-1) // no unique prefix -> stop
+            {
+              path="";
+              done=TRUE;
+            }
+            else // restart with shorter path
+            {
+              path=path.left(i+1);
+            }
+            break;
+          }
+          count++;
+        }
+        if (count==Doxygen::directories->count())
+          // path matches for all directories -> found the common prefix
+        {
+          done=TRUE;
+        }
+      }
+    }
+  }
+  for (sdi.toFirst();(dir=sdi.current());++sdi)
+  {
+    QCString diskName = dir->name().right(dir->name().length()-path.length());
+    dir->setDiskName(diskName);
+    //printf("set disk name: %s -> %s\n",dir->name().data(),diskName.data());
+  }
+}
 
 void buildDirectories()
 {
@@ -807,6 +871,7 @@ void buildDirectories()
       }
     }
   }
+  computeCommonDirPrefix();
 }
 
 void computeDirDependencies()
@@ -825,79 +890,7 @@ void computeDirDependencies()
     dir->computeDependencies();
   }
 
-#if 0
-  printf("-------------------------------------------------------------\n");
-  // print dependencies (for debugging)
-  for (sdi.toFirst();(dir=sdi.current());++sdi)
-  {
-    if (dir->usedDirs())
-    {
-      QDictIterator<UsedDir> udi(*dir->usedDirs());
-      UsedDir *usedDir;
-      for (udi.toFirst();(usedDir=udi.current());++udi)
-      {
-        printf("%s depends on %s due to ",
-            dir->shortName().data(),usedDir->dir()->shortName().data());
-        QDictIterator<FileDef> fdi(usedDir->files());
-        FileDef *fd;
-        for (fdi.toFirst();(fd=fdi.current());++fdi)
-        {
-          printf("%s ",fd->name().data());
-        }
-        printf("\n");
-      }
-    }
-  }
-  printf("^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^\n");
-#endif
 }
-
-#if 0
-void writeDirDependencyGraph(const char *dirName)
-{
-  QString path;
-  DirDef *dir;
-  DirSDict::Iterator sdi(*Doxygen::directories);
-  QFile htmlPage(QCString(dirName)+"/dirdeps.html");
-  if (htmlPage.open(IO_WriteOnly))
-  {
-    QTextStream out(&htmlPage);
-    out << "<html><body>";
-    for (sdi.toFirst();(dir=sdi.current());++sdi)
-    {
-      path=dirName;
-      path+="/";
-      path+=dir->getOutputFileBase();
-      path+="_dep.dot";
-      out << "<h4>" << dir->displayName() << "</h4>" << endl;
-      out << "<img src=\"" << dir->getOutputFileBase() << "_dep.gif\">" << endl;
-      QFile f(path);
-      if (f.open(IO_WriteOnly))
-      {
-        QTextStream t(&f);
-        dir->writeDepGraph(t);
-      }
-      f.close();
-
-      QCString imgExt = Config_getEnum("DOT_IMAGE_FORMAT");
-      QCString outFile = QCString(dirName)+"/"+
-                         dir->getOutputFileBase()+"_dep."+imgExt; 
-      DotRunner dotRun(path);
-      dotRun.addJob(imgExt,outFile);
-      dotRun.run();
-      
-      //QCString dotArgs(4096);
-      //dotArgs.sprintf("%s -Tgif -o %s",path.data(),outFile.data());
-      //if (portable_system(Config_getString("DOT_PATH")+"dot",dotArgs,FALSE)!=0)
-      //{
-      //  err("Problems running dot. Check your installation!\n");
-      //}
-    }
-    out << "</body></html>";
-  }
-  htmlPage.close();
-}
-#endif
 
 void generateDirDocs(OutputList &ol)
 {

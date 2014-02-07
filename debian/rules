@@ -4,14 +4,14 @@
 export DH_OPTIONS=
 export QTDIR=/usr/share/qt4/QtGui
 
+CFLAGS := $(shell dpkg-buildflags --get CPPFLAGS; dpkg-buildflags --get CFLAGS)
+LDFLAGS := $(shell dpkg-buildflags --get LDFLAGS)
 DEB_BUILD_ARCH ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH)
 with_doxywizard := yes
-ifeq ($(DEB_BUILD_ARCH),hurd-i386)
+ifneq (,$(filter $(DEB_BUILD_ARCH),hurd-i386))
   with_doxywizard := no
 endif
 
-CFLAGS+=$(if $(findstring debug,$(DEB_BUILD_OPTIONS)),-g)
-CFLAGS+=$(if $(findstring noopt,$(DEB_BUILD_OPTIONS)),-O0,-O2)
 ifeq ($(with_doxywizard),yes)
   CONFIGUREFLAGS+=--with-doxywizard
 endif
@@ -19,23 +19,25 @@ CONFIGUREFLAGS+=--dot /usr/bin/dot
 CONFIGUREFLAGS+=--install /usr/bin/install
 
 configure: configure-stamp
-configure-stamp: patch-stamp
+configure-stamp:
 	dh_testdir
-	CFLAGS="$(CFLAGS)" ./configure $(CONFIGUREFLAGS)
+	./configure $(CONFIGUREFLAGS)
 	sed -i 's/^TMAKE_MOC *=.*/TMAKE_MOC = moc/' addon/doxywizard/doxywizard.pro
 	touch $@
 
 build: build-stamp
+build-arch: build-stamp
+build-indep: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
-	$(MAKE)
+	TMAKE_CFLAGS_RELEASE="$(CFLAGS)" TMAKE_LFLAGS_RELEASE="$(LDFLAGS)" \
+		$(MAKE) QMAKE=/usr/bin/qmake-qt4
 	touch $@
 
 clean:
 	dh_testdir
 	dh_testroot
-	$(MAKE) -f debian/rules unpatch
-	rm -f configure-stamp build-stamp install*stamp patch-stamp
+	rm -f configure-stamp build-stamp install*stamp
 	rm -rf qt
 	[ ! -f Makefile ] || $(MAKE) distclean
 	rm -f qtools/Makefile.qtools
@@ -126,53 +128,3 @@ binary: binary-arch binary-indep
 .PHONY: configure build clean uninstall
 .PHONY: install-arch install-indep install
 .PHONY: binary-arch binary-indep binary
-.PHONY: patch unpatch
-
-patchdir = debian/patches
-debian_patches = \
-	manpages \
-	dot-config \
-	doxygen_direct_dot_run \
-
-patch: patch-stamp
-patch-stamp: $(foreach p,$(debian_patches),patch-stamp-$(p))
-	echo ""; echo "Patches applied in this version:" > pxxx
-	for i in $(debian_patches); do \
-	  echo "" >> pxxx; echo "$$i:" >> pxxx; \
-	  sed -n 's/^# *DP: */  /p' $(patchdir)/$$i.dpatch >> pxxx; \
-	done
-	mv -f pxxx $@
-
-unpatch:
-	for stamp in none `ls -1t patch-stamp-* 2>/dev/null`; do \
-	  case "$$stamp" in none|patched-stamp|patched-\*) continue; esac; \
-	  patch=`echo $$stamp | sed -e 's,patch-stamp-,,'`; \
-	  echo "trying to revert patch $$patch ..."; \
-	  if [ -x $(patchdir)/$$patch.dpatch ]; then true; else \
-	    chmod +x $(patchdir)/$$patch.dpatch; fi; \
-	  if $(patchdir)/$$patch.dpatch -unpatch; then \
-	    echo "reverted $$patch patch."; \
-	    rm -f $$stamp; \
-	  else \
-	    echo "error in reverting $$patch patch."; \
-	    exit 1; \
-	  fi; \
-	done
-	rm -f patch-stamp
-
-patch-stamp-%: $(patchdir)/%.dpatch
-	if [ -x $< ]; then true; else chmod +x $<; fi
-	if [ -f $@ ]; then \
-	  echo "$* patches already applied."; exit 1; \
-	fi
-	$< -patch
-	echo "$* patches applied." > $@
-
-suffix ?= .orig
-collect-diffs:
-	@for f in $$(find . ! -path './debian*' -type f -name '*$(suffix)'); do \
-	  fnew=$$(echo $$f | sed 's,$(suffix)$$,,'); \
-	  echo diff -u $$f $$fnew; \
-	  diff -u $$f $$fnew; \
-	done; \
-	exit 0

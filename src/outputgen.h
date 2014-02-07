@@ -2,7 +2,7 @@
  *
  * $Id: outputgen.h,v 1.48 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -38,7 +38,7 @@ class MemberDef;
 class GroupDef;
 class Definition;
 
-/*! \brief Output interface for code parser. 
+/** Output interface for code parser. 
  */
 class CodeOutputInterface
 {
@@ -65,7 +65,7 @@ class CodeOutputInterface
 
     virtual void writeLineNumber(const char *ref,const char *file,
                                  const char *anchor,int lineNumber) = 0;
-    virtual void startCodeLine() = 0;
+    virtual void startCodeLine(bool hasLineNumbers) = 0;
     virtual void endCodeLine() = 0;
     virtual void startCodeAnchor(const char *label) = 0;
     virtual void endCodeAnchor() = 0;
@@ -76,7 +76,7 @@ class CodeOutputInterface
                  Definition *symDef,Definition *context) = 0;
 };
 
-/*! \brief Base Interface used for generating output outside of the
+/** Base Interface used for generating output outside of the
  *  comment blocks.
  *
  *  This abstract class is used by output generation functions
@@ -263,7 +263,7 @@ class BaseOutputDocInterface : public CodeOutputInterface
     virtual void endSubsubsection() = 0;
 };
 
-/*! \brief Abstract output generator.
+/** Abstract output generator.
  *
  *  Subclass this class to add support for a new output format
  */
@@ -301,7 +301,8 @@ class OutputGenerator : public BaseOutputDocInterface
     ///////////////////////////////////////////////////////////////
     virtual void startFile(const char *name,const char *manName,
                            const char *title) = 0;
-    virtual void writeFooter() = 0;
+    virtual void writeSearchInfo() = 0;
+    virtual void writeFooter(const char *navPath) = 0;
     virtual void endFile() = 0;
     virtual void startIndexSection(IndexSections) = 0;
     virtual void endIndexSection(IndexSections) = 0;
@@ -321,8 +322,8 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void endIndexValue(const char *,bool) = 0;
     virtual void startIndexItem(const char *ref,const char *file) = 0;
     virtual void endIndexItem(const char *ref,const char *file) = 0;
-    virtual void startGroupHeader() = 0;
-    virtual void endGroupHeader() = 0;
+    virtual void startGroupHeader(int) = 0;
+    virtual void endGroupHeader(int) = 0;
     virtual void startMemberSections() = 0;
     virtual void endMemberSections() = 0;
     virtual void startHeaderSection() = 0;
@@ -335,12 +336,14 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void endMemberDocList() = 0;
     virtual void startMemberList() = 0;
     virtual void endMemberList() = 0;
+    virtual void startInlineHeader() = 0;
+    virtual void endInlineHeader() = 0;
     virtual void startAnonTypeScope(int) = 0;
     virtual void endAnonTypeScope(int) = 0;
-    virtual void startMemberItem(int) = 0;
+    virtual void startMemberItem(const char *,int,const char *) = 0;
     virtual void endMemberItem() = 0;
     virtual void startMemberTemplateParams() = 0;
-    virtual void endMemberTemplateParams() = 0;
+    virtual void endMemberTemplateParams(const char *) = 0;
     virtual void startMemberGroupHeader(bool) = 0;
     virtual void endMemberGroupHeader() = 0;
     virtual void startMemberGroupDocs() = 0;
@@ -349,7 +352,7 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void endMemberGroup(bool) = 0;
     virtual void insertMemberAlign(bool) = 0;
     virtual void startMemberDoc(const char *,const char *,
-                                const char *,const char *) = 0;
+                                const char *,const char *,bool) = 0;
     virtual void endMemberDoc(bool) = 0;
     virtual void startDoxyAnchor(const char *fName,const char *manName,
                                  const char *anchor,const char *name,
@@ -359,8 +362,11 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void writeStartAnnoItem(const char *type,const char *file,
                                     const char *path,const char *name) = 0;
     virtual void writeEndAnnoItem(const char *name) = 0;
-    virtual void startMemberDescription() = 0;
+    virtual void startMemberDescription(const char *anchor,const char *inheritId) = 0;
     virtual void endMemberDescription() = 0;
+    virtual void writeInheritedSectionTitle(const char *id,const char *ref,
+                                            const char *file,const char *anchor,
+                                            const char *title,const char *name) = 0;
     virtual void startIndent() = 0;
     virtual void endIndent() = 0;
     virtual void writeSynopsis() = 0;
@@ -379,7 +385,11 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void writeGraphicalHierarchy(const DotGfxHierarchyTable &g) = 0;
     virtual void startQuickIndices() = 0;
     virtual void endQuickIndices() = 0;
-    virtual void writeQuickLinks(bool compact,HighlightedItem hli) = 0;
+    virtual void writeSplitBar(const char *) = 0;
+    virtual void writeNavigationPath(const char *) = 0;
+    virtual void writeLogo() = 0;
+    virtual void writeQuickLinks(bool compact,HighlightedItem hli,const char *file) = 0;
+    virtual void writeSummaryLink(const char *file,const char *anchor,const char *title,bool first) = 0;
     virtual void startContents() = 0;
     virtual void endContents() = 0;
     virtual void startTextBlock(bool) = 0;
@@ -389,7 +399,7 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void endMemberDocPrefixItem() = 0;
     virtual void startMemberDocName(bool) = 0;
     virtual void endMemberDocName() = 0;
-    virtual void startParameterType(bool,const char *) = 0;
+    virtual void startParameterType(bool,const char *key) = 0;
     virtual void endParameterType() = 0;
     virtual void startParameterName(bool) = 0;
     virtual void endParameterName(bool,bool,bool) = 0;
@@ -405,6 +415,20 @@ class OutputGenerator : public BaseOutputDocInterface
     virtual void endConstraintDocs() = 0;
     virtual void endConstraintList() = 0;
 
+    virtual void startMemberDocSimple() = 0;
+    virtual void endMemberDocSimple() = 0;
+    virtual void startInlineMemberType() = 0;
+    virtual void endInlineMemberType() = 0;
+    virtual void startInlineMemberName() = 0;
+    virtual void endInlineMemberName() = 0;
+    virtual void startInlineMemberDoc() = 0;
+    virtual void endInlineMemberDoc() = 0;
+
+
+    virtual void startLabels() = 0;
+    virtual void writeLabel(const char *,bool) = 0;
+    virtual void endLabels() = 0;
+
   protected:
     FTextStream t;
     QFile *file;
@@ -418,7 +442,7 @@ class OutputGenerator : public BaseOutputDocInterface
     OutputGenerator &operator=(const OutputGenerator &o);
 };
 
-/*! \brief Interface used for generating documentation.
+/** Interface used for generating documentation.
  *
  *  This abstract class is used by several functions
  *  to generate the output for a specific format. 

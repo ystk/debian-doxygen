@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -13,9 +13,8 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- * The code is this file is largely based on a contribution from
- * Harm van der Heijden <H.v.d.Heijden@phys.tue.nl>
- * Please send thanks to him and bug reports to me :-)
+ * The original version of this file is largely based on a contribution from
+ * Harm van der Heijden.
  */
 
 #include <stdio.h>
@@ -35,6 +34,7 @@
 
 //----------------------------------------------------------------------------
 
+/** Class representing a field in the HTML help index. */
 struct IndexField
 {
   QCString name;
@@ -44,6 +44,7 @@ struct IndexField
   bool     reversed;
 };
 
+/** Sorted dictionary of IndexField objects. */
 class IndexFieldSDict : public SDict<IndexField>
 {
   public:
@@ -55,13 +56,13 @@ class IndexFieldSDict : public SDict<IndexField>
     }
 };
 
-/*! A helper class for HtmlHelp that manages a two level index in 
- * alphabetical order 
+/** A helper class for HtmlHelp that manages a two level index in 
+ *  alphabetical order.
  */
 class HtmlHelpIndex
 {
   public:
-    HtmlHelpIndex();
+    HtmlHelpIndex(HtmlHelp *help);
    ~HtmlHelpIndex();
     void addItem(const char *first,const char *second, 
                  const char *url, const char *anchor,
@@ -69,10 +70,11 @@ class HtmlHelpIndex
     void writeFields(FTextStream &t);
   private:
     IndexFieldSDict *dict;   
+    HtmlHelp *m_help;
 };
 
 /*! Constructs a new HtmlHelp index */
-HtmlHelpIndex::HtmlHelpIndex()
+HtmlHelpIndex::HtmlHelpIndex(HtmlHelp *help) : m_help(help)
 {
   dict = new IndexFieldSDict;
   dict->setAutoDelete(TRUE);
@@ -199,7 +201,7 @@ void HtmlHelpIndex::writeFields(FTextStream &t)
         t << "<param name=\"Local\" value=\"" << f->url << Doxygen::htmlFileExtension;
         if (!f->anchor.isEmpty() && f->reversed) t << "#" << f->anchor;  
         t << "\">";
-        t << "<param name=\"Name\" value=\"" << level1 << "\">"
+        t << "<param name=\"Name\" value=\"" << m_help->recode(level1) << "\">"
            "</OBJECT>\n";
       }
       else
@@ -210,14 +212,14 @@ void HtmlHelpIndex::writeFields(FTextStream &t)
           t << "<param name=\"Local\" value=\"" << f->url << Doxygen::htmlFileExtension;
           if (!f->anchor.isEmpty() && f->reversed) t << "#" << f->anchor;  
           t << "\">";
-          t << "<param name=\"Name\" value=\"" << level1 << "\">"
+          t << "<param name=\"Name\" value=\"" << m_help->recode(level1) << "\">"
                "</OBJECT>\n";
         }
         else
         {
           t << "  <LI><OBJECT type=\"text/sitemap\">";
-          t << "<param name=\"See Also\" value=\"" << level1 << "\">";
-          t << "<param name=\"Name\" value=\"" << level1 << "\">"
+          t << "<param name=\"See Also\" value=\"" << m_help->recode(level1) << "\">";
+          t << "<param name=\"Name\" value=\"" << m_help->recode(level1) << "\">"
                "</OBJECT>\n";
         }
       }
@@ -238,7 +240,7 @@ void HtmlHelpIndex::writeFields(FTextStream &t)
       t << "<param name=\"Local\" value=\"" << f->url << Doxygen::htmlFileExtension;
       if (!f->anchor.isEmpty()) t << "#" << f->anchor;  
       t << "\">";
-      t << "<param name=\"Name\" value=\"" << level2 << "\">"
+      t << "<param name=\"Name\" value=\"" << m_help->recode(level2) << "\">"
          "</OBJECT>\n";
     }
     lastLevel1 = level1.copy();
@@ -259,7 +261,7 @@ HtmlHelp::HtmlHelp() : indexFileDict(1009)
   /* initial depth */
   dc = 0;
   cf = kf = 0;
-  index = new HtmlHelpIndex;
+  index = new HtmlHelpIndex(this);
   m_fromUtf8 = (void *)(-1);
 }
 
@@ -447,7 +449,7 @@ void HtmlHelp::createProjectFile()
     FTextStream t(&f);
     
     QCString indexName="index"+Doxygen::htmlFileExtension;
-    if (Config_getBool("GENERATE_TREEVIEW")) indexName="main"+Doxygen::htmlFileExtension;
+    //if (Config_getBool("GENERATE_TREEVIEW")) indexName="main"+Doxygen::htmlFileExtension;
     t << "[OPTIONS]\n";
     if (!Config_getString("CHM_FILE").isEmpty())
     {
@@ -483,6 +485,8 @@ void HtmlHelp::createProjectFile()
       t << s << endl;
       s = indexFiles.next();
     }
+#if 0
+    // items not found by the html help compiler scan.
     t << "tabs.css" << endl;
     t << "tab_a.png" << endl;
     t << "tab_b.png" << endl;
@@ -490,10 +494,47 @@ void HtmlHelp::createProjectFile()
     t << "tab_s.png" << endl;
     t << "nav_h.png" << endl;
     t << "nav_f.png" << endl;
+    t << "bc_s.png" << endl;
     if (Config_getBool("HTML_DYNAMIC_SECTIONS"))
     {
-      t << "open.gif" << endl;
-      t << "closed.gif" << endl;
+      t << "open.png" << endl;
+      t << "closed.png" << endl;
+    }
+    if (Config_getBool("GENERATE_HTMLHELP"))
+    {
+      t << "ftv2blank.png" << endl;
+      t << "ftv2doc.png" << endl;
+      t << "ftv2folderclosed.png" << endl;
+      t << "ftv2folderopen.png" << endl;
+      t << "ftv2lastnode.png" << endl;
+      t << "ftv2link.png" << endl;
+      t << "ftv2mlastnode.png" << endl;
+      t << "ftv2mnode.png" << endl;
+      t << "ftv2node.png" << endl;
+      t << "ftv2plastnode.png" << endl;
+      t << "ftv2pnode.png" << endl;
+      t << "ftv2vertline.png" << endl;
+    }
+    if (Config_getBool("SEARCHENGINE"))
+    {
+      t << "search_l.png" << endl;
+      t << "search_m.png" << endl;
+      t << "search_r.png" << endl;
+      if (Config_getBool("SERVER_BASED_SEARCH"))
+      {
+        t << "mag.png" << endl;
+      }
+      else
+      {
+        t << "mag_sel.png" << endl;
+        t << "close.png" << endl;
+      }
+    }
+#endif
+    uint i;
+    for (i=0;i<imageFiles.count();i++)
+    {
+      t << imageFiles.at(i) << endl;
     }
     f.close();
   }
@@ -590,12 +631,18 @@ QCString HtmlHelp::recode(const QCString &s)
  *  \param ref  the URL of to the item.
  *  \param file the file in which the item is defined.
  *  \param anchor the anchor of the item.
+ *  \param separateIndex not used.
+ *  \param addToNavIndex not used.
+ *  \param def not used.
  */
 void HtmlHelp::addContentsItem(bool isDir,
                                const char *name,
                                const char * /*ref*/, 
                                const char *file,
-                               const char *anchor)
+                               const char *anchor,
+                               bool /* separateIndex */,
+                               bool /* addToNavIndex */,
+                               Definition * /* def */)
 {
   // If we're using a binary toc then folders cannot have links. 
   if(Config_getBool("BINARY_TOC") && isDir) 
@@ -627,7 +674,7 @@ void HtmlHelp::addContentsItem(bool isDir,
 
 
 void HtmlHelp::addIndexItem(Definition *context,MemberDef *md,
-                            const char *anc,const char *word)
+                            const char *word)
 {
   if (md)
   {
@@ -647,14 +694,19 @@ void HtmlHelp::addIndexItem(Definition *context,MemberDef *md,
     QCString level2  = md->name();
     QCString contRef = separateMemberPages ? cfname : cfiname;
     QCString memRef  = cfname;
-    QCString anchor  = anc;
+    QCString anchor  = md->anchor();
     index->addItem(level1,level2,contRef,anchor,TRUE,FALSE);
     index->addItem(level2,level1,memRef,anchor,TRUE,TRUE);
   }
   else if (context)
   {
     QCString level1  = word ? QCString(word) : context->name();
-    index->addItem(level1,0,context->getOutputFileBase(),anc,TRUE,FALSE);
+    index->addItem(level1,0,context->getOutputFileBase(),0,TRUE,FALSE);
   }
+}
+
+void HtmlHelp::addImageFile(const char *fileName)
+{
+  imageFiles.append(fileName);
 }
 

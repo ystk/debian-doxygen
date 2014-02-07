@@ -2,7 +2,7 @@
  *
  * $Id: definition.h,v 1.21 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -24,6 +24,7 @@
 #include <sys/types.h>
 
 #include "lockingptr.h"
+#include "util.h"
 
 class FileDef;
 class OutputList;
@@ -37,15 +38,7 @@ struct SectionInfo;
 class Definition;
 class DefinitionImpl;
 
-#if 0
-struct ReachableDefinition
-{
-  ReachableDefinition(Definition *d,int dist) : def(d), distance(dist) {}
-  Definition *def;
-  int distance;
-};
-#endif
-
+/** Data associated with a detailed description. */
 struct DocInfo
 {
     QCString doc;  
@@ -53,6 +46,7 @@ struct DocInfo
     QCString file;
 };
 
+/** Data associated with a brief description. */
 struct BriefInfo
 {
     QCString doc;  
@@ -61,14 +55,15 @@ struct BriefInfo
     QCString file;
 };
 
+/** Data associated with description found in the body. */
 struct BodyInfo
 {
-    int      startLine;   // line number of the start of the definition
-    int      endLine;     // line number of the end of the definition
-    FileDef *fileDef;     // file definition containing the function body
+    int      startLine;   //!< line number of the start of the definition
+    int      endLine;     //!< line number of the end of the definition
+    FileDef *fileDef;     //!< file definition containing the function body
 };
     
-/*! Abstract interface for a Definition or DefinitionList */
+/** Abstract interface for a Definition or DefinitionList */
 class DefinitionIntf
 {
   public:
@@ -91,7 +86,8 @@ class DefinitionIntf
     virtual DefType definitionType() const = 0;
 };
 
-/*! The common base class of all entity definitions found in the sources. 
+/** The common base class of all entity definitions found in the sources. 
+ *
  *  This can be a class or a member function, or a file, or a namespace, etc.
  *  Use definitionType() to find which type of definition this is.
  */
@@ -115,6 +111,9 @@ class Definition : public DefinitionIntf, public LockableObj
     /*! Returns the name of the definition */
     const QCString& name() const { return m_name; }
 
+    /*! Returns the name of the definition as it appears in the output */
+    virtual QCString displayName(bool includeScope=TRUE) const = 0;
+
     /*! Returns the local name without any scope qualifiers. */
     QCString localName() const;
 
@@ -131,6 +130,9 @@ class Definition : public DefinitionIntf, public LockableObj
      */
     virtual QCString getOutputFileBase() const = 0;
 
+    /*! Returns the anchor within a page where this item can be found */
+    virtual QCString anchor() const = 0;
+
     /*! Returns the name of the source listing of this file. */
     virtual QCString getSourceFileBase() const { ASSERT(0); return "NULL"; }
 
@@ -146,7 +148,7 @@ class Definition : public DefinitionIntf, public LockableObj
     QCString docFile() const;
 
     /*! Returns the brief description of this definition. This can include commands. */
-    QCString briefDescription() const;
+    QCString briefDescription(bool abbreviate=FALSE) const;
 
     /*! Returns a plain text version of the brief description suitable for use
      *  as a tool tip. 
@@ -178,7 +180,7 @@ class Definition : public DefinitionIntf, public LockableObj
     QCString getDefFileExtension() const;
 
     /*! returns the line number at which the definition was found */
-    int getDefLine() const;
+    int getDefLine() const { return m_defLine; }
 
     /*! Returns TRUE iff the definition is documented 
      *  (which could be generated documentation) 
@@ -240,6 +242,9 @@ class Definition : public DefinitionIntf, public LockableObj
      */
     FileDef *getBodyDef();
 
+    /** Returns the programming language this definition was written in. */
+    SrcLangExt getLanguage() const;
+
     LockingPtr<GroupList> partOfGroups() const;
 
     LockingPtr< QList<ListItemInfo> > xrefListItems() const;
@@ -250,6 +255,8 @@ class Definition : public DefinitionIntf, public LockableObj
     LockingPtr<MemberSDict> getReferencesMembers() const;
     LockingPtr<MemberSDict> getReferencedByMembers() const;
 
+    bool hasSections() const;
+
     //-----------------------------------------------------------------------------------
     // ----  setters -----
     //-----------------------------------------------------------------------------------
@@ -258,18 +265,18 @@ class Definition : public DefinitionIntf, public LockableObj
     void setName(const char *name);
 
     /*! Sets the documentation of this definition to \a d. */
-    void setDocumentation(const char *d,const char *docFile,int docLine,bool stripWhiteSpace=TRUE);
+    virtual void setDocumentation(const char *d,const char *docFile,int docLine,bool stripWhiteSpace=TRUE);
 
     /*! Sets the brief description of this definition to \a b.
      *  A dot is added to the sentence if not available.
      */
-    void setBriefDescription(const char *b,const char *briefFile,int briefLine);
+    virtual void setBriefDescription(const char *b,const char *briefFile,int briefLine);
 
     /*! Set the documentation that was found inside the body of an item.
      *  If there was already some documentation set, the new documentation
      *  will be appended.
      */
-    void setInbodyDocumentation(const char *d,const char *docFile,int docLine);
+    virtual void setInbodyDocumentation(const char *d,const char *docFile,int docLine);
 
     /*! Sets the tag file id via which this definition was imported. */
     void setReference(const char *r);
@@ -290,9 +297,10 @@ class Definition : public DefinitionIntf, public LockableObj
     virtual void addInnerCompound(Definition *d);
     virtual void setOuterScope(Definition *d);
 
-    void setHidden(bool b);
+    virtual void setHidden(bool b);
 
     void setArtificial(bool b);
+    void setLanguage(SrcLangExt lang);
 
     //-----------------------------------------------------------------------------------
     // --- actions ----
@@ -304,8 +312,9 @@ class Definition : public DefinitionIntf, public LockableObj
     void writeSourceRefs(OutputList &ol,const char *scopeName);
     void writeSourceReffedBy(OutputList &ol,const char *scopeName);
     void makePartOfGroup(GroupDef *gd);
-    void writePathFragment(OutputList &ol) const;
+    //void writePathFragment(OutputList &ol) const;
     void writeNavigationPath(OutputList &ol) const;
+    QCString navigationPathAsString() const;
     virtual void writeQuickMemberLinks(OutputList &,MemberDef *) const {}
     virtual void writeSummaryLinks(OutputList &) {}
     QCString pathFragment() const;
@@ -314,9 +323,12 @@ class Definition : public DefinitionIntf, public LockableObj
      *  the Doxygen::tagFile stream.
      */
     void writeDocAnchorsToTagFile();
+    void setLocalName(const QCString name);
+
+    void addSectionsToIndex();
+    void writeToc(OutputList &ol);
 
   protected:
-    void setLocalName(const QCString name);
 
     virtual void flushToDisk() const;
     virtual void loadFromDisk() const;
@@ -342,9 +354,10 @@ class Definition : public DefinitionIntf, public LockableObj
     QCString m_name;
     bool m_isSymbol;
     QCString m_symbolName;
-
+    int m_defLine;
 };
 
+/** A list of Definition objects. */
 class DefinitionList : public QList<Definition>, public DefinitionIntf
 {
   public:
@@ -359,6 +372,7 @@ class DefinitionList : public QList<Definition>, public DefinitionIntf
 
 };
 
+/** An iterator for Definition objects in a DefinitionList. */
 class DefinitionListIterator : public QListIterator<Definition>
 {
   public:

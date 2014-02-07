@@ -1,11 +1,11 @@
 #
-# This file was generated from doxygen.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from doxygen.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 #
 # $Id: doxygen.pro.in,v 1.6 2001/03/19 19:27:40 root Exp $
 #
-# Copyright (C) 1997-2010 by Dimitri van Heesch.
+# Copyright (C) 1997-2012 by Dimitri van Heesch.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -41,3 +41,4 @@ win32-g++:TARGETDEPS       =  ../lib/libdoxygen.a ../lib/libdoxycfg.a
 win32-mingw:TARGETDEPS     =  ../lib/libdoxygen.a ../lib/libdoxycfg.a
 OBJECTS_DIR                =  ../objects
 
+TMAKE_MOC = /usr/bin/moc

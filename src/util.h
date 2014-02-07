@@ -2,7 +2,7 @@
  *
  * $Id: util.h,v 1.49 2001/03/19 19:27:42 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -18,7 +18,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-/*! \file util.h 
+/*! \file 
  *  \brief A bunch of utility functions.
  */
 
@@ -27,6 +27,7 @@
 #include <qtextstream.h>
 #include <ctype.h>
 #include "sortdict.h"
+#include "types.h"
 
 //--------------------------------------------------------------------
 
@@ -60,24 +61,26 @@ class FTextStream;
 
 //--------------------------------------------------------------------
 
+/** Abstract interface for a hyperlinked text fragment. */
 class TextGeneratorIntf
 {
   public:
     virtual ~TextGeneratorIntf() {}
     virtual void writeString(const char *,bool) const = 0;
-    virtual void writeBreak() const = 0;
+    virtual void writeBreak(int indent) const = 0;
     virtual void writeLink(const char *extRef,const char *file,
                       const char *anchor,const char *text
                      ) const = 0; 
 };
 
+/** Implements TextGeneratorIntf for an OutputDocInterface stream. */
 class TextGeneratorOLImpl : public TextGeneratorIntf
 {
   public:
     virtual ~TextGeneratorOLImpl() {}
     TextGeneratorOLImpl(OutputDocInterface &od);
     void writeString(const char *s,bool keepSpaces) const;
-    void writeBreak() const;
+    void writeBreak(int indent) const;
     void writeLink(const char *extRef,const char *file,
                    const char *anchor,const char *text
                   ) const;
@@ -87,38 +90,25 @@ class TextGeneratorOLImpl : public TextGeneratorIntf
 
 //--------------------------------------------------------------------
 
-enum SrcLangExt
-{
-  SrcLangExt_Unknown = 0x0000,
-  SrcLangExt_IDL     = 0x0008,
-  SrcLangExt_Java    = 0x0010,
-  SrcLangExt_CSharp  = 0x0020,
-  SrcLangExt_D       = 0x0040,
-  SrcLangExt_PHP     = 0x0080,
-  SrcLangExt_ObjC    = 0x0100,
-  SrcLangExt_Cpp     = 0x0200,
-  SrcLangExt_JS      = 0x0400,
-  SrcLangExt_Python  = 0x0800,
-  SrcLangExt_F90     = 0x1000,
-  SrcLangExt_VHDL    = 0x2000,
-  SrcLangExt_XML     = 0x4000
-};
+QCString langToString(SrcLangExt lang);
+QCString getLanguageSpecificSeparator(SrcLangExt lang,bool classScope=FALSE);
 
 //--------------------------------------------------------------------
 
 void linkifyText(const TextGeneratorIntf &ol,
                  Definition *scope,
                  FileDef *fileScope,
-                 const char *name,
+                 Definition *self,
                  const char *text,
                  bool autoBreak=FALSE,
                  bool external=TRUE,
-                 bool keepSpaces=FALSE
+                 bool keepSpaces=FALSE,
+                 int indentLevel=0
                 );
 
 void setAnchors(ClassDef *cd,char id,MemberList *ml,int groupId=-1);
 
-QCString fileToString(const char *name,bool filter=FALSE);
+QCString fileToString(const char *name,bool filter=FALSE,bool isSourceCode=FALSE);
 
 QCString dateToString(bool);
 
@@ -132,10 +122,11 @@ bool getDefs(const QCString &scopeName,
                     GroupDef *&gd,
                     bool forceEmptyScope=FALSE,
                     FileDef *currentFile=0,
-                    bool checkCV=FALSE
+                    bool checkCV=FALSE,
+                    const char *forceTagFile=0
                    );
 
-QCString getFileFilter(const char* name);
+QCString getFileFilter(const char* name,bool isSourceCode);
 
 bool resolveRef(/* in */  const char *scName,
                 /* in */  const char *name,
@@ -154,8 +145,8 @@ bool resolveLink(/* in */  const char *scName,
                  /* out */ QCString &resAnchor
                 );
 
-bool generateRef(OutputDocInterface &od,const char *,
-                        const char *,bool inSeeBlock,const char * =0);
+//bool generateRef(OutputDocInterface &od,const char *,
+//                        const char *,bool inSeeBlock,const char * =0);
 
 bool generateLink(OutputDocInterface &od,const char *,
                          const char *,bool inSeeBlock,const char *);
@@ -177,6 +168,10 @@ void mergeArguments(ArgumentList *,ArgumentList *,bool forceNameOverwrite=FALSE)
 QCString substituteClassNames(const QCString &s);
 
 QCString substitute(const char *s,const char *src,const char *dst);
+
+QCString clearBlock(const char *s,const char *begin,const char *end);
+
+QCString selectBlock(const QCString& s,const QCString &name,bool which);
 
 QCString resolveDefines(const char *n);
 
@@ -207,7 +202,7 @@ inline bool isId(int c)
 
 QCString removeRedundantWhiteSpace(const QCString &s);
 
-QCString argListToString(ArgumentList *al,bool useCanonicalType=FALSE);
+QCString argListToString(ArgumentList *al,bool useCanonicalType=FALSE,bool showDefVals=TRUE);
 
 QCString tempArgListToString(ArgumentList *al);
 
@@ -225,7 +220,8 @@ bool rightScopeMatch(const QCString &scope, const QCString &name);
 
 bool leftScopeMatch(const QCString &scope, const QCString &name);
 
-QCString substituteKeywords(const QCString &s,const char *title,const QCString &relPath="");
+QCString substituteKeywords(const QCString &s,const char *title,
+         const char *projName,const char *projNum,const char *projBrief);
 
 int getPrefixIndex(const QCString &name);
 
@@ -238,6 +234,7 @@ void initClassHierarchy(ClassSDict *cl);
 bool hasVisibleRoot(BaseClassList *bcl);
 
 int minClassDistance(const ClassDef *cd,const ClassDef *bcd,int level=0);
+Protection classInheritedProtectionLevel(ClassDef *cd,ClassDef *bcd,Protection prot=Public,int level=0);
 
 QCString convertNameToFile(const char *name,bool allowDots=FALSE,bool allowUnderscore=FALSE);
 
@@ -253,6 +250,8 @@ QCString convertToHtml(const char *s,bool keepEntities=TRUE);
 
 QCString convertToXML(const char *s);
 
+QCString convertToJSString(const char *s);
+
 QCString getOverloadDocs();
 
 void addMembersToMemberGroup(/* in */     MemberList *ml,
@@ -260,7 +259,7 @@ void addMembersToMemberGroup(/* in */     MemberList *ml,
                              /* in */     Definition *context);
 
 int extractClassNameFromType(const QCString &type,int &pos,
-                              QCString &name,QCString &templSpec);
+                              QCString &name,QCString &templSpec,SrcLangExt=SrcLangExt_Unknown);
 
 QCString substituteTemplateArgumentsInString(
        const QCString &name,
@@ -293,7 +292,8 @@ PageDef *addRelatedPage(const char *name,const QCString &ptitle,
                            const char *fileName,int startLine,
                            const QList<ListItemInfo> *sli,
                            GroupDef *gd=0,
-                           TagInfo *tagInfo=0
+                           TagInfo *tagInfo=0,
+                           SrcLangExt lang=SrcLangExt_Unknown
                           );
 
 QCString escapeCharsInString(const char *name,bool allowDots,bool allowUnderscore=FALSE);
@@ -301,12 +301,13 @@ QCString escapeCharsInString(const char *name,bool allowDots,bool allowUnderscor
 void addGroupListToTitle(OutputList &ol,Definition *d);
 
 void filterLatexString(FTextStream &t,const char *str,
-                       bool insideTabbing=FALSE,bool insidePre=FALSE,
+                       bool insideTabbing=FALSE,
+                       bool insidePre=FALSE,
                        bool insideItem=FALSE);
 
 QCString rtfFormatBmkStr(const char *name);
 
-QCString linkToText(const char *link,bool isFileName);
+QCString linkToText(SrcLangExt lang,const char *link,bool isFileName);
 
 QCString stripExtension(const char *fName);
 
@@ -331,7 +332,7 @@ bool containsWord(const QCString &s,const QCString &word);
 
 bool findAndRemoveWord(QCString &s,const QCString &word);
 
-QCString stripLeadingAndTrailingEmptyLines(const QCString &s);
+QCString stripLeadingAndTrailingEmptyLines(const QCString &s,int &docLine);
 
 //void stringToSearchIndex(const QCString &docUrlBase,const QCString &title,
 //                         const QCString &str, bool priority=FALSE,
@@ -341,6 +342,8 @@ bool updateLanguageMapping(const QCString &extension,const QCString &parser);
 SrcLangExt getLanguageFromFileName(const QCString fileName);
 void initDefaultExtensionMapping();
 
+MemberDef *getMemberFromSymbol(Definition *scope,FileDef *fileScope, 
+                                const char *n);
 bool checkIfTypedef(Definition *scope,FileDef *fileScope,const char *n);
 
 ClassDef *newResolveTypedef(FileDef *fileScope,MemberDef *md,
@@ -358,7 +361,7 @@ QCString extractAliasArgs(const QCString &args,int pos);
 
 int countAliasArguments(const QCString argList);
 
-QCString replaceAliasArguments(const QCString &aliasValue,const QCString &argList);
+//QCString replaceAliasArguments(const QCString &aliasValue,const QCString &argList);
 
 QCString resolveAliasCmd(const QCString aliasCmd);
 QCString expandAlias(const QCString &aliasName,const QCString &aliasValue);
@@ -367,7 +370,6 @@ void writeTypeConstraints(OutputList &ol,Definition *d,ArgumentList *al);
 
 QCString convertCharEntitiesToUTF8(const QCString &s);
 
-bool usingTreeIndex();
 void stackTrace();
 
 bool readInputFile(const char *fileName,BufStr &inBuf);
@@ -375,11 +377,35 @@ QCString filterTitle(const QCString &title);
 
 bool patternMatch(const QFileInfo &fi,const QStrList *patList);
 
-void writeSummaryLink(OutputList &ol,const char *label,const char *title,
-                      bool &first);
-
 QCString externalLinkTarget();
 QCString externalRef(const QCString &relPath,const QCString &ref,bool href);
+int nextUtf8CharPosition(const QCString &utf8Str,int len,int startPos);
+
+/** Data associated with a HSV colored image. */
+struct ColoredImgDataItem
+{
+  const char *name;
+  unsigned short width;
+  unsigned short height;
+  unsigned char *content;
+  unsigned char *alpha;
+};
+
+void writeColoredImgData(const char *dir,ColoredImgDataItem data[]);
+QCString replaceColorMarkers(const char *str);
+
+bool copyFile(const QCString &src,const QCString &dest);
+QCString extractBlock(const QCString text,const QCString marker);
+
+QCString correctURL(const QCString &url,const QCString &relPath);
+
+QCString processMarkup(const QCString &s);
+
+bool protectionLevelVisible(Protection prot);
+
+QCString stripIndentation(const QCString &s);
+
+bool fileVisibleInIndex(FileDef *fd,bool &genSourceFile);
 
 #endif
 
