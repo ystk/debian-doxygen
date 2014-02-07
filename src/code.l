@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -34,6 +34,7 @@
 #include "util.h"
 #include "membername.h"
 #include "searchindex.h"
+#include "arguments.h"
 
 #define YY_NEVER_INTERACTIVE 1
   
@@ -140,6 +141,7 @@ static int g_braceCount=0;
 static void saveObjCContext();
 static void restoreObjCContext();
 
+static QCString g_forceTagReference;
 
 
 //-------------------------------------------------------------------
@@ -246,7 +248,7 @@ void VariableContext::addVariable(const QCString &type,const QCString &name)
          ( // look for class definitions inside the code block
 	   (varType=g_codeClassSDict->find(typeName)) ||
            // otherwise look for global class definitions
-           (varType=getResolvedClass(g_currentDefinition,g_sourceFileDef,typeName))
+           (varType=getResolvedClass(g_currentDefinition,g_sourceFileDef,typeName,0,0,TRUE,TRUE))
 	 ) && // and it must be a template
          varType->templateArguments())
     {
@@ -469,13 +471,16 @@ static void startCodeLine()
     //lineAnchor.sprintf("l%05d",g_yyLineNr);
    
     Definition *d   = g_sourceFileDef->getSourceDefinition(g_yyLineNr);
+    //printf("%s:startCodeLine(%d)=%p\n",g_sourceFileDef->name().data(),g_yyLineNr,d);
     if (!g_includeCodeFragment && d)
     {
       g_currentDefinition = d;
       g_currentMemberDef = g_sourceFileDef->getSourceMember(g_yyLineNr);
+      //printf("->startCodeLine(%s)=%p\n",d->name().data(),g_currentMemberDef);
       g_insideBody = FALSE;
       g_searchingForBody = TRUE;
-      g_realScope = d->name().copy();
+      g_realScope = d->name();
+      //g_classScope = "";
       g_type.resize(0);
       g_name.resize(0);
       g_args.resize(0);
@@ -511,7 +516,7 @@ static void startCodeLine()
       g_code->writeLineNumber(0,0,0,g_yyLineNr);
     }
   }
-  g_code->startCodeLine(); 
+  g_code->startCodeLine(g_sourceFileDef && g_lineNumbers); 
   if (g_currentFontClass)
   {
     g_code->startFontClass(g_currentFontClass);
@@ -542,10 +547,10 @@ static void nextCodeLine()
 /*! write a code fragment `text' that may span multiple lines, inserting
  * line numbers for each line.
  */
-static void codifyLines(char *text)
+static void codifyLines(const char *text)
 {
   //printf("codifyLines(%d,\"%s\")\n",g_yyLineNr,text);
-  char *p=text,*sp=p;
+  const char *p=text,*sp=p;
   char c;
   bool done=FALSE;
   while (!done)
@@ -555,8 +560,13 @@ static void codifyLines(char *text)
     if (c=='\n')
     {
       g_yyLineNr++;
-      *(p-1)='\0';
-      g_code->codify(sp);
+      //*(p-1)='\0';
+      int l = p-sp-1;
+      char *tmp = (char*)malloc(l+1);
+      memcpy(tmp,sp,l);
+      tmp[l]='\0';
+      g_code->codify(tmp);
+      free(tmp);
       nextCodeLine();
     }
     else
@@ -621,7 +631,7 @@ static void addParmType()
 
 static void addUsingDirective(const char *name)
 {
-  if (g_exampleBlock && g_sourceFileDef && name)
+  if (g_sourceFileDef && name)
   {
     NamespaceDef *nd = Doxygen::namespaceSDict->find(name);
     if (nd)
@@ -652,7 +662,7 @@ static void setParameterList(MemberDef *md)
   }
 }
 
-static ClassDef *stripClassName(const char *s)
+static ClassDef *stripClassName(const char *s,Definition *d=g_currentDefinition)
 {
   int pos=0;
   QCString type = s;
@@ -664,11 +674,11 @@ static ClassDef *stripClassName(const char *s)
     ClassDef *cd=0;
     if (!g_classScope.isEmpty())
     {
-      cd=getResolvedClass(g_currentDefinition,g_sourceFileDef,g_classScope+"::"+clName);
+      cd=getResolvedClass(d,g_sourceFileDef,g_classScope+"::"+clName);
     }
     if (cd==0)
     {
-      cd=getResolvedClass(g_currentDefinition,g_sourceFileDef,clName);
+      cd=getResolvedClass(d,g_sourceFileDef,clName);
     }
     //printf("stripClass trying `%s' = %p\n",clName.data(),cd);
     if (cd)
@@ -698,7 +708,7 @@ static MemberDef *setCallContextForVar(const QCString &name)
       if (md)
       {
         //printf("name=%s scope=%s\n",locName.data(),scope.data());
-        g_theCallContext.setClass(stripClassName(md->typeString()));
+        g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
         return md;
       }
     }
@@ -711,7 +721,7 @@ static MemberDef *setCallContextForVar(const QCString &name)
 	if (md)
 	{
 	  //printf("name=%s scope=%s\n",locName.data(),scope.data());
-	  g_theCallContext.setClass(stripClassName(md->typeString()));
+	  g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
 	  return md;
 	}
       }
@@ -722,7 +732,7 @@ static MemberDef *setCallContextForVar(const QCString &name)
   ClassDef *mcd = g_theVarContext.findVariable(name);
   if (mcd) // local variable
   {
-    //fprintf(stderr,"local variable\n");
+    //fprintf(stderr,"local variable?\n");
     if (mcd!=VariableContext::dummyContext)
     {
       //fprintf(stderr,"local var `%s' mcd=%s\n",name.data(),mcd->name().data());
@@ -731,6 +741,7 @@ static MemberDef *setCallContextForVar(const QCString &name)
   }
   else
   {
+    //fprintf(stderr,"class member? scope=%s\n",g_classScope.data());
     // look for a class member 
     mcd = getClass(g_classScope);
     if (mcd)
@@ -743,7 +754,7 @@ static MemberDef *setCallContextForVar(const QCString &name)
 	if (g_scopeStack.top()!=CLASSBLOCK)
 	{
           //fprintf(stderr,"class member `%s' mcd=%s\n",name.data(),mcd->name().data());
-	  g_theCallContext.setClass(stripClassName(md->typeString()));
+	  g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
 	}
 	return md;
       }
@@ -759,7 +770,7 @@ static MemberDef *setCallContextForVar(const QCString &name)
       MemberDef *md=mn->getFirst();
       if (!md->isStatic() || md->getBodyDef()==g_sourceFileDef)
       {
-        g_theCallContext.setClass(stripClassName(md->typeString()));
+        g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
         return md;
       }
       return 0;
@@ -776,9 +787,11 @@ static MemberDef *setCallContextForVar(const QCString &name)
 	// in case there are multiple members we could link to, we 
 	// only link to members if defined in the same file or 
 	// defined as external.
-        if (!md->isStatic() || md->getBodyDef()==g_sourceFileDef)
+        if ((!md->isStatic() || md->getBodyDef()==g_sourceFileDef) &&
+	    (g_forceTagReference.isEmpty() || g_forceTagReference==md->getReference())
+	   )
         {
-          g_theCallContext.setClass(stripClassName(md->typeString()));
+          g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
 	  //printf("returning member %s in source file %s\n",md->name().data(),g_sourceFileDef->name().data());
           return md;
         }
@@ -788,6 +801,22 @@ static MemberDef *setCallContextForVar(const QCString &name)
     }
   }
   return 0;
+}
+
+static void updateCallContextForSmartPointer()
+{
+  ClassDef *cd = g_theCallContext.getClass();
+  //printf("updateCallContextForSmartPointer() cd=%s\n",cd ? cd->name().data() : "<none>");
+  MemberDef *md;
+  if (cd && (md=cd->isSmartPointer()))
+  {
+    ClassDef *ncd = stripClassName(md->typeString(),md->getOuterScope());
+    if (ncd)
+    {
+      g_theCallContext.setClass(ncd);
+      //printf("Found smart pointer call %s->%s!\n",cd->name().data(),ncd->name().data());
+    }
+  }
 }
 
 static void addDocCrossReference(MemberDef *src,MemberDef *dst)
@@ -848,9 +877,10 @@ static bool getLinkInScope(const QCString &c,  // scope
   NamespaceDef *nd;
   GroupDef     *gd;
   //fprintf(stderr,"getLinkInScope: trying `%s'::`%s' varOnly=%d\n",c.data(),m.data(),varOnly);
-  if (getDefs(c,m,"()",md,cd,fd,nd,gd,FALSE,g_sourceFileDef) && 
+  if (getDefs(c,m,"()",md,cd,fd,nd,gd,FALSE,g_sourceFileDef,FALSE,g_forceTagReference) && 
       md->isLinkable() && (!varOnly || md->isVariable()))
   {
+    //printf("found it!\n");
     if (g_exampleBlock)
     {
       QCString anchor;
@@ -867,10 +897,9 @@ static bool getLinkInScope(const QCString &c,  // scope
     Definition *d = md->getOuterScope()==Doxygen::globalScope ?
 	            md->getBodyDef() : md->getOuterScope();
     if (md->getGroupDef()) d = md->getGroupDef();
-    //fprintf(stderr,"d=%p linkable=%d\n",d,d?d->isLinkable():0);
     if (d && d->isLinkable())
     {
-      g_theCallContext.setClass(stripClassName(md->typeString()));
+      g_theCallContext.setClass(stripClassName(md->typeString(),md->getOuterScope()));
       //printf("g_currentDefinition=%p g_currentMemberDef=%p g_insideBody=%d\n",
       //        g_currentDefinition,g_currentMemberDef,g_insideBody);
 
@@ -917,7 +946,7 @@ static bool getLink(const char *className,
   return TRUE;
 }
 
-static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
+static void generateClassOrGlobalLink(CodeOutputInterface &ol,const char *clName,
                                       bool typeOnly=FALSE,bool varOnly=FALSE)
 {
   int i=0;
@@ -932,6 +961,7 @@ static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
   {
     className+="-p";
   }
+  className = substitute(className,"\\","::"); // for PHP namespaces
   ClassDef *cd=0,*lcd=0;
   MemberDef *md=0;
   bool isLocal=FALSE;
@@ -940,11 +970,11 @@ static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
   if ((lcd=g_theVarContext.findVariable(className))==0) // not a local variable
   {
     Definition *d = g_currentDefinition;
-    //printf("d=%p g_sourceFileDef=%p\n",d,g_currentDefinition);
+    //printf("d=%s g_sourceFileDef=%s\n",d?d->name().data():"<none>",g_sourceFileDef?g_sourceFileDef->name().data():"<none>");
     cd = getResolvedClass(d,g_sourceFileDef,className,&md);
     //fprintf(stderr,"non-local variable name=%s context=%d cd=%s md=%s!\n",
     //	className.data(),g_theVarContext.count(),cd?cd->name().data():"<none>",
-    //	md?md->name().data():"<none>");
+    //    md?md->name().data():"<none>");
     if (cd==0 && md==0 && (i=className.find('<'))!=-1)
     {
       QCString bareName = className.left(i); //stripTemplateSpecifiersFromScope(className);
@@ -1000,8 +1030,9 @@ static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
     }
     ol.linkableSymbol(g_yyLineNr,cd->name(),cd,
                       g_currentMemberDef ? g_currentMemberDef : g_currentDefinition);
-    writeMultiLineCodeLink(ol,cd->getReference(),cd->getOutputFileBase(),0,clName,cd->briefDescriptionAsTooltip());
+    writeMultiLineCodeLink(ol,cd->getReference(),cd->getOutputFileBase(),cd->anchor(),clName,cd->briefDescriptionAsTooltip());
     addToSearchIndex(className);
+    g_theCallContext.setClass(cd);
     if (md)
     {
       Definition *d = md->getOuterScope()==Doxygen::globalScope ?
@@ -1041,9 +1072,26 @@ static void generateClassOrGlobalLink(CodeOutputInterface &ol,char *clName,
         //fprintf(stderr,"is a global md=%p g_currentDefinition=%s linkable=%d\n",md,g_currentDefinition?g_currentDefinition->name().data():"<none>",md->isLinkable());
 	if (md->isLinkable())
 	{
+	  QCString text;
+	  if (!g_forceTagReference.isEmpty()) // explicit reference to symbol in tag file
+	  {
+	    text=g_forceTagReference;
+	    if (text.right(4)==".tag") // strip .tag if present
+	    {
+	      text=text.left(text.length()-4);
+	    }
+	    text+=getLanguageSpecificSeparator(md->getLanguage());
+	    text+=clName;
+	    md->setName(text);
+	    md->setLocalName(text);
+	  }
+	  else // normal reference
+	  {
+	    text=clName;
+	  }
           ol.linkableSymbol(g_yyLineNr,md->name(),md,
 	                    g_currentMemberDef ? g_currentMemberDef : g_currentDefinition);
-	  writeMultiLineCodeLink(ol,md->getReference(),md->getOutputFileBase(),md->anchor(),clName,md->briefDescriptionAsTooltip());
+	  writeMultiLineCodeLink(ol,md->getReference(),md->getOutputFileBase(),md->anchor(),text,md->briefDescriptionAsTooltip());
           addToSearchIndex(clName);
 	  if (g_currentMemberDef)
 	  {
@@ -1085,7 +1133,7 @@ static bool generateClassMemberLink(CodeOutputInterface &ol,MemberDef *xmd,const
     }
   }
 
-  ClassDef *typeClass = stripClassName(removeAnonymousScopes(xmd->typeString()));
+  ClassDef *typeClass = stripClassName(removeAnonymousScopes(xmd->typeString()),xmd->getOuterScope());
   //fprintf(stderr,"%s -> typeName=%p\n",xmd->typeString(),typeClass);
   g_theCallContext.setClass(typeClass);
 
@@ -1198,7 +1246,7 @@ static void generateMemberLink(CodeOutputInterface &ol,const QCString &varName,
 		  vmd->getClassDef()==jcd)
 	      {
 		//printf("Found variable type=%s\n",vmd->typeString());
-		ClassDef *mcd=stripClassName(vmd->typeString());
+		ClassDef *mcd=stripClassName(vmd->typeString(),vmd->getOuterScope());
 		if (mcd && mcd->isLinkable())
 		{
 		  if (generateClassMemberLink(ol,mcd,memName)) return;
@@ -1219,7 +1267,7 @@ static void generateMemberLink(CodeOutputInterface &ol,const QCString &varName,
 	      vmd->getClassDef()==vcd)
 	  {
 	    //printf("Found variable type=%s\n",vmd->typeString());
-	    ClassDef *mcd=stripClassName(vmd->typeString());
+	    ClassDef *mcd=stripClassName(vmd->typeString(),vmd->getOuterScope());
 	    if (mcd && mcd->isLinkable())
 	    {
 	      if (generateClassMemberLink(ol,mcd,memName)) return;
@@ -1237,8 +1285,26 @@ static void generateMemberLink(CodeOutputInterface &ol,const QCString &varName,
   return;
 }
 
-static void generateFunctionLink(CodeOutputInterface &ol,char *funcName)
+static void generatePHPVariableLink(CodeOutputInterface &ol,const char *varName)
 {
+  QCString name = varName+7; // strip $this->
+  name.prepend("$");
+  //printf("generatePHPVariableLink(%s) name=%s scope=%s\n",varName,name.data(),g_classScope.data());
+  if (!getLink(g_classScope,name,ol,varName))
+  {
+    codifyLines(varName);
+  }
+}
+
+static void generateFunctionLink(CodeOutputInterface &ol,const char *funcName)
+{
+  //CodeClassDef *ccd=0;
+  ClassDef *ccd=0;
+  QCString locScope=g_classScope;
+  QCString locFunc=removeRedundantWhiteSpace(funcName);
+  //fprintf(stdout,"*** locScope=%s locFunc=%s\n",locScope.data(),locFunc.data());
+  int len=2;
+  int i=locFunc.findRev("::");
   if (g_currentMemberDef && g_currentMemberDef->getClassDef() &&
       funcName==g_currentMemberDef->localName() && 
       g_currentMemberDef->getDefLine()==g_yyLineNr &&
@@ -1251,16 +1317,10 @@ static void generateFunctionLink(CodeOutputInterface &ol,char *funcName)
     // in case of overloaded methods, this will make sure that we link to
     // the correct method, and thereby get the correct reimplemented relations.
     // See also bug 549022.
-    return;
+    goto exit;
   }
-  //CodeClassDef *ccd=0;
-  ClassDef *ccd=0;
-  QCString locScope=g_classScope;
-  QCString locFunc=removeRedundantWhiteSpace(funcName);
-  //fprintf(stdout,"*** locScope=%s locFunc=%s\n",locScope.data(),locFunc.data());
-  int len=2;
-  int i=locFunc.findRev("::");
   if (i==-1) i=locFunc.findRev("."),len=1;
+  if (i==-1) i=locFunc.findRev("\\"),len=1; // for PHP
   if (i>0)
   {
     if (locScope.isEmpty())
@@ -1292,7 +1352,7 @@ static void generateFunctionLink(CodeOutputInterface &ol,char *funcName)
       {
 	if (getLink(bcli.current()->classDef->name(),locFunc,ol,funcName)) 
 	{
-	  return;
+	  goto exit;
 	}
       }
     }
@@ -1301,6 +1361,8 @@ static void generateFunctionLink(CodeOutputInterface &ol,char *funcName)
   {
     generateClassOrGlobalLink(ol,funcName);
   }
+exit:  
+  g_forceTagReference.resize(0);
   return;
 }
 
@@ -1551,7 +1613,7 @@ static void writeObjCMethodCall(ObjCCallCtx *ctx)
 	      writeMultiLineCodeLink(*g_code,
 		    cd->getReference(),
 		    cd->getOutputFileBase(),
-		    0,
+		    cd->anchor(),
 		    pObject->data(),
 		    cd->briefDescriptionAsTooltip());
 	    }
@@ -1567,7 +1629,7 @@ static void writeObjCMethodCall(ObjCCallCtx *ctx)
 	   	writeMultiLineCodeLink(*g_code,
 		    cd->getReference(),
 		    cd->getOutputFileBase(),
-		    0,
+		    cd->anchor(),
 		    pObject->data(),
 		    cd->briefDescriptionAsTooltip());
 	      }
@@ -1712,12 +1774,13 @@ static int yyread(char *buf,int max_size)
 B       [ \t]
 BN      [ \t\n\r]
 ID	"$"?[a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF]*
-SCOPENAME "$"?(({ID}?{BN}*"::"{BN}*)*)((~{BN}*)?{ID})
+SEP      ("::"|"\\")
+SCOPENAME ({SEP}{BN}*)?({ID}{BN}*{SEP}{BN}*)*("~"{BN}*)?{ID}
 TEMPLIST "<"[^\"\}\{\(\)\/\n\>]*">"
-SCOPETNAME ((({ID}{TEMPLIST}?){BN}*"::"{BN}*)*)((~{BN}*)?{ID})
-SCOPEPREFIX ({ID}{TEMPLIST}?{BN}*"::"{BN}*)+
-KEYWORD_OBJC ("@public"|"@private"|"@protected"|"@class"|"@implementation"|"@interface"|"@end"|"@selector"|"@protocol"|"@optional"|"@required"|"@throw"|"@synthesize")
-KEYWORD ("asm"|"__assume"|"auto"|"class"|"const"|"delete"|"enum"|"explicit"|"extern"|"false"|"friend"|"gcnew"|"gcroot"|"get"|"inline"|"internal"|"mutable"|"namespace"|"new"|"nullptr"|"override"|"operator"|"pin_ptr"|"private"|"protected"|"public"|"raise"|"register"|"remove"|"self"|"set"|"sizeof"|"static"|"struct"|"__super"|"template"|"generic"|"this"|"true"|"typedef"|"typeid"|"typename"|"union"|"using"|"virtual"|"volatile"|"abstract"|"final"|"import"|"synchronized"|"transient"|{KEYWORD_OBJC})
+SCOPETNAME (((({ID}{TEMPLIST}?){BN}*)?{SEP}{BN}*)*)((~{BN}*)?{ID})
+SCOPEPREFIX ({ID}{TEMPLIST}?{BN}*{SEP}{BN}*)+
+KEYWORD_OBJC ("@public"|"@private"|"@protected"|"@class"|"@implementation"|"@interface"|"@end"|"@selector"|"@protocol"|"@optional"|"@required"|"@throw"|"@synthesize"|"@property")
+KEYWORD ("asm"|"__assume"|"auto"|"class"|"const"|"delete"|"enum"|"explicit"|"extern"|"false"|"friend"|"gcnew"|"gcroot"|"get"|"inline"|"internal"|"mutable"|"namespace"|"new"|"nullptr"|"override"|"operator"|"pin_ptr"|"private"|"protected"|"public"|"raise"|"register"|"remove"|"self"|"set"|"sizeof"|"static"|"struct"|"__super"|"function"|"template"|"generic"|"this"|"true"|"typedef"|"typeid"|"typename"|"union"|"using"|"virtual"|"volatile"|"abstract"|"final"|"import"|"synchronized"|"transient"|{KEYWORD_OBJC})
 FLOWKW  ("break"|"case"|"catch"|"continue"|"default"|"do"|"else"|"finally"|"for"|"foreach"|"for each"|"goto"|"if"|"return"|"switch"|"throw"|"throws"|"try"|"while"|"@try"|"@catch"|"@finally")
 TYPEKW  ("bool"|"char"|"double"|"float"|"int"|"long"|"object"|"short"|"signed"|"unsigned"|"void"|"wchar_t"|"size_t"|"boolean"|"id"|"SEL"|"string")
 CASTKW ("const_cast"|"dynamic_cast"|"reinterpret_cast"|"static_cast")
@@ -1790,7 +1853,7 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
   					  codifyLines(yytext);
 					  endFontClass();
 					}
-<Body>(KEYWORD_CPPCLI_DATATYPE|("partial"{B}+)?"class"|"struct"|"union"|"namespace"){B}+ { 
+<Body>(KEYWORD_CPPCLI_DATATYPE|("partial"{B}+)?"class"|"struct"|"union"|"namespace"|"interface"){B}+ { 
   					  startFontClass("keyword");
   					  codifyLines(yytext);
 					  endFontClass();
@@ -1888,10 +1951,15 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  //FileInfo *f;
 					  bool ambig;
 					  bool found=FALSE;
-                                          FileDef *fd=0;
-					  //printf("looking for include %s\n",yytext);
-					  if ((fd=findFileDef(Doxygen::inputNameDict,yytext,ambig)) &&
-					      fd->isLinkable())
+					  //QCString absPath = yytext;
+					  //if (g_sourceFileDef && QDir::isRelativePath(absPath))
+					  //{
+					  //  absPath = QDir::cleanDirPath(g_sourceFileDef->getPath()+"/"+absPath);
+					  //}
+
+                                          FileDef *fd=findFileDef(Doxygen::inputNameDict,yytext,ambig);
+					  //printf("looking for include %s -> %s fd=%p\n",yytext,absPath.data(),fd);
+					  if (fd && fd->isLinkable())
 					  {
 					    if (ambig) // multiple input files match the name
 					    {
@@ -1918,9 +1986,9 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					      found = TRUE;
 					    }
 					  }
+					  //printf("      include file %s found=%d\n",fd ? fd->absFilePath().data() : "<none>",found);
 					  if (found)
 					  {
-					    //printf("      include file %s found=%d\n",fd->absFilePath().data(),found);
 					    g_code->writeCodeLink(fd->getReference(),fd->getOutputFileBase(),0,yytext,fd->briefDescriptionAsTooltip());
 					  }
 					  else
@@ -2054,9 +2122,16 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  generateClassOrGlobalLink(*g_code,yytext);
 					  BEGIN( ClassVar );
 					}
+<ClassName>{ID}("\\"{ID})*		{ // PHP namespace
+                                          g_curClassName=substitute(yytext,"\\","::");
+  					  g_scopeStack.push(CLASSBLOCK);
+					  pushScope(g_curClassName);
+					  addType();
+					  generateClassOrGlobalLink(*g_code,yytext);
+					  BEGIN( ClassVar );
+  					}
 <PackageName>{ID}("."{ID})*		{
-                                          g_curClassName=yytext;
-					  g_curClassName=substitute(g_curClassName,".","::");
+					  g_curClassName=substitute(yytext,".","::");
 					  //printf("found package: %s\n",g_curClassName.data());
 					  addType();
 					  codifyLines(yytext);
@@ -2093,7 +2168,8 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  g_curClassBases.clear();
   					  BEGIN( Bases ); 
 					}
-<PackageName>[ \t]*";"				|
+<PackageName>[ \t]*";"			|
+<Bases>^{B}*/"@"{ID}                    | // Objective-C interface
 <Bases,ClassName,ClassVar,CppCliTypeModifierFollowup>{B}*"{"{B}* {
                                           g_theVarContext.pushScope();
   					  g_code->codify(yytext);
@@ -2116,7 +2192,7 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					    //fprintf(stderr,"***** g_curClassName=%s\n",g_curClassName.data());
 					    if (getResolvedClass(g_currentDefinition,g_sourceFileDef,g_curClassName)==0)
 					    {
-					      //printf("Adding new class %s\n",g_curClassName.data());
+					      //fprintf(stderr,"Adding new class %s\n",g_curClassName.data());
 					      ClassDef *ncd=new ClassDef("<code>",1,
 				 		  g_curClassName,ClassDef::Class,0,0,FALSE);
 					      g_codeClassSDict->append(g_curClassName,ncd);
@@ -2150,8 +2226,8 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
   					  g_code->codify(yytext);
 					  endFontClass();
 					}
-<Bases>{ID}	                        { 
-					  //printf("%s:addBase(%s)\n",g_ccd.name.data(),yytext);
+<Bases>{SEP}?({ID}{SEP})*{ID}           { 
+					  //fprintf(stderr,"%s:addBase(%s)\n",g_curClassName.data(),yytext);
   					  g_curClassBases.inSort(yytext); 
 					  generateClassOrGlobalLink(*g_code,yytext);
 					}
@@ -2209,7 +2285,15 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
   					  g_name+=yytext; 
   					  BEGIN( FuncCall );
 					}
-<Body>{SCOPEPREFIX}?"operator"{B}*[^\(\n]+/"(" {
+<Body>{SCOPEPREFIX}?"operator"/"("      {
+  					  addType();
+					  generateFunctionLink(*g_code,yytext);
+  					  g_bracketCount=0;
+					  g_args.resize(0);
+  					  g_name+=yytext; 
+  					  BEGIN( FuncCall );
+                                        }
+<Body>{SCOPEPREFIX}?"operator"[^a-z_A-Z0-9\(\n]+/"(" {
   					  addType();
 					  generateFunctionLink(*g_code,yytext);
   					  g_bracketCount=0;
@@ -2295,6 +2379,13 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
   					  codifyLines(yytext);
 					  endFontClass();
   					}
+<Body>"*"{B}*")"                        { // end of cast?
+  					  g_code->codify(yytext);
+					  g_theCallContext.popScope();
+					  g_bracketCount--;
+                                          g_parmType = g_name;
+					  BEGIN(FuncCall);
+                                        }
 <Body>[\\|\)\+\-\/\%\~\!]		{
   					  g_code->codify(yytext);
   				          g_name.resize(0);g_type.resize(0);
@@ -2367,6 +2458,11 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
                                           g_lastTemplCastContext = YY_START;
 					  BEGIN(TemplCast);
 					}
+<Body>"$this->"{SCOPENAME}/{BN}*[;,)\]] { // PHP member variable
+					  addType();
+					  generatePHPVariableLink(*g_code,yytext);
+  					  g_name+=yytext+7; 
+                                        }
 <Body,TemplCast>{SCOPENAME}{B}*"<"[^\n\/\-\.\{\"\>]*">"("::"{ID})*/{B}* { // A<T> *pt;
 					  int i=QCString(yytext).find('<');
 					  QCString kw = QCString(yytext).left(i).stripWhiteSpace();
@@ -2380,7 +2476,9 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					}
 <Body>{SCOPENAME}/{BN}*[;,)\]]		{ // "int var;" or "var, var2" or "debug(f) macro" 
 					  addType();
-					  generateClassOrGlobalLink(*g_code,yytext,FALSE,TRUE);
+					  // changed this to generateFunctionLink, see bug 624514
+					  //generateClassOrGlobalLink(*g_code,yytext,FALSE,TRUE);
+					  generateFunctionLink(*g_code,yytext);
   					  g_name+=yytext; 
 					}
 <Body>{SCOPENAME}/{B}* 			{ // p->func()
@@ -2396,11 +2494,9 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  addType();
   					  g_name=varname; 
 					}
-<Body>{SCOPETNAME}/{BN}*"("		{ // a() or c::a() or t<A,B>::a()
+<Body>{SCOPETNAME}/{BN}*"("		{ // a() or c::a() or t<A,B>::a() or A\B\foo()
   					  addType();
 					  generateFunctionLink(*g_code,yytext);
-					  //printf("---> g_classScope=%s\n",g_classScope.data());
-					  //g_theVarContext.addVariable(g_type,yytext);
   					  g_bracketCount=0;
 					  g_args.resize(0);
   					  g_name+=yytext; 
@@ -2486,6 +2582,10 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  endFontClass();
   					}
 <Body>"."|"->"				{ 
+  				          if (yytext[0]=='-') // -> could be overloaded
+					  {
+					    updateCallContextForSmartPointer();
+					  }
   					  g_code->codify(yytext);
 					  g_memCallContext = YY_START;
   					  BEGIN( MemberCall ); 
@@ -2778,8 +2878,17 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  }
   					  g_code->codify(yytext);
   					}
-<MemberCall,MemberCall2,FuncCall>")"	{ 
-					  g_theVarContext.addVariable(g_parmType,g_parmName);
+<MemberCall,MemberCall2,FuncCall>("*"{B}*)?")"	{ 
+                                          if (yytext[0]==')') // no a pointer cast
+                                          {
+                                            //printf("addVariable(%s,%s)\n",g_parmType.data(),g_parmName.data());
+					    g_theVarContext.addVariable(g_parmType,g_parmName);
+                                          }
+                                          else
+                                          {
+                                            g_parmType.resize(0);
+                                            g_parmName.resize(0);
+                                          }
 					  g_theCallContext.popScope();
 					  g_inForEachExpression = FALSE;
 					  //g_theCallContext.setClass(0); // commented out, otherwise a()->b() does not work for b().
@@ -2840,6 +2949,7 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  //g_theCallContext.popScope();
 					  g_parmType.resize(0);g_parmName.resize(0);
 					  int index = g_name.findRev("::");
+					  //fprintf(stderr,"g_name=%s\n",g_name.data());
 					  if (index!=-1) 
 					  {
 					    QCString scope = g_name.left(index);
@@ -2848,13 +2958,15 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					    if (cd)
 					    {
 					      setClassScope(cd->name());
+  					      g_scopeStack.push(SCOPEBLOCK);
+                                              DBG_CTX((stderr,"** scope stack push SCOPEBLOCK\n"));
 					    }
-					    else
+					    else 
 					    {
-					      setClassScope(g_realScope);
+					      //setClassScope(g_realScope);
+  					      g_scopeStack.push(INNERBLOCK);
+                                              DBG_CTX((stderr,"** scope stack push INNERBLOCK\n"));
 					    }
-                                            DBG_CTX((stderr,"** scope stack push SCOPEBLOCK\n"));
-  					    g_scopeStack.push(SCOPEBLOCK);
 					  }
 					  else
 					  {
@@ -2970,7 +3082,7 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 <FuncCall,MemberCall2>("("{B}*("*"{B}*)+{ID}*{B}*")"{B}*)/("."|"->") { 
   					  g_code->codify(yytext);
 					  int s=0;while (!isId(yytext[s])) s++;
-                                          int e=yyleng-1;while (!isId(yytext[e])) e--;
+                                          int e=(int)yyleng-1;while (!isId(yytext[e])) e--;
 					  g_name=((QCString)yytext).mid(s,e-s+1); 
 					  BEGIN( MemberCall2 ); 
 					}
@@ -2989,6 +3101,10 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  BEGIN( MemberCall2 ); 
     					}
 <MemberCall2>"->"|"."			{
+  				          if (yytext[0]=='-') // -> could be overloaded
+					  {
+					    updateCallContextForSmartPointer();
+					  }
   					  g_code->codify(yytext);
 					  g_memCallContext = YY_START;
   					  BEGIN( MemberCall ); 
@@ -3007,6 +3123,10 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 <SkipComment>[ \t]*"*/"			{ 
   					  g_code->codify(yytext);
 					  endFontClass();
+  					  if (g_lastCContext==SkipCPP)
+                                          {
+                                            startFontClass("preprocessor");
+                                          }
   					  BEGIN( g_lastCContext ) ; 
 					}
 <SkipCxxComment>[^\r\n]*"\\"[\r]?\n	{ // line continuation
@@ -3159,7 +3279,7 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					  }
   					}
 <*>"//"[!/][^\n]*\n			{ // strip special one-line comment
-                                          if (YY_START==SkipComment || YY_START==SkipString || YY_START==SkipCPP) REJECT;
+                                          if (YY_START==SkipComment || YY_START==SkipString) REJECT;
   					  if (Config_getBool("STRIP_CODE_COMMENTS"))
 					  {
 					    char c[2]; c[0]='\n'; c[1]=0;
@@ -3171,6 +3291,12 @@ OPERATOR {ARITHOP}|{ASSIGNOP}|{LOGICOP}|{BITOP}
 					    codifyLines(yytext);
 					    endFontClass();
 					  }
+  					}
+<*>"/*[tag:"[^\]\n]*"]*/"{B}*		{ // special pattern /*[tag:filename]*/ to force linking to a tag file
+  					  g_forceTagReference=yytext;
+					  int s=g_forceTagReference.find(':');
+					  int e=g_forceTagReference.findRev(']');
+					  g_forceTagReference = g_forceTagReference.mid(s+1,e-s-1);
   					}
 <*>\n{B}*"/*"[!*]/[^/*] 		{
 					  if (Config_getBool("STRIP_CODE_COMMENTS"))
@@ -3337,6 +3463,7 @@ static void restoreObjCContext()
 void resetCCodeParserState()
 {
   //printf("***initParseCodeContext()\n");
+  g_forceTagReference.resize(0);
   g_theVarContext.clear();
   g_classScopeLengthStack.setAutoDelete(TRUE);
   g_classScopeLengthStack.clear();
@@ -3353,7 +3480,8 @@ void parseCCode(CodeOutputInterface &od,const char *className,const QCString &s,
 		  int startLine,int endLine,bool inlineFragment,
 		  MemberDef *memberDef,bool showLineNumbers)
 {
-  //printf("***parseCode() exBlock=%d exName=%s fd=%p\n",exBlock,exName,fd);
+  //printf("***parseCode() exBlock=%d exName=%s fd=%p className=%s\n",
+  //    exBlock,exName,fd,className);
   if (s.isEmpty()) return;
   if (g_codeClassSDict==0)
   {
@@ -3383,14 +3511,17 @@ void parseCCode(CodeOutputInterface &od,const char *className,const QCString &s,
   g_theCallContext.clear();
   g_scopeStack.clear();
   g_classScope    = className;
+  //printf("parseCCode %s\n",className);
   g_exampleBlock  = exBlock; 
   g_exampleName   = exName;
   g_sourceFileDef = fd;
   g_lineNumbers   = fd!=0 && showLineNumbers;
-  if (exBlock && fd==0)
+  bool cleanupSourceDef = FALSE;
+  if (/* exBlock */ fd==0)
   {
     // create a dummy filedef for the example
-    g_sourceFileDef = new FileDef("",exName);
+    g_sourceFileDef = new FileDef("",(exName?exName:"generated"));
+    cleanupSourceDef = TRUE;
   }
   if (g_sourceFileDef) 
   {
@@ -3405,7 +3536,8 @@ void parseCCode(CodeOutputInterface &od,const char *className,const QCString &s,
   g_bracketCount = 0;
   if (!g_exampleName.isEmpty())
   {
-    g_exampleFile = convertNameToFile(g_exampleName+"-example");
+    g_exampleFile = convertNameToFile(g_exampleName+"-example",FALSE,TRUE);
+    //printf("g_exampleFile=%s\n",g_exampleFile.data());
   }
   g_includeCodeFragment = inlineFragment;
   //printf("** exBlock=%d exName=%s include=%d\n",exBlock,exName,inlineFragment);
@@ -3425,7 +3557,7 @@ void parseCCode(CodeOutputInterface &od,const char *className,const QCString &s,
     endFontClass();
     g_code->endCodeLine();
   }
-  if (exBlock && fd==0)
+  if (cleanupSourceDef)
   {
     // delete the temporary file definition used for this example
     delete g_sourceFileDef;

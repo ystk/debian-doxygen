@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -40,7 +40,7 @@
  Translator class (by the local maintainer) when the localized
  translator is made up-to-date again.
 */
-class TranslatorTurkish : public Translator
+class TranslatorTurkish : public TranslatorAdapter_1_7_5
 {
   public:
 
@@ -125,7 +125,7 @@ class TranslatorTurkish : public Translator
 
     /*! put in the class documentation */
     virtual QCString trListOfAllMembers()
-    { return "Tüm üyelerin listesi."; }
+    { return "Tüm üyelerin listesi"; }
 
     /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()

@@ -2,7 +2,7 @@
  *
  * $Id: debug.cpp,v 1.7 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -25,6 +25,7 @@
 
 //------------------------------------------------------------------------
 
+/** Helper struct representing a mapping from debug label to a debug ID */
 struct LabelMap
 {
   const char *name;
@@ -44,9 +45,12 @@ static LabelMap s_labels[] =
   { "printtree",    Debug::PrintTree    },
   { "time",         Debug::Time         },
   { "extcmd",       Debug::ExtCmd       },
+  { "markdown",     Debug::Markdown     },
+  { "filteroutput", Debug::FilterOutput },
   { 0,             (Debug::DebugMask)0  }
 };
 
+/** Class representing a mapping from debug labels to debug IDs. */
 class LabelMapper
 {
   public:

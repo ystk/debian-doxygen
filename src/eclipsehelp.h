@@ -2,7 +2,7 @@
  *
  * $Id: htmlgen.h,v 1.51 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -30,9 +30,9 @@
 
 /* -- forward declarations */
 class QFile;
+class Definition;
 
-/*!
- * \brief Generator of Eclipse help files
+/** Generator for Eclipse help files.
  *
  * This class generates the Eclipse specific help files.
  * These files can be used to generate a help plugin readable
@@ -49,10 +49,10 @@ class EclipseHelp : public IndexIntf
     virtual void finalize();
     virtual void incContentsDepth();
     virtual void decContentsDepth();
-    virtual void addContentsItem(bool isDir, const char *name, const char *ref = 0,
-                                 const char *file = 0, const char *anchor = 0);
-    virtual void addIndexItem(Definition *context,MemberDef *md,
-                              const char *anchor,const char *word);
+    virtual void addContentsItem(bool isDir, const char *name, const char *ref,
+                                 const char *file, const char *anchor,bool separateIndex,bool addToNavIndex,
+                                 Definition *def);
+    virtual void addIndexItem(Definition *context,MemberDef *md,const char *title);
     virtual void addIndexFile(const char *name);
     virtual void addImageFile(const char *name);
     virtual void addStyleSheetFile(const char *name);

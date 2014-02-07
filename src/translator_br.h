@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby
@@ -15,6 +15,8 @@
  *    Thanks to Jorge Ramos, Fernando Carijo and others for their contributions.
  *
  * History:
+ *   20110628:
+ *	- Updated to 1.7.5;
  *   20100531:
  *	- Updated to 1.6.3;
  *   20091218:
@@ -32,7 +34,7 @@
 #ifndef TRANSLATOR_BR_H
 #define TRANSLATOR_BR_H
 
-class TranslatorBrazilian : public Translator
+class TranslatorBrazilian : public TranslatorAdapter_1_8_0
 {
   public:
 
@@ -111,7 +113,7 @@ class TranslatorBrazilian : public Translator
 
     /*! put in the class documentation */
     virtual QCString trListOfAllMembers()
-    { return "Lista de todos os Membros."; }
+    { return "Lista de todos os Membros"; }
 
     /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()
@@ -1862,5 +1864,25 @@ class TranslatorBrazilian : public Translator
       }
       return sdate;
     }
+    
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "Referências Bibliográficas"; }
+
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    {
+      // Note: I will left it as is because "Direitos autorais" may not fit
+      // in the text.
+      return "Copyright";
+    }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    { return QCString("Grafo de dependências do diretório ")+name+":"; }    
 };
 #endif

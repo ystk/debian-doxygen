@@ -2,7 +2,7 @@
  *
  * $Id: commentcnv.l,v 1.80 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -25,6 +25,7 @@
 #include <qstack.h>
 #include <qregexp.h>
 #include <qtextstream.h>
+#include <qglobal.h>
 
 #include "bufstr.h"
 #include "debug.h"
@@ -33,6 +34,7 @@
 #include "doxygen.h"
 #include "util.h"
 
+#include <assert.h>
 
 #define ADDCHAR(c)    g_outBuf->addChar(c)
 #define ADDARRAY(a,s) g_outBuf->addArray(a,s)
@@ -62,6 +64,8 @@ static QCString g_blockName;
 static int      g_lastCommentContext;
 static bool     g_inSpecialComment;
 static bool     g_inRoseComment;
+static int      g_stringContext;
+static int      g_charContext;
 static int      g_javaBlock;
 static bool     g_specialComment;
 
@@ -78,27 +82,38 @@ static void replaceCommentMarker(const char *s,int len)
 {
   const char *p=s;
   char c;
-  // copy blanks
+  // copy leading blanks
   while ((c=*p) && (c==' ' || c=='\t' || c=='\n')) 
   {
     ADDCHAR(c);
     g_lineNr += c=='\n';
     p++;
   }
-  // replace start of comment marker by spaces
+  // replace start of comment marker by blanks and the last character by a *
+  int blanks=0;
   while ((c=*p) && (c=='/' || c=='!' || c=='#')) 
   {
-    ADDCHAR(' ');
+    blanks++;
     p++;
     if (*p=='<') // comment-after-item marker 
     { 
-      ADDCHAR(' '); 
+      blanks++;
       p++; 
     }
     if (c=='!') // end after first !
     {
       break;
     }
+  }
+  if (blanks>0)
+  {
+    while (blanks>2)
+    {
+      ADDCHAR(' ');
+      blanks--;
+    }
+    if (blanks>1) ADDCHAR('*');
+    ADDCHAR(' ');
   }
   // copy comment line to output
   ADDARRAY(p,len-(p-s));
@@ -134,7 +149,7 @@ static inline void copyToOutput(const char *s,int len)
       }
     }
   }
-  else
+  else if (len>0)
   {
     ADDARRAY(s,len);
     static int tabSize=Config_getInt("TAB_SIZE");
@@ -180,64 +195,6 @@ static void endCondSection()
   }
 }
 
-#if 0
-/** remove and executes cond and endcond commands in \a s */
-static QCString handleCondCmdInAliases(const QCString &s)
-{
-  QCString result;
-  //printf("handleCondCmdInAliases(%s)\n",s.data());
-  static QRegExp cmdPat("[\\\\@][a-z_A-Z][a-z_A-Z0-9]*");
-  int p=0,i,l;
-  while ((i=cmdPat.match(s,p,&l))!=-1)
-  {
-    result+=s.mid(p,i-p);
-    QCString cmd = s.mid(i+1,l-1);
-    //printf("Found command %s\n",cmd.data());
-    if (cmd=="cond")
-    {
-      int sp=i+l,ep;
-      const char *arg=s.data()+sp;
-      char c;
-      // skip spaces
-      while ((c=*arg) && (c==' ' || c=='\t')) arg++,sp++;
-      // read argument
-      if (*arg=='\n') // no arg
-      {
-	startCondSection(" ");
-	ep=sp;
-      }
-      else // get argument
-      {
-	ep=sp;
-	while ((c=*arg) && isId(c)) arg++,ep++;
-	if (ep>sp)
-	{
-	  QCString id = s.mid(sp,ep-sp);
-	  //printf("Found conditional section id %s\n",id.data());
-	  startCondSection(id);
-	}
-	else // invalid identifier
-	{
-	}
-      }
-      p=ep;
-    }
-    else if (cmd=="endcond")
-    {
-      endCondSection();
-      p=i+l;
-    }
-    else
-    {
-      result+=s.mid(i,l);
-      p=i+l;
-    }
-  }
-  result+=s.right(s.length()-p);
-  return result;
-}
-#endif
-
 /** copies string \a s with length \a len to the output, while 
  *  replacing any alias commands found in the string.
  */
@@ -281,7 +238,7 @@ void replaceComment(int offset);
 %%
 
 <Scan>[^"'!\/\n\\#\\-]*           { /* eat anything that is not " / or \n */ 
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
 				   }
 <Scan>"\"\"\""!                     { /* start of python long comment */
                                      if (g_lang!=SrcLangExt_Python)
@@ -291,44 +248,52 @@ void replaceComment(int offset);
 				     else
 				     {
                                        g_pythonDocString = TRUE;
-                                       copyToOutput(yytext,yyleng); 
+                                       copyToOutput(yytext,(int)yyleng); 
 				       BEGIN(CComment);
 				     }
                                    }
 <Scan>"!>"			   {
-  			             if (g_lang!=SrcLangExt_F90)
+  			             if (g_lang!=SrcLangExt_Fortran)
 				     {
 				       REJECT;
 				     }
 				     else
 				     {
-                                       copyToOutput(yytext,yyleng); 
+                                       copyToOutput(yytext,(int)yyleng); 
 				       BEGIN(CComment);
 				     }
                                    }
 <Scan>"\""                         { /* start of a string */ 
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
+				     g_stringContext = YY_START;
 				     BEGIN(SkipString); 
                                    }
 <Scan>'				   {
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
+				     g_charContext = YY_START;
 				     BEGIN(SkipChar);
   				   }
 <Scan>\n                           { /* new line */ 
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <Scan>("//!"|"///").*/\n[ \t]*"//"[\/!][^\/] { /* start C++ style special comment block */
-  				     if (g_mlBrief) REJECT; // bail out if we do not need to convert
-  				     int i=3;
-				     if (yytext[2]=='/')
+  				     if (g_mlBrief) 
 				     {
-				       while (i<(int)yyleng && yytext[i]=='/') i++;
+				       REJECT; // bail out if we do not need to convert
 				     }
-				     g_blockHeadCol=g_col;
-                                     copyToOutput("/**",3); 
-				     replaceAliases(yytext+i);
-				     g_inSpecialComment=TRUE;
-				     BEGIN(SComment); 
+				     else
+				     {
+				       int i=3;
+				       if (yytext[2]=='/')
+				       {
+					 while (i<(int)yyleng && yytext[i]=='/') i++;
+				       }
+				       g_blockHeadCol=g_col;
+				       copyToOutput("/**",3); 
+				       replaceAliases(yytext+i);
+				       g_inSpecialComment=TRUE;
+				       BEGIN(SComment); 
+				     }
                                    }
 <Scan>"//##Documentation".*/\n	   { /* Start of Rational Rose ANSI C++ comment block */
                                      if (g_mlBrief) REJECT;
@@ -340,13 +305,13 @@ void replaceComment(int offset);
 				     BEGIN(SComment);
   				   }
 <Scan>"//"/.*\n	                   { /* one line C++ comment */ 
-  				     copyToOutput(yytext,yyleng); 
+  				     copyToOutput(yytext,(int)yyleng); 
 				     g_readLineCtx=YY_START;
 				     BEGIN(ReadLine);
 				   }
 <Scan>"/*"[*!]?			   { /* start of a C comment */
-  			             g_specialComment=yyleng==3;
-                                     copyToOutput(yytext,yyleng); 
+  			             g_specialComment=(int)yyleng==3;
+                                     copyToOutput(yytext,(int)yyleng); 
 				     BEGIN(CComment); 
                                    }
 <Scan>"#"("#")?		           {
@@ -356,7 +321,7 @@ void replaceComment(int offset);
 				     }
 				     else
 				     {
-                                       copyToOutput(yytext,yyleng); 
+                                       copyToOutput(yytext,(int)yyleng); 
 				       BEGIN(CComment);
 				     }
   				   }
@@ -367,7 +332,18 @@ void replaceComment(int offset);
 				     }
 				     else
 				     {
-                                       copyToOutput(yytext,yyleng); 
+                                       copyToOutput(yytext,(int)yyleng); 
+				       BEGIN(CComment);
+				     }
+  				   }
+<Scan>"!>"			   {
+                                     if (g_lang!=SrcLangExt_Fortran)
+				     {
+				       REJECT;
+				     }
+				     else
+				     {
+                                       copyToOutput(yytext,(int)yyleng); 
 				       BEGIN(CComment);
 				     }
   				   }
@@ -379,14 +355,14 @@ void replaceComment(int offset);
                                      BEGIN(VerbatimCode);
   				   }
 <CComment,ReadLine>[\\@]("dot"|"code"|"msc")/[^a-z_A-Z0-9] { /* start of a verbatim block */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
 				     g_lastCommentContext = YY_START;
 				     g_javaBlock=0;
 				     g_blockName=&yytext[1];
                                      BEGIN(VerbatimCode);
   				   }
 <CComment,ReadLine>[\\@]("f$"|"f["|"f{"[a-z]*) {
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
 				     g_blockName=&yytext[1];
 				     if (g_blockName.at(1)=='[')
 				     {
@@ -400,16 +376,16 @@ void replaceComment(int offset);
 				     BEGIN(Verbatim);
   			           }
 <CComment,ReadLine>[\\@]("verbatim"|"latexonly"|"htmlonly"|"xmlonly"|"rtfonly"|"manonly")/[^a-z_A-Z0-9] { /* start of a verbatim block */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
 				     g_blockName=&yytext[1];
 				     g_lastCommentContext = YY_START;
                                      BEGIN(Verbatim);
                                    }
 <Scan>.                            { /* any other character */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <Verbatim>[\\@]("endverbatim"|"endlatexonly"|"endhtmlonly"|"endxmlonly"|"endrtfonly"|"endmanonly"|"f$"|"f]"|"f}") { /* end of verbatim block */
-                                     copyToOutput(yytext,yyleng);
+                                     copyToOutput(yytext,(int)yyleng);
 				     if (yytext[1]=='f') // end of formula
 				     {
 				       BEGIN(g_lastCommentContext);
@@ -427,7 +403,7 @@ void replaceComment(int offset);
 				     else
 				     {
 				       g_javaBlock++;
-                                       copyToOutput(yytext,yyleng);
+                                       copyToOutput(yytext,(int)yyleng);
 				     }
                                    }
 <VerbatimCode>"}"		   {
@@ -445,12 +421,12 @@ void replaceComment(int offset);
 				       }
 				       else
 				       {
-                                         copyToOutput(yytext,yyleng);
+                                         copyToOutput(yytext,(int)yyleng);
 				       }
 				     }
   				   }
 <VerbatimCode>[\\@]("enddot"|"endcode"|"endmsc") { /* end of verbatim block */
-                                     copyToOutput(yytext,yyleng);
+                                     copyToOutput(yytext,(int)yyleng);
 				     if (&yytext[4]==g_blockName)
 				     {
 				       BEGIN(g_lastCommentContext);
@@ -459,50 +435,61 @@ void replaceComment(int offset);
 <VerbatimCode>^[ \t]*"//"[\!\/]?   { /* skip leading comments */
   				     if (!g_inSpecialComment)
 				     {
-                                       copyToOutput(yytext,yyleng); 
+                                       copyToOutput(yytext,(int)yyleng); 
 				     }
   				   }
 <Verbatim,VerbatimCode>[^@\/\\\n{}]* { /* any character not a backslash or new line or } */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <Verbatim,VerbatimCode>\n	   { /* new line in verbatim block */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
+<Verbatim,VerbatimCode>^[ \t]*"///"  {
+  				     if (g_blockName=="dot" || g_blockName=="msc" || g_blockName.at(0)=='f')
+				     {
+				       // see bug 487871, strip /// from dot images and formulas.
+				       copyToOutput("   ",3);
+				     }
+				     else // even slashes are verbatim (e.g. \verbatim, \code)
+				     {
+				       REJECT;
+				     }
+  				   }
 <Verbatim,VerbatimCode>.	   { /* any other character */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <SkipString>\\.                    { /* escaped character in string */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <SkipString>"\""       	           { /* end of string */ 
-                                     copyToOutput(yytext,yyleng); 
-				     BEGIN(Scan); 
+                                     copyToOutput(yytext,(int)yyleng); 
+				     BEGIN(g_stringContext); 
                                    }
 <SkipString>.                      { /* any other string character */ 
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <SkipString>\n                     { /* new line inside string (illegal for some compilers) */ 
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <SkipChar>\\.		           { /* escaped character */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <SkipChar>'                        { /* end of character literal */ 
-                                     copyToOutput(yytext,yyleng); 
-                                     BEGIN(Scan);
+                                     copyToOutput(yytext,(int)yyleng); 
+                                     BEGIN(g_charContext);
                                    }
 <SkipChar>.                        { /* any other string character */ 
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <SkipChar>\n                       { /* new line character */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 
-<CComment>[^\\!@*\n{]*	           { /* anything that is not a '*' or command */ 
-                                     copyToOutput(yytext,yyleng); 
+<CComment>[^\\!@*\n{\"]*           { /* anything that is not a '*' or command */ 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
-<CComment>"*"+[^*/\\@\n]*          { /* stars without slashes */
-                                     copyToOutput(yytext,yyleng); 
+<CComment>"*"+[^*/\\@\n{\"]*       { /* stars without slashes */
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <CComment>"\"\"\""                 { /* end of Python docstring */
                                      if (g_lang!=SrcLangExt_Python)
@@ -512,12 +499,12 @@ void replaceComment(int offset);
 				     else
 				     {
                                        g_pythonDocString = FALSE;
-				       copyToOutput(yytext,yyleng);
+				       copyToOutput(yytext,(int)yyleng);
 				       BEGIN(Scan);
 				     }
   				   }
 <CComment>\n                       { /* new line in comment */
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
                                    }
 <CComment>"*"+"/"                  { /* end of C comment */
                                      if (g_lang==SrcLangExt_Python)
@@ -526,7 +513,7 @@ void replaceComment(int offset);
 				     }
 				     else
 				     {
-				       copyToOutput(yytext,yyleng);
+				       copyToOutput(yytext,(int)yyleng);
 				       BEGIN(Scan);
 				     }
                                    }
@@ -537,7 +524,7 @@ void replaceComment(int offset);
 				     }
 				     else
 				     {
-				       copyToOutput(yytext,yyleng);
+				       copyToOutput(yytext,(int)yyleng);
 				       BEGIN(Scan);
 				     }
   				   }
@@ -548,23 +535,35 @@ void replaceComment(int offset);
 				     }
 				     else
 				     {
-				       copyToOutput(yytext,yyleng);
+				       copyToOutput(yytext,(int)yyleng);
 				       BEGIN(Scan);
 				     }
   				   }
 <CComment>"\n"/[ \t]*[^!]	   { /* end of Fortran comment */
-  				     if (g_lang!=SrcLangExt_F90)
+  				     if (g_lang!=SrcLangExt_Fortran)
 				     {
 				       REJECT;
 				     }
 				     else
 				     {
-				       copyToOutput(yytext,yyleng);
+				       copyToOutput(yytext,(int)yyleng);
 				       BEGIN(Scan);
 				     }
   				   }
+   /* removed for bug 674842 (bug was introduced in rev 768)
+<CComment>"'"			   {
+  			             g_charContext = YY_START;
+				     copyToOutput(yytext,(int)yyleng);
+				     BEGIN(SkipChar);
+  				   }
+<CComment>"\""			   {
+  			             g_stringContext = YY_START;
+				     copyToOutput(yytext,(int)yyleng);
+				     BEGIN(SkipString);
+  				   }
+   */
 <CComment>.			   {
-                                     copyToOutput(yytext,yyleng); 
+                                     copyToOutput(yytext,(int)yyleng); 
   				   }
 <SComment>^[ \t]*"///"[\/]*/\n     {
   				     replaceComment(0);
@@ -591,7 +590,7 @@ void replaceComment(int offset);
                                    }
 <SComment>\n[ \t]*"//!"            |
 <SComment>\n[ \t]*"//!<"/.*\n      |
-<SComment>\n[ \t]*"//!"[^<\n]/.*\n   { 
+<SComment>\n[ \t]*"//!"[^<\n]/.*\n { 
                                      replaceComment(1); 
 				     g_readLineCtx=YY_START;
 				     BEGIN(ReadLine);
@@ -622,17 +621,17 @@ void replaceComment(int offset);
                                    }
 <SComment>\n			   { /* end of special comment */
                                      copyToOutput(" */",3); 
-				     copyToOutput(yytext,yyleng); 
+				     copyToOutput(yytext,(int)yyleng); 
 				     g_inSpecialComment=FALSE;
 				     g_inRoseComment=FALSE;
 				     BEGIN(Scan); 
                                    }
 <ReadLine>[^\\@\n]*/\n		   {
-  				     copyToOutput(yytext,yyleng);
+  				     copyToOutput(yytext,(int)yyleng);
                                      BEGIN(g_readLineCtx);
   				   }
 <CComment,ReadLine>[\\@][\\@][~a-z_A-Z][a-z_A-Z0-9]*[ \t]* { // escaped command
-				     copyToOutput(yytext,yyleng);
+				     copyToOutput(yytext,(int)yyleng);
   				   }
 <CComment,ReadLine>[\\@]"cond"[ \t]+	   { // conditional section
   				     g_condCtx = YY_START; 
@@ -645,7 +644,8 @@ void replaceComment(int offset);
     			             {
 				       //printf("** Adding start of comment!\n");
 				       if (g_lang!=SrcLangExt_Python &&
-					   g_lang!=SrcLangExt_VHDL)
+					   g_lang!=SrcLangExt_VHDL &&
+					   g_lang!=SrcLangExt_Fortran)
 				       {
  				         ADDCHAR('/');
      				         ADDCHAR('*');
@@ -663,7 +663,8 @@ void replaceComment(int offset);
     			             {
 				       //printf("** Adding terminator for comment!\n");
 				       if (g_lang!=SrcLangExt_Python &&
-					   g_lang!=SrcLangExt_VHDL)
+					   g_lang!=SrcLangExt_VHDL &&
+					   g_lang!=SrcLangExt_Fortran)
 				       {
  				         ADDCHAR('*');
      				         ADDCHAR('/');
@@ -702,6 +703,18 @@ void replaceComment(int offset);
   				   }
 <ReadAliasArgs>^[ \t]*"//"[/!]/[^\n]+   { // skip leading special comments (see bug 618079)
   				   }
+<ReadAliasArgs>"*/"		   { // oops, end of comment in the middle of an alias?
+                                     if (g_lang==SrcLangExt_Python)
+				     {
+				       REJECT;
+				     }
+				     else // abort the alias, restart scanning
+				     {
+				       copyToOutput(g_aliasString,g_aliasString.length());
+				       copyToOutput(yytext,(int)yyleng);
+				       BEGIN(Scan);
+				     }
+  				   }
 <ReadAliasArgs>[^{}\n\\\*]+	   {
                                      g_aliasString+=yytext;
 				     g_lastEscaped=FALSE;
@@ -736,29 +749,30 @@ void replaceComment(int offset);
 				     g_lastEscaped=FALSE;
   				   }
 <ReadLine>.			   {
-  				     copyToOutput(yytext,yyleng);
+  				     copyToOutput(yytext,(int)yyleng);
   				   }
 
 %%
 
-void replaceComment(int offset)                                
+void replaceComment(int offset)
 {
-  if (g_mlBrief)                                              
-  {                                                           
-    copyToOutput(yytext,yyleng); 
-  }                                                           
-  else                                                        
-  {                                                           
+  if (g_mlBrief)
+  {
+    copyToOutput(yytext,(int)yyleng);
+  }
+  else
+  {
     //printf("replaceComment(%s)\n",yytext);
-    int i=computeIndent(&yytext[offset]);                     
-    if (i==g_blockHeadCol)                                    
-    {                                                         
-      replaceCommentMarker(yytext,yyleng);                    
-    }                                                         
-    else                                                      
-    {                                                         
-      copyToOutput(" */",3);                                  
-      int i;for (i=yyleng-1;i>=0;i--) unput(yytext[i]);       
+    int i=computeIndent(&yytext[offset]);
+    if (i==g_blockHeadCol)
+    {
+      replaceCommentMarker(yytext,(int)yyleng);
+    }
+    else
+    {
+      copyToOutput(" */",3);
+      int i;for (i=(int)yyleng-1;i>=0;i--) unput(yytext[i]);
+      g_inSpecialComment=FALSE;
       BEGIN(Scan);                                            
     }                                                         
   }
@@ -785,7 +799,14 @@ void convertCppComments(BufStr *inBuf,BufStr *outBuf,const char *fileName)
   g_lineNr   = 1;
   g_condStack.clear();
   g_condStack.setAutoDelete(TRUE);
-  BEGIN(Scan);
+  if (g_lang==SrcLangExt_Markdown)
+  {
+    BEGIN(CComment);
+  }
+  else
+  {
+    BEGIN(Scan);
+  }
   yylex();
   while (!g_condStack.isEmpty())
   {

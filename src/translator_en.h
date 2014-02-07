@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -126,7 +126,7 @@ class TranslatorEnglish : public Translator
 
     /*! put in the class documentation */
     virtual QCString trListOfAllMembers()
-    { return "List of all members."; }
+    { return "List of all members"; }
 
     /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()
@@ -421,7 +421,7 @@ class TranslatorEnglish : public Translator
      *  list of defines
      */
     virtual QCString trDefines()
-    { return "Defines"; }
+    { return "Macros"; }
 
     /*! This is used in the documentation of a file as a header before the 
      *  list of function prototypes
@@ -463,7 +463,7 @@ class TranslatorEnglish : public Translator
      *  documentation blocks for defines
      */
     virtual QCString trDefineDocumentation()
-    { return "Define Documentation"; }
+    { return "Macro Definition Documentation"; }
 
     /*! This is used in the documentation of a file/namespace before the list 
      *  of documentation blocks for function prototypes
@@ -555,7 +555,7 @@ class TranslatorEnglish : public Translator
 
     /*! this text is generated when the \\sa command is used. */
     virtual QCString trSeeAlso()
-    { return "See also"; }
+    { return "See Also"; }
 
     /*! this text is generated when the \\param command is used. */
     virtual QCString trParameters()
@@ -1870,6 +1870,61 @@ class TranslatorEnglish : public Translator
       return sdate;
     }
 
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "Bibliographic References"; }
+
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    { return "Copyright"; }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    { return QCString("Directory dependency graph for ")+name+":"; }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Detail level selector shown for hierarchical indices */
+    virtual QCString trDetailLevel()
+    { return "detail level"; }
+
+    /*! Section header for list of template parameters */
+    virtual QCString trTemplateParameters()
+    { return "Template Parameters"; }
+
+    /*! Used in dot graph when UML_LOOK is enabled and there are many fields */
+    virtual QCString trAndMore(const QCString &number)
+    { return "and "+number+" more..."; }
+
+    /*! Used file list for a Java enum */
+    virtual QCString trEnumGeneratedFromFiles(bool single)
+    { QCString result = "The documentation for this enum was generated from the following file";
+      if (!single) result += "s";
+      result+=":";
+      return result;
+    }
+
+    /*! Header of a Java enum page (Java enums are represented as classes). */
+    virtual QCString trEnumReference(const char *name)
+    { return QCString(name)+" Enum Reference"; }
+
+    /*! Used for a section containing inherited members */
+    virtual QCString trInheritedFrom(const char *members,const char *what)
+    { return QCString(members)+" inherited from "+what; }
+
+    /*! Header of the sections with inherited members specific for the 
+     *  base class(es) 
+     */
+    virtual QCString trAdditionalInheritedMembers()
+    { return "Additional Inherited Members"; }
+
+//////////////////////////////////////////////////////////////////////////
 
 };
 

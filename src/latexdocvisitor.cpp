@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -27,6 +27,7 @@
 #include "parserintf.h"
 #include "msc.h"
 #include "htmlattrib.h"
+#include "cite.h"
 
 static QCString escapeLabelName(const char *s)
 {
@@ -52,25 +53,11 @@ static const char *secLabels[maxLevels] =
 
 static const char *getSectionName(int level)
 {
+  static bool compactLatex = Config_getBool("COMPACT_LATEX");
   int l = level;
-  if (Config_getBool("COMPACT_LATEX")) l++;
+  if (compactLatex) l++;
   if (Doxygen::insideMainPage) l--;
   return secLabels[QMIN(maxLevels-1,l)];
-}
-
-static int rowspan(DocHtmlCell *cell)
-{
-  int retval = 0;
-  HtmlAttribList attrs = cell->attribs ();
-  for (unsigned int i = 0; i < attrs.count(); ++i) 
-  {
-    if ("rowspan" == attrs.at(i)->name.lower())
-    {
-      retval = attrs.at(i)->value.toInt();
-      break;
-    }
-  }
-  return retval;
 }
 
 QCString LatexDocVisitor::escapeMakeIndexChars(const char *s)
@@ -100,8 +87,10 @@ LatexDocVisitor::LatexDocVisitor(FTextStream &t,CodeOutputInterface &ci,
                                  const char *langExt,bool insideTabbing) 
   : DocVisitor(DocVisitor_Latex), m_t(t), m_ci(ci), m_insidePre(FALSE), 
     m_insideItem(FALSE), m_hide(FALSE), m_insideTabbing(insideTabbing),
-    m_langExt(langExt), m_currentColumn(0), m_inRowspan(FALSE)
+    m_insideTable(FALSE), m_langExt(langExt), m_currentColumn(0), 
+    m_inRowspan(FALSE), m_inColspan(FALSE)
 {
+  m_rowSpans.setAutoDelete(TRUE);
 }
 
   //--------------------------------------
@@ -140,7 +129,7 @@ void LatexDocVisitor::visit(DocSymbol *s)
   if (m_hide) return;
   switch(s->symbol())
   {
-    case DocSymbol::BSlash:  m_t << "$\\backslash$"; break;
+    case DocSymbol::BSlash:  m_t << "\\textbackslash{}"; break;
     case DocSymbol::At:      m_t << "@"; break;
     case DocSymbol::Less:    if (m_insidePre) m_t << "<"; else m_t << "$<$"; 
                              break;
@@ -148,7 +137,9 @@ void LatexDocVisitor::visit(DocSymbol *s)
     case DocSymbol::Amp:     m_t << "\\&"; break;
     case DocSymbol::Dollar:  m_t << "\\$"; break;
     case DocSymbol::Hash:    m_t << "\\#"; break;
+    case DocSymbol::DoubleColon:  m_t << "::"; break;
     case DocSymbol::Percent: m_t << "\\%"; break;
+    case DocSymbol::Pipe:    m_t << "$|$"; break;
     case DocSymbol::Copy:    m_t << "\\copyright"; break;
     case DocSymbol::Tm:      m_t << "\\texttrademark"; break;
     case DocSymbol::Reg:     m_t << "\\textregistered"; break;
@@ -196,6 +187,73 @@ void LatexDocVisitor::visit(DocSymbol *s)
     case DocSymbol::Nbsp:    m_t << "~"; break;
     case DocSymbol::AElig:   m_t << "{\\AE}"; break;
     case DocSymbol::Aelig:   m_t << "{\\ae}"; break;
+    case DocSymbol::GrkGamma:      m_t << "{$\\Gamma$}"; break;
+    case DocSymbol::GrkDelta:      m_t << "{$\\Delta$}"; break;
+    case DocSymbol::GrkTheta:      m_t << "{$\\Theta$}"; break;
+    case DocSymbol::GrkLambda:     m_t << "{$\\Lambda$}"; break;
+    case DocSymbol::GrkXi:         m_t << "{$\\Xi$}"; break;
+    case DocSymbol::GrkPi:         m_t << "{$\\Pi$}"; break;
+    case DocSymbol::GrkSigma:      m_t << "{$\\Sigma$}"; break;
+    case DocSymbol::GrkUpsilon:    m_t << "{$\\Upsilon$}"; break;
+    case DocSymbol::GrkPhi:        m_t << "{$\\Phi$}"; break;
+    case DocSymbol::GrkPsi:        m_t << "{$\\Psi$}"; break;
+    case DocSymbol::GrkOmega:      m_t << "{$\\Omega$}"; break;
+    case DocSymbol::Grkalpha:      m_t << "{$\\alpha$}"; break;
+    case DocSymbol::Grkbeta:       m_t << "{$\\beta$}"; break;
+    case DocSymbol::Grkgamma:      m_t << "{$\\gamma$}"; break;
+    case DocSymbol::Grkdelta:      m_t << "{$\\delta$}"; break;
+    case DocSymbol::Grkepsilon:    m_t << "{$\\varepsilon$}"; break;
+    case DocSymbol::Grkzeta:       m_t << "{$\\zeta$}"; break;
+    case DocSymbol::Grketa:        m_t << "{$\\eta$}"; break;
+    case DocSymbol::Grktheta:      m_t << "{$\\theta$}"; break;
+    case DocSymbol::Grkiota:       m_t << "{$\\iota$}"; break;
+    case DocSymbol::Grkkappa:      m_t << "{$\\kappa$}"; break;
+    case DocSymbol::Grklambda:     m_t << "{$\\lambda$}"; break;
+    case DocSymbol::Grkmu:         m_t << "{$\\mu$}"; break;
+    case DocSymbol::Grknu:         m_t << "{$\\nu$}"; break;
+    case DocSymbol::Grkxi:         m_t << "{$\\xi$}"; break;
+    case DocSymbol::Grkpi:         m_t << "{$\\pi$}"; break;
+    case DocSymbol::Grkrho:        m_t << "{$\\rho$}"; break;
+    case DocSymbol::Grksigma:      m_t << "{$\\sigma$}"; break;
+    case DocSymbol::Grktau:        m_t << "{$\\tau$}"; break;
+    case DocSymbol::Grkupsilon:    m_t << "{$\\upsilon$}"; break;
+    case DocSymbol::Grkphi:        m_t << "{$\\varphi$}"; break;
+    case DocSymbol::Grkchi:        m_t << "{$\\chi$}"; break;
+    case DocSymbol::Grkpsi:        m_t << "{$\\psi$}"; break;
+    case DocSymbol::Grkomega:      m_t << "{$\\omega$}"; break;
+    case DocSymbol::Grkvarsigma:   m_t << "{$\\varsigma$}"; break;
+    case DocSymbol::Section:       m_t << "{$\\S$}"; break;
+    case DocSymbol::Degree:        m_t << "\\textdegree"; break;
+    case DocSymbol::Prime:         m_t << "'"; break;
+    case DocSymbol::DoublePrime:   m_t << "''"; break;
+    case DocSymbol::Infinity:      m_t << "{$\\infty$}"; break;
+    case DocSymbol::EmptySet:      m_t << "{$\\emptyset$}"; break;
+    case DocSymbol::PlusMinus:     m_t << "{$\\pm$}"; break;
+    case DocSymbol::Times:         m_t << "{$\\times$}"; break;
+    case DocSymbol::Minus:         m_t << "-"; break;
+    case DocSymbol::CenterDot:     m_t << "{$\\cdot$}"; break;
+    case DocSymbol::Partial:       m_t << "{$\\partial$}"; break;
+    case DocSymbol::Nabla:         m_t << "{$\\nabla$}"; break;
+    case DocSymbol::SquareRoot:    m_t << "{$\\surd$}"; break;
+    case DocSymbol::Perpendicular: m_t << "{$\\perp$}"; break;
+    case DocSymbol::Sum:           m_t << "{$\\sum$}"; break;
+    case DocSymbol::Integral:      m_t << "{$\\int$}"; break;
+    case DocSymbol::Product:       m_t << "{$\\prod$}"; break;
+    case DocSymbol::Similar:       m_t << "{$\\sim$}"; break;
+    case DocSymbol::Approx:        m_t << "{$\\approx$}"; break;
+    case DocSymbol::NotEqual:      m_t << "{$\\ne$}"; break;
+    case DocSymbol::Equivalent:    m_t << "{$\\equiv$}"; break;
+    case DocSymbol::Proportional:  m_t << "{$\\propto$}"; break;
+    case DocSymbol::LessEqual:     m_t << "{$\\le$}"; break;
+    case DocSymbol::GreaterEqual:  m_t << "{$\\ge$}"; break;
+    case DocSymbol::LeftArrow:     m_t << "{$\\leftarrow$}"; break;
+    case DocSymbol::RightArrow:    m_t << "{$\\rightarrow$}"; break;
+    case DocSymbol::SetIn:         m_t << "{$\\in$}"; break;
+    case DocSymbol::SetNotIn:      m_t << "{$\\notin$}"; break;
+    case DocSymbol::LeftCeil:      m_t << "{$\\lceil$}"; break;
+    case DocSymbol::RightCeil:     m_t << "{$\\rceil$}"; break;
+    case DocSymbol::LeftFloor:     m_t << "{$\\lfloor$}"; break;
+    case DocSymbol::RightFloor:    m_t << "{$\\rfloor$}"; break;
     default:
                              err("error: unknown symbol found\n");
   }
@@ -218,7 +276,8 @@ void LatexDocVisitor::visit(DocURL *u)
 void LatexDocVisitor::visit(DocLineBreak *)
 {
   if (m_hide) return;
-  m_t << "\\par\n";
+  if (m_insideTable) m_t << "\\newline\n";
+  else m_t << "\\par\n";
 }
 
 void LatexDocVisitor::visit(DocHorRuler *)
@@ -236,7 +295,7 @@ void LatexDocVisitor::visit(DocStyleChange *s)
       if (s->enable()) m_t << "{\\bfseries ";      else m_t << "}";
       break;
     case DocStyleChange::Italic:
-      if (s->enable()) m_t << "{\\itshape ";     else m_t << "\\/}";
+      if (s->enable()) m_t << "{\\itshape ";     else m_t << "}";
       break;
     case DocStyleChange::Code:
       if (s->enable()) m_t << "{\\ttfamily ";   else m_t << "}";
@@ -272,28 +331,20 @@ void LatexDocVisitor::visit(DocStyleChange *s)
 
 void LatexDocVisitor::visit(DocVerbatim *s)
 {
-  //static bool latexSourceCode = Config_getBool("LATEX_SOURCE_CODE");
   if (m_hide) return;
+  QCString lang = m_langExt;
+  if (!s->language().isEmpty()) // explicit language setting
+  {
+    lang = s->language();
+  }
   switch(s->type())
   {
     case DocVerbatim::Code: 
-      //if (latexSourceCode)
-      //{
-      //  m_t << "\n\n\\begin{footnotesize}\\begin{alltt}" << endl; 
-      //}
-      //else
       {
         m_t << "\n\\begin{DoxyCode}\n";
-      }
-      Doxygen::parserManager->getParser(m_langExt)
-                            ->parseCode(m_ci,s->context(),s->text(),
-                                        s->isExample(),s->exampleFile());
-      //if (latexSourceCode)
-      //{
-      //  m_t << "\\end{alltt}\\end{footnotesize}" << endl; 
-      //}
-      //else
-      {
+        Doxygen::parserManager->getParser(lang)
+                              ->parseCode(m_ci,s->context(),s->text(),
+                                          s->isExample(),s->exampleFile());
         m_t << "\\end{DoxyCode}\n";
       }
       break;
@@ -305,6 +356,7 @@ void LatexDocVisitor::visit(DocVerbatim *s)
     case DocVerbatim::HtmlOnly: 
     case DocVerbatim::XmlOnly: 
     case DocVerbatim::ManOnly: 
+    case DocVerbatim::RtfOnly: 
       /* nothing */ 
       break;
     case DocVerbatim::LatexOnly: 
@@ -369,11 +421,11 @@ void LatexDocVisitor::visit(DocVerbatim *s)
 void LatexDocVisitor::visit(DocAnchor *anc)
 {
   if (m_hide) return;
-  m_t << "\\label{" << anc->file() << "_" << anc->anchor() << "}" << endl;
+  m_t << "\\label{" << anc->file() << "_" << anc->anchor() << "}%" << endl;
   if (!anc->file().isEmpty() && Config_getBool("PDF_HYPERLINKS")) 
   {
     m_t << "\\hypertarget{" << anc->file() << "_" << anc->anchor() 
-      << "}{}" << endl;
+      << "}{}%" << endl;
   }    
 }
 
@@ -386,7 +438,7 @@ void LatexDocVisitor::visit(DocInclude *inc)
       { 
          m_t << "\n\\begin{DoxyCodeInclude}\n";
          QFileInfo cfi( inc->file() );
-         FileDef fd( cfi.dirPath(), cfi.fileName() );
+         FileDef fd( cfi.dirPath().utf8(), cfi.fileName().utf8() );
          Doxygen::parserManager->getParser(inc->extension())
                                ->parseCode(m_ci,inc->context(),
                                            inc->text(),
@@ -411,6 +463,19 @@ void LatexDocVisitor::visit(DocInclude *inc)
       m_t << "\n\\begin{DoxyVerbInclude}\n";
       m_t << inc->text();
       m_t << "\\end{DoxyVerbInclude}\n";
+      break;
+    case DocInclude::Snippet:
+      {
+         m_t << "\n\\begin{DoxyCodeInclude}\n";
+         Doxygen::parserManager->getParser(inc->extension())
+                               ->parseCode(m_ci,
+                                           inc->context(),
+                                           extractBlock(inc->text(),inc->blockId()),
+                                           inc->isExample(),
+                                           inc->exampleFile()
+                                          );
+         m_t << "\\end{DoxyCodeInclude}" << endl;
+      }
       break;
   }
 }
@@ -464,6 +529,24 @@ void LatexDocVisitor::visit(DocIndexEntry *i)
 
 void LatexDocVisitor::visit(DocSimpleSectSep *)
 {
+}
+
+void LatexDocVisitor::visit(DocCite *cite)
+{
+  if (m_hide) return;
+  if (!cite->file().isEmpty()) 
+  {
+    //startLink(cite->ref(),cite->file(),cite->anchor());
+    QCString anchor = cite->anchor();
+    anchor = anchor.mid(CiteConsts::anchorPrefix.length()); // strip prefix
+    m_t << "\\cite{" << anchor << "}";
+  }
+  else
+  {
+    m_t << "{\\bfseries [";
+    filter(cite->text());
+    m_t << "]}";
+  }
 }
 
 //--------------------------------------
@@ -577,6 +660,10 @@ void LatexDocVisitor::visitPre(DocSimpleSect *s)
       m_t << "\\begin{DoxyPostcond}{";
       filter(theTranslator->trPostcondition());
       break;
+    case DocSimpleSect::Copyright:
+      m_t << "\\begin{DoxyCopyright}{";
+      filter(theTranslator->trCopyright());
+      break;
     case DocSimpleSect::Invar:
       m_t << "\\begin{DoxyInvariant}{";
       filter(theTranslator->trInvariant());
@@ -646,6 +733,9 @@ void LatexDocVisitor::visitPost(DocSimpleSect *s)
       break;
     case DocSimpleSect::Post:
       m_t << "\n\\end{DoxyPostcond}\n";
+      break;
+    case DocSimpleSect::Copyright:
+      m_t << "\n\\end{DoxyCopyright}\n";
       break;
     case DocSimpleSect::Invar:
       m_t << "\n\\end{DoxyInvariant}\n";
@@ -756,16 +846,32 @@ void LatexDocVisitor::visitPost(DocHtmlListItem *)
 //  m_t << "\\end{alltt}\\normalsize " << endl;
 //}
 
-void LatexDocVisitor::visitPre(DocHtmlDescList *)
+void LatexDocVisitor::visitPre(DocHtmlDescList *dl)
 {
   if (m_hide) return;
-  m_t << "\n\\begin{DoxyDescription}";
+  QCString val = dl->attribs().find("class");
+  if (val=="reflist")
+  {
+    m_t << "\n\\begin{DoxyRefList}";
+  }
+  else
+  {
+    m_t << "\n\\begin{DoxyDescription}";
+  }
 }
 
-void LatexDocVisitor::visitPost(DocHtmlDescList *) 
+void LatexDocVisitor::visitPost(DocHtmlDescList *dl) 
 {
   if (m_hide) return;
-  m_t << "\n\\end{DoxyDescription}";
+  QCString val = dl->attribs().find("class");
+  if (val=="reflist")
+  {
+    m_t << "\n\\end{DoxyRefList}";
+  }
+  else
+  {
+    m_t << "\n\\end{DoxyDescription}";
+  }
 }
 
 void LatexDocVisitor::visitPre(DocHtmlDescTitle *)
@@ -792,17 +898,21 @@ void LatexDocVisitor::visitPost(DocHtmlDescData *)
 
 void LatexDocVisitor::visitPre(DocHtmlTable *t)
 {
-  m_rowspanIndices.clear();
+  m_rowSpans.clear();
+  m_insideTable=TRUE;
   if (m_hide) return;
   if (t->hasCaption()) 
   {
     m_t << "\\begin{table}[h]";
   }
-  m_t << "\\begin{TabularC}{" << t->numCols() << "}\n\\hline\n";
+  m_t << "\\begin{TabularC}{" << t->numColumns() << "}\n";
+  m_numCols = t->numColumns();
+  m_t << "\\hline\n";
 }
 
 void LatexDocVisitor::visitPost(DocHtmlTable *t) 
 {
+  m_insideTable=FALSE;
   if (m_hide) return;
   if (t->hasCaption())
   {
@@ -826,65 +936,185 @@ void LatexDocVisitor::visitPost(DocHtmlCaption *)
   m_t << "}\n";
 }
 
-void LatexDocVisitor::visitPre(DocHtmlRow *)
+void LatexDocVisitor::visitPre(DocHtmlRow *r)
 {
   m_currentColumn = 0;
+  if (r->isHeading()) m_t << "\\rowcolor{lightgray}";
 }
 
-void LatexDocVisitor::visitPost(DocHtmlRow *) 
+void LatexDocVisitor::visitPost(DocHtmlRow *row) 
 {
   if (m_hide) return;
 
+  int c=m_currentColumn;
+  while (c<=m_numCols) // end of row while inside a row span?
+  {
+    uint i;
+    for (i=0;i<m_rowSpans.count();i++)
+    {
+      ActiveRowSpan *span = m_rowSpans.at(i);
+      //printf("  founc row span: column=%d rs=%d cs=%d rowIdx=%d cell->rowIdx=%d\n",
+      //    span->column, span->rowSpan,span->colSpan,row->rowIndex(),span->cell->rowIndex());
+      if (span->rowSpan>0 && span->column==c &&  // we are at a cell in a row span
+          row->rowIndex()>span->cell->rowIndex() // but not the row that started the span
+         )
+      {
+        m_t << "&";
+        if (span->colSpan>1) // row span is also part of a column span
+        {
+          m_t << "\\multicolumn{" << span->colSpan << "}{";
+          m_t << "p{(\\linewidth-\\tabcolsep*" 
+            << m_numCols << "-\\arrayrulewidth*"
+            << row->visibleCells() << ")*" 
+            << span->colSpan <<"/"<< m_numCols << "}|}{}";
+        }
+        else // solitary row span
+        {
+          m_t << "\\multicolumn{1}{c|}{}";
+        }
+      }
+    }
+    c++;
+  }
+
   m_t << "\\\\";
   
-  QMap<int, int>::Iterator it;
   int col = 1;
-    for (it = m_rowspanIndices.begin(); it != m_rowspanIndices.end(); ++it) 
+  uint i;
+  for (i=0;i<m_rowSpans.count();i++)
   {
-    it.data()--;
-    if (it.data () <= 0)
-      m_rowspanIndices.remove (it);
-    else if (0 < it.data() - col)
-      m_t << "\\cline{" << col << "-" << it.data() - col << "}";
-      
-    col = 1 + it.data ();
+    ActiveRowSpan *span = m_rowSpans.at(i);
+    if (span->rowSpan>0) span->rowSpan--;
+    if (span->rowSpan<=0)
+    {
+      // inactive span
     }
+    else if (span->column>col)
+    {
+      m_t << "\\cline{" << col << "-" << (span->column-1) << "}";
+      col = span->column+span->colSpan;
+    }
+    else
+    {
+      col = span->column+span->colSpan;
+    }
+  }
 
-  if (col <= m_currentColumn)
-    m_t << "\\cline{" << col << "-" << m_currentColumn << "}";
+  if (col <= m_numCols)
+  {
+    m_t << "\\cline{" << col << "-" << m_numCols << "}";
+  }
 
   m_t << "\n";
 }
 
-void LatexDocVisitor::visitPre(DocHtmlCell *cell)
+void LatexDocVisitor::visitPre(DocHtmlCell *c)
 {
   if (m_hide) return;
+
+  DocHtmlRow *row = 0;
+  if (c->parent() && c->parent()->kind()==DocNode::Kind_HtmlRow)
+  {
+    row = (DocHtmlRow*)c->parent();
+  }
   
   m_currentColumn++;
+
   //Skip columns that span from above.
+  uint i;
+  for (i=0;i<m_rowSpans.count();i++)
+  {
+    ActiveRowSpan *span = m_rowSpans.at(i);
+    if (span->rowSpan>0 && span->column==m_currentColumn)
+    {
+      if (row && span->colSpan>1)
+      {
+        m_t << "\\multicolumn{" << span->colSpan << "}{";
+        if (m_currentColumn /*c->columnIndex()*/==1) // add extra | for first column
+        {
+          m_t << "|";
+        }
+        m_t << "p{(\\linewidth-\\tabcolsep*" 
+            << m_numCols << "-\\arrayrulewidth*"
+            << row->visibleCells() << ")*" 
+            << span->colSpan <<"/"<< m_numCols << "}|}{}";
+        m_currentColumn+=span->colSpan;
+      }
+      else
+      {
+        m_currentColumn++;
+      }
+      m_t << "&";
+    }
+  }
+
+#if 0
   QMap<int, int>::Iterator it = m_rowspanIndices.find(m_currentColumn);
-  while (0 < it.data() && it != m_rowspanIndices.end())
+  if (it!=m_rowspanIndices.end() && it.data()>0)
   {
     m_t << "&";
     m_currentColumn++;
     it++;
   }
+#endif
 
-  int rs = rowspan(cell);
-  if (0 < rs)
+  int cs = c->colSpan();
+  if (cs>1 && row)
+  {
+    m_inColspan = TRUE;
+    m_t << "\\multicolumn{" << cs << "}{";
+    if (c->columnIndex()==1) // add extra | for first column
+    {
+      m_t << "|";
+    }
+    m_t << "p{(\\linewidth-\\tabcolsep*" 
+        << m_numCols << "-\\arrayrulewidth*"
+        << row->visibleCells() << ")*" 
+        << cs <<"/"<< m_numCols << "}|}{";
+    if (c->isHeading()) m_t << "\\cellcolor{lightgray}";
+  }
+  int rs = c->rowSpan();
+  if (rs>0)
   {
     m_inRowspan = TRUE;
-    m_rowspanIndices[m_currentColumn] = rs;
+    //m_rowspanIndices[m_currentColumn] = rs;
+    m_rowSpans.append(new ActiveRowSpan(c,rs,cs,m_currentColumn));
     m_t << "\\multirow{" << rs << "}{\\linewidth}{";
+  }
+  int a = c->alignment();
+  if (a==DocHtmlCell::Center)
+  {
+    m_t << "\\PBS\\centering ";
+  }
+  else if (a==DocHtmlCell::Right)
+  {
+    m_t << "\\PBS\\raggedleft ";
+  }
+  if (c->isHeading())
+  {
+    m_t << "{\\bf ";
+  }
+  if (cs>1)
+  {
+    m_currentColumn+=cs-1;
   }
 }
 
 void LatexDocVisitor::visitPost(DocHtmlCell *c) 
 {
   if (m_hide) return;
+  if (c->isHeading())
+  {
+    m_t << "}";
+  }
   if (m_inRowspan)
   {
     m_inRowspan = FALSE;
+    m_t << "}";
+  }
+  if (m_inColspan)
+  {
+    m_inColspan = FALSE;
     m_t << "}";
   }
   if (!c->isLast()) m_t << "&";
@@ -893,15 +1123,15 @@ void LatexDocVisitor::visitPost(DocHtmlCell *c)
 void LatexDocVisitor::visitPre(DocInternal *)
 {
   if (m_hide) return;
-  m_t << "\\begin{DoxyInternal}{";
-  filter(theTranslator->trForInternalUseOnly());
-  m_t << "}\n";
+  //m_t << "\\begin{DoxyInternal}{";
+  //filter(theTranslator->trForInternalUseOnly());
+  //m_t << "}\n";
 }
 
 void LatexDocVisitor::visitPost(DocInternal *) 
 {
   if (m_hide) return;
-  m_t << "\\end{DoxyInternal}" << endl;
+  //m_t << "\\end{DoxyInternal}" << endl;
 }
 
 void LatexDocVisitor::visitPre(DocHRef *href)
@@ -1006,7 +1236,17 @@ void LatexDocVisitor::visitPost(DocDotFile *df)
   if (m_hide) return;
   endDotFile(df->hasCaption());
 }
+void LatexDocVisitor::visitPre(DocMscFile *df)
+{
+  if (m_hide) return;
+  startMscFile(df->file(),df->width(),df->height(),df->hasCaption());
+}
 
+void LatexDocVisitor::visitPost(DocMscFile *df) 
+{
+  if (m_hide) return;
+  endMscFile(df->hasCaption());
+}
 void LatexDocVisitor::visitPre(DocLink *lnk)
 {
   if (m_hide) return;
@@ -1022,14 +1262,30 @@ void LatexDocVisitor::visitPost(DocLink *lnk)
 void LatexDocVisitor::visitPre(DocRef *ref)
 {
   if (m_hide) return;
-  if (!ref->file().isEmpty()) startLink(ref->ref(),ref->file(),ref->anchor());
+  // when ref->isSubPage()==TRUE we use ref->file() for HTML and
+  // ref->anchor() for LaTeX/RTF
+  if (ref->isSubPage())
+  {
+    startLink(ref->ref(),0,ref->anchor());
+  }
+  else
+  {
+    if (!ref->file().isEmpty()) startLink(ref->ref(),ref->file(),ref->anchor());
+  }
   if (!ref->hasLinkText()) filter(ref->targetTitle());
 }
 
 void LatexDocVisitor::visitPost(DocRef *ref) 
 {
   if (m_hide) return;
-  if (!ref->file().isEmpty()) endLink(ref->ref(),ref->file(),ref->anchor());
+  if (ref->isSubPage())
+  {
+    endLink(ref->ref(),0,ref->anchor());
+  }
+  else
+  {
+    if (!ref->file().isEmpty()) endLink(ref->ref(),ref->file(),ref->anchor());
+  }
 }
 
 void LatexDocVisitor::visitPre(DocSecRefItem *)
@@ -1060,32 +1316,18 @@ void LatexDocVisitor::visitPost(DocSecRefList *)
   m_t << "\\normalsize" << endl;
 }
 
-//void LatexDocVisitor::visitPre(DocLanguage *l)
-//{
-//  QCString langId = Config_getEnum("OUTPUT_LANGUAGE");
-//  if (l->id().lower()!=langId.lower())
-//  {
-//    pushEnabled();
-//    m_hide = TRUE;
-//  }
-//}
-//
-//void LatexDocVisitor::visitPost(DocLanguage *l) 
-//{
-//  QCString langId = Config_getEnum("OUTPUT_LANGUAGE");
-//  if (l->id().lower()!=langId.lower())
-//  {
-//    popEnabled();
-//  }
-//}
-
 void LatexDocVisitor::visitPre(DocParamSect *s)
 {
   if (m_hide) return;
+  bool hasInOutSpecs = s->hasInOutSpecifier();
+  bool hasTypeSpecs  = s->hasTypeSpecifier();
   switch(s->type())
   {
     case DocParamSect::Param:
-      m_t << "\n\\begin{DoxyParams}{";
+      m_t << "\n\\begin{DoxyParams}";
+      if      (hasInOutSpecs && hasTypeSpecs) m_t << "[2]"; // 2 extra cols
+      else if (hasInOutSpecs || hasTypeSpecs) m_t << "[1]"; // 1 extra col
+      m_t << "{";
       filter(theTranslator->trParameters());
       break;
     case DocParamSect::RetVal:
@@ -1134,23 +1376,60 @@ void LatexDocVisitor::visitPost(DocParamSect *s)
 void LatexDocVisitor::visitPre(DocParamList *pl)
 {
   if (m_hide) return;
-  m_t << "\\item[";
-  if (pl->direction()!=DocParamSect::Unspecified)
+  DocParamSect::Type parentType = DocParamSect::Unknown;
+  DocParamSect *sect = 0;
+  if (pl->parent() && pl->parent()->kind()==DocNode::Kind_ParamSect)
   {
-    m_t << "\\mbox{\\tt[";
-    if (pl->direction()==DocParamSect::In)
+    parentType = ((DocParamSect*)pl->parent())->type();
+    sect=(DocParamSect*)pl->parent();
+  }
+  bool useTable = parentType==DocParamSect::Param ||
+                  parentType==DocParamSect::RetVal ||
+                  parentType==DocParamSect::Exception ||
+                  parentType==DocParamSect::TemplateParam;
+  if (!useTable)
+  {
+    m_t << "\\item[";
+  }
+  if (sect && sect->hasInOutSpecifier())
+  {
+    if (pl->direction()!=DocParamSect::Unspecified)
     {
-      m_t << "in";
+      m_t << "\\mbox{\\tt ";
+      if (pl->direction()==DocParamSect::In)
+      {
+        m_t << "in";
+      }
+      else if (pl->direction()==DocParamSect::Out)
+      {
+        m_t << "out";
+      }
+      else if (pl->direction()==DocParamSect::InOut)
+      {
+        m_t << "in,out";
+      }
+      m_t << "} ";
     }
-    else if (pl->direction()==DocParamSect::Out)
+    if (useTable) m_t << " & ";
+  }
+  if (sect && sect->hasTypeSpecifier())
+  {
+    QListIterator<DocNode> li(pl->paramTypes());
+    DocNode *type;
+    bool first=TRUE;
+    for (li.toFirst();(type=li.current());++li)
     {
-      m_t << "out";
+      if (!first) m_t << " | "; else first=FALSE;
+      if (type->kind()==DocNode::Kind_Word)
+      {
+        visit((DocWord*)type); 
+      }
+      else if (type->kind()==DocNode::Kind_LinkedWord)
+      {
+        visit((DocLinkedWord*)type); 
+      }
     }
-    else if (pl->direction()==DocParamSect::InOut)
-    {
-      m_t << "in,out";
-    }
-    m_t << "]} ";
+    if (useTable) m_t << " & ";
   }
   m_t << "{\\em ";
   //QStrListIterator li(pl->parameters());
@@ -1172,17 +1451,42 @@ void LatexDocVisitor::visitPre(DocParamList *pl)
     }
     m_insideItem=FALSE;
   }
-  m_t << "}]";
+  m_t << "}";
+  if (useTable)
+  {
+    m_t << " & ";
+  }
+  else
+  {
+    m_t << "]";
+  }
 }
 
-void LatexDocVisitor::visitPost(DocParamList *)
+void LatexDocVisitor::visitPost(DocParamList *pl)
 {
+  if (m_hide) return;
+  DocParamSect::Type parentType = DocParamSect::Unknown;
+  if (pl->parent() && pl->parent()->kind()==DocNode::Kind_ParamSect)
+  {
+    parentType = ((DocParamSect*)pl->parent())->type();
+  }
+  bool useTable = parentType==DocParamSect::Param ||
+                  parentType==DocParamSect::RetVal ||
+                  parentType==DocParamSect::Exception ||
+                  parentType==DocParamSect::TemplateParam;
+  if (useTable)
+  {
+    m_t << "\\\\" << endl
+        << "\\hline" << endl;
+  }
 }
 
 void LatexDocVisitor::visitPre(DocXRefItem *x)
 {
   if (m_hide) return;
-  m_t << "\\begin{Desc}" << endl;
+  m_t << "\\begin{DoxyRefDesc}{";
+  filter(x->title());
+  m_t << "}" << endl;
   bool anonymousEnum = x->file()=="@";
   m_t << "\\item[";
   if (Config_getBool("PDF_HYPERLINKS") && !anonymousEnum)
@@ -1202,7 +1506,7 @@ void LatexDocVisitor::visitPre(DocXRefItem *x)
 void LatexDocVisitor::visitPost(DocXRefItem *)
 {
   if (m_hide) return;
-  m_t << "\\end{Desc}" << endl;
+  m_t << "\\end{DoxyRefDesc}" << endl;
 }
 
 void LatexDocVisitor::visitPre(DocInternalRef *ref)
@@ -1231,6 +1535,18 @@ void LatexDocVisitor::visitPre(DocText *)
 
 void LatexDocVisitor::visitPost(DocText *)
 {
+}
+
+void LatexDocVisitor::visitPre(DocHtmlBlockQuote *)
+{
+  if (m_hide) return;
+  m_t << "\\begin{quotation}" << endl;
+}
+
+void LatexDocVisitor::visitPost(DocHtmlBlockQuote *)
+{
+  if (m_hide) return;
+  m_t << "\\end{quotation}" << endl;
 }
 
 void LatexDocVisitor::filter(const char *str)
@@ -1307,14 +1623,11 @@ void LatexDocVisitor::startDotFile(const QCString &fileName,
   {
     baseName=baseName.right(baseName.length()-i-1);
   } 
-  if (baseName.right(4)==".eps" || baseName.right(4)==".pdf")
+  if ((i=baseName.find('.'))!=-1)
   {
-    baseName=baseName.left(baseName.length()-4);
+    baseName=baseName.left(i);
   }
-  if (baseName.right(4)==".dot")
-  {
-    baseName=baseName.left(baseName.length()-4);
-  }
+  baseName.prepend("dot_");
   QCString outDir = Config_getString("LATEX_OUTPUT");
   QCString name = fileName;
   writeDotGraphFromFile(name,outDir,baseName,EPS);
@@ -1335,6 +1648,10 @@ void LatexDocVisitor::startDotFile(const QCString &fileName,
   else if (!height.isEmpty())
   {
     m_t << "[height=" << height << "]";
+  }
+  else
+  {
+    m_t << "[width=\\textwidth]";
   }
   m_t << "{" << baseName << "}";
 
@@ -1358,6 +1675,71 @@ void LatexDocVisitor::endDotFile(bool hasCaption)
   }
 }
 
+void LatexDocVisitor::startMscFile(const QCString &fileName,
+                                   const QCString &width,
+                                   const QCString &height,
+                                   bool hasCaption
+                                  )
+{
+  QCString baseName=fileName;
+  int i;
+  if ((i=baseName.findRev('/'))!=-1)
+  {
+    baseName=baseName.right(baseName.length()-i-1);
+  } 
+  if ((i=baseName.find('.'))!=-1)
+  {
+    baseName=baseName.left(i);
+  }
+  baseName.prepend("msc_");
+
+  QCString outDir = Config_getString("LATEX_OUTPUT");
+  writeMscGraphFromFile(fileName,outDir,baseName,MSC_EPS); 
+  if (hasCaption)
+  {
+    m_t << "\n\\begin{DoxyImage}\n";
+  }
+  else
+  {
+    m_t << "\n\\begin{DoxyImageNoCaption}\n"
+           "  \\mbox{";
+  }
+  m_t << "\\includegraphics";
+  if (!width.isEmpty())
+  {
+    m_t << "[width=" << width << "]";
+  }
+  else if (!height.isEmpty())
+  {
+    m_t << "[height=" << height << "]";
+  }
+  else
+  {
+    m_t << "[width=\\textwidth]";
+  }
+  m_t << "{" << baseName << "}";
+
+  if (hasCaption)
+  {
+    m_t << "\n\\caption{";
+  }
+}
+
+void LatexDocVisitor::endMscFile(bool hasCaption)
+{
+  if (m_hide) return;
+  m_t << "}\n"; // end caption or mbox
+  if (hasCaption)
+  {
+    m_t << "\\end{DoxyImage}\n";
+  }
+  else
+  {
+    m_t << "\\end{DoxyImageNoCaption}\n";
+  }
+}
+
+
 void LatexDocVisitor::writeMscFile(const QCString &baseName)
 {
   QCString shortName = baseName;
@@ -1367,7 +1749,7 @@ void LatexDocVisitor::writeMscFile(const QCString &baseName)
     shortName=shortName.right(shortName.length()-i-1);
   } 
   QCString outDir = Config_getString("LATEX_OUTPUT");
-  writeMscGraphFromFile(baseName,outDir,baseName,MSC_EPS);
+  writeMscGraphFromFile(baseName+".msc",outDir,shortName,MSC_EPS);
   m_t << "\n\\begin{DoxyImageNoCaption}"
          "  \\mbox{\\includegraphics";
   m_t << "{" << shortName << "}";

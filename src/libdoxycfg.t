@@ -1,7 +1,7 @@
 #
 # $Id: libdoxycfg.t,v 1.1 2001/03/19 19:27:41 root Exp $
 #
-# Copyright (C) 1997-2010 by Dimitri van Heesch.
+# Copyright (C) 1997-2012 by Dimitri van Heesch.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -16,8 +16,8 @@
 #!
 #$ IncludeTemplate("lib.t");
 
-LEX     =   flex
-YACC    =   bison
+LEX     =   /usr/bin/flex
+YACC    =   /usr/bin/bison
 
 #${
 sub GenerateDep {

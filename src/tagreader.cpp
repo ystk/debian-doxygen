@@ -3,7 +3,7 @@
  * $Id: tagreader.cpp,v 1.2 2001/03/19 19:27:41 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -35,17 +35,19 @@
 #include "util.h"
 #include "message.h"
 #include "defargs.h"
+#include "arguments.h"
 //#include "reflist.h"
 
-/*! Information about an linkable anchor */
+/** Information about an linkable anchor */
 class TagAnchorInfo
 {
   public:
-    TagAnchorInfo(const QString &f,const QString &l) : label(l), fileName(f) {}
-    QString label;
-    QString fileName;
+    TagAnchorInfo(const QCString &f,const QCString &l) : label(l), fileName(f) {}
+    QCString label;
+    QCString fileName;
 };
 
+/** List of TagAnchorInfo objects. */
 class TagAnchorInfoList : public QList<TagAnchorInfo>
 {
   public: 
@@ -53,84 +55,85 @@ class TagAnchorInfoList : public QList<TagAnchorInfo>
     virtual ~TagAnchorInfoList() {}
 };
 
-/*! Container for member specific info that can be read from a tagfile */
+/** Container for member specific info that can be read from a tagfile */
 class TagMemberInfo
 {
   public:
     TagMemberInfo() : prot(Public), virt(Normal), isStatic(FALSE) {}
-    QString type;
-    QString name;
-    QString anchorFile;
-    QString anchor;
-    QString arglist;
-    QString kind;
+    QCString type;
+    QCString name;
+    QCString anchorFile;
+    QCString anchor;
+    QCString arglist;
+    QCString kind;
     TagAnchorInfoList docAnchors;
     Protection prot;
     Specifier virt;
     bool isStatic; 
 };
 
-/*! Container for class specific info that can be read from a tagfile */
+/** Container for class specific info that can be read from a tagfile */
 class TagClassInfo
 {
   public:
     enum Kind { Class, Struct, Union, Interface, Exception, Protocol, Category };
     TagClassInfo() { bases=0, templateArguments=0; members.setAutoDelete(TRUE); isObjC=FALSE; }
    ~TagClassInfo() { delete bases; delete templateArguments; }
-    QString name;
-    QString filename;
+    QCString name;
+    QCString filename;
     TagAnchorInfoList docAnchors;
     QList<BaseInfo> *bases;
     QList<TagMemberInfo> members;
-    QList<QString> *templateArguments;
+    QList<QCString> *templateArguments;
     QStringList classList;
     Kind kind;
     bool isObjC;
 };
 
-/*! Container for namespace specific info that can be read from a tagfile */
+/** Container for namespace specific info that can be read from a tagfile */
 class TagNamespaceInfo
 {
   public:
     TagNamespaceInfo() { members.setAutoDelete(TRUE); }
-    QString name;
-    QString filename;
+    QCString name;
+    QCString filename;
     QStringList classList;
     QStringList namespaceList;
     TagAnchorInfoList docAnchors;
     QList<TagMemberInfo> members;
 };
 
-/*! Container for package specific info that can be read from a tagfile */
+/** Container for package specific info that can be read from a tagfile */
 class TagPackageInfo
 {
   public:
     TagPackageInfo() { members.setAutoDelete(TRUE); }
-    QString name;
-    QString filename;
+    QCString name;
+    QCString filename;
     TagAnchorInfoList docAnchors;
     QList<TagMemberInfo> members;
     QStringList classList;
 };
 
+/** Container for include info that can be read from a tagfile */
 class TagIncludeInfo
 {
   public:
-    QString id;
-    QString name;
-    QString text;
+    QCString id;
+    QCString name;
+    QCString text;
     bool isLocal;
     bool isImported;
 };
 
-/*! Container for file specific info that can be read from a tagfile */
+/** Container for file specific info that can be read from a tagfile */
 class TagFileInfo
 {
   public:
     TagFileInfo() { members.setAutoDelete(TRUE); includes.setAutoDelete(TRUE); }
-    QString name;
-    QString path;
-    QString filename;
+    QCString name;
+    QCString path;
+    QCString filename;
     TagAnchorInfoList docAnchors;
     QList<TagMemberInfo> members;
     QStringList classList;
@@ -138,14 +141,14 @@ class TagFileInfo
     QList<TagIncludeInfo> includes;
 };
 
-/*! Container for group specific info that can be read from a tagfile */
+/** Container for group specific info that can be read from a tagfile */
 class TagGroupInfo
 {
   public:
     TagGroupInfo() { members.setAutoDelete(TRUE); }
-    QString name;
-    QString title;
-    QString filename;
+    QCString name;
+    QCString title;
+    QCString filename;
     TagAnchorInfoList docAnchors;
     QList<TagMemberInfo> members;
     QStringList subgroupList;
@@ -156,29 +159,30 @@ class TagGroupInfo
     QStringList dirList;
 };
 
-/*! Container for page specific info that can be read from a tagfile */
+/** Container for page specific info that can be read from a tagfile */
 class TagPageInfo
 {
   public:
-    QString name;
-    QString title;
-    QString filename;
+    QCString name;
+    QCString title;
+    QCString filename;
     TagAnchorInfoList docAnchors;
 };
 
-/*! Container for directory specific info that can be read from a tagfile */
+/** Container for directory specific info that can be read from a tagfile */
 class TagDirInfo
 {
   public:
-    QString name;
-    QString filename;
-    QString path;
+    QCString name;
+    QCString filename;
+    QCString path;
     QStringList subdirList;
     QStringList fileList;
     TagAnchorInfoList docAnchors;
 };
 
-/*! Tag file parser. 
+/** Tag file parser. 
+ *
  *  Reads an XML-structured tagfile and builds up the structure in
  *  memory. The method buildLists() is used to transfer/translate 
  *  the structures to the doxygen engine.
@@ -234,7 +238,7 @@ class TagFileParser : public QXmlDefaultHandler
 
     void setFileName( const QString &fileName )
     {
-      m_inputFileName = fileName;
+      m_inputFileName = fileName.utf8();
     }
 
     void warn(const char *fmt)
@@ -326,6 +330,7 @@ class TagFileParser : public QXmlDefaultHandler
       else
       {
         warn("warning: Unknown compound attribute `%s' found!\n",kind.data());
+        m_state = Invalid;
       }
       if (isObjC=="yes" && m_curClass)
       {
@@ -359,10 +364,10 @@ class TagFileParser : public QXmlDefaultHandler
     void startMember( const QXmlAttributes& attrib)
     {
       m_curMember = new TagMemberInfo;
-      m_curMember->kind = attrib.value("kind");
-      QString protStr   = attrib.value("protection");
-      QString virtStr   = attrib.value("virtualness");
-      QString staticStr = attrib.value("static");
+      m_curMember->kind = attrib.value("kind").utf8();
+      QCString protStr   = attrib.value("protection").utf8();
+      QCString virtStr   = attrib.value("virtualness").utf8();
+      QCString staticStr = attrib.value("static").utf8();
       if (protStr=="protected")
       {
         m_curMember->prot = Protected;
@@ -477,7 +482,7 @@ class TagFileParser : public QXmlDefaultHandler
 
     void startDocAnchor(const QXmlAttributes& attrib )
     {
-      m_fileName = attrib.value("file");
+      m_fileName = attrib.value("file").utf8();
       m_curString = "";
     }
 
@@ -560,10 +565,10 @@ class TagFileParser : public QXmlDefaultHandler
       if (m_state==InFile && m_curFile)
       {
         m_curIncludes = new TagIncludeInfo;
-        m_curIncludes->id = attrib.value("id");
-        m_curIncludes->name = attrib.value("name");
-        m_curIncludes->isLocal = attrib.value("local")=="yes" ? TRUE : FALSE;
-        m_curIncludes->isImported = attrib.value("imported")=="yes" ? TRUE : FALSE;
+        m_curIncludes->id = attrib.value("id").utf8();
+        m_curIncludes->name = attrib.value("name").utf8();
+        m_curIncludes->isLocal = attrib.value("local").utf8()=="yes" ? TRUE : FALSE;
+        m_curIncludes->isImported = attrib.value("imported").utf8()=="yes" ? TRUE : FALSE;
         m_curFile->includes.append(m_curIncludes);
       }
       else
@@ -584,10 +589,10 @@ class TagFileParser : public QXmlDefaultHandler
       {
         if (m_curClass->templateArguments==0) 
         {
-          m_curClass->templateArguments = new QList<QString>;
+          m_curClass->templateArguments = new QList<QCString>;
           m_curClass->templateArguments->setAutoDelete(TRUE);
         }
-        m_curClass->templateArguments->append(new QString(m_curString));
+        m_curClass->templateArguments->append(new QCString(m_curString));
       }
       else
       {
@@ -757,7 +762,7 @@ class TagFileParser : public QXmlDefaultHandler
                        const QString&name, const QXmlAttributes& attrib )
     {
       //printf("startElement `%s'\n",name.data());
-      StartElementHandler *handler = m_startElementHandlers[name];
+      StartElementHandler *handler = m_startElementHandlers[name.utf8()];
       if (handler)
       {
         (*handler)(attrib);
@@ -772,7 +777,7 @@ class TagFileParser : public QXmlDefaultHandler
     bool endElement( const QString&, const QString&, const QString& name )
     {
       //printf("endElement `%s'\n",name.data());
-      EndElementHandler *handler = m_endElementHandlers[name];
+      EndElementHandler *handler = m_endElementHandlers[name.utf8()];
       if (handler)
       {
         (*handler)();
@@ -786,7 +791,7 @@ class TagFileParser : public QXmlDefaultHandler
 
     bool characters ( const QString & ch ) 
     {
-      m_curString+=ch;
+      m_curString+=ch.utf8();
       return TRUE;
     }
 
@@ -816,15 +821,16 @@ class TagFileParser : public QXmlDefaultHandler
     TagMemberInfo             *m_curMember;
     TagIncludeInfo            *m_curIncludes;
     QCString                   m_curString;
-    QString                    m_tagName;
-    QString                    m_fileName;
+    QCString                   m_tagName;
+    QCString                   m_fileName;
     State                      m_state;
     QStack<State>              m_stateStack;
     QXmlLocator               *m_locator;
-    QString                    m_inputFileName;
+    QCString                   m_inputFileName;
 };
 
-/*! Error handler for the XML tag file parser. 
+/** Error handler for the XML tag file parser. 
+ *
  *  Basically dumps all fatal error to stderr using err().
  */
 class TagFileErrorHandler : public QXmlErrorHandler
@@ -1034,8 +1040,8 @@ void TagFileParser::addDocAnchors(Entry *e,const TagAnchorInfoList &l)
       //printf("New sectionInfo file=%s anchor=%s\n",
       //    ta->fileName.data(),ta->label.data());
       SectionInfo *si=new SectionInfo(ta->fileName,ta->label,ta->label,
-          SectionInfo::Anchor,m_tagName);
-      Doxygen::sectionDict.insert(ta->label,si);
+          SectionInfo::Anchor,0,m_tagName);
+      Doxygen::sectionDict.append(ta->label,si);
       e->anchors->append(si);
     }
     else
@@ -1146,7 +1152,7 @@ void TagFileParser::buildMemberList(Entry *ce,QList<TagMemberInfo> &members)
   }
 }
 
-static QString stripPath(const QString &s)
+static QCString stripPath(const QCString &s)
 {
   int i=s.findRev('/');
   if (i!=-1)
@@ -1208,8 +1214,8 @@ void TagFileParser::buildLists(Entry *root)
       ArgumentList *al = new ArgumentList;
       ce->tArgLists->append(al);
       
-      QListIterator<QString> sli(*tci->templateArguments);
-      QString *argName;
+      QListIterator<QCString> sli(*tci->templateArguments);
+      QCString *argName;
       for (;(argName=sli.current());++sli)
       {
         Argument *a = new Argument;
@@ -1237,7 +1243,7 @@ void TagFileParser::buildLists(Entry *root)
     ti->fileName = tfi->filename;
     fe->tagInfo  = ti;
     
-    QString fullName = m_tagName+":"+tfi->path+stripPath(tfi->name);
+    QCString fullName = m_tagName+":"+tfi->path+stripPath(tfi->name);
     fe->fileName = fullName;
     //printf("new FileDef() filename=%s\n",tfi->filename.data());
     FileDef *fd = new FileDef(m_tagName+":"+tfi->path,
@@ -1373,7 +1379,7 @@ void TagFileParser::addIncludes()
                 //        ifd->getOutputFileBase().data(),ii->id.data());
                 if (ifd->getOutputFileBase()==QCString(ii->id))
                 {
-                  fd->addIncludeDependency(ifd,ii->text,ii->isLocal,ii->isImported);
+                  fd->addIncludeDependency(ifd,ii->text,ii->isLocal,ii->isImported,FALSE);
                 }
               }
             }

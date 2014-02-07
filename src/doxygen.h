@@ -3,7 +3,7 @@
  * $Id: doxygen.h,v 1.39 2001/03/19 19:27:40 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -48,6 +48,7 @@ class ObjCache;
 class Store;
 class QFileInfo;
 class BufStr;
+class CiteDict;
 
 typedef QList<QCString>    StringList;
 typedef QDict<FileDef>     FileDict;
@@ -92,6 +93,7 @@ class Doxygen
     static FileNameList             *inputNameList;
     static FileNameDict             *imageNameDict;
     static FileNameDict             *dotFileNameDict;
+    static FileNameDict             *mscFileNameDict;
     static QStrList                  tagfileList;
     static MemberNameSDict          *memberNameSDict;
     static MemberNameSDict          *functionNameSDict;
@@ -116,7 +118,7 @@ class Doxygen
     static QDict<DefinitionIntf>    *symbolMap;
     static bool                      outputToWizard;
     static QDict<int>               *htmlDirMap;
-    static QCache<LookupInfo>        lookupCache;
+    static QCache<LookupInfo>       *lookupCache;
     static DirSDict                 *directories;
     static SDict<DirRelation>        dirRelations;
     static ParserManager            *parserManager;
@@ -125,11 +127,14 @@ class Doxygen
     static Store                    *symbolStorage;
     static QCString                  objDBFileName;
     static QCString                  entryDBFileName;
+    static CiteDict                 *citeDict;
     static bool                      gatherDefines;
     static bool                      userComments;
     static IndexList                 indexList;
     static int                       subpageNestingLevel;
     static QCString                  spaces;
+    static bool                      generatingXmlOutput;
+    static bool                      markdownSupport;
 };
 
 void initDoxygen();

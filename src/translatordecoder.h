@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -21,6 +21,7 @@
 #include "translator.h"
 #include "portable.h"
 
+/** Decoder adapter for translator file that are not yet UTF-8 encoded. */
 class TranslatorDecoder : public Translator
 {
   public:
@@ -737,6 +738,36 @@ class TranslatorDecoder : public Translator
     { return toUtf8(m_translator->trDateTime(year,month,day,dayOfWeek,
                                              hour,minutes,seconds,includeTime)); 
     }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    QCString trCiteReferences()
+    { return toUtf8(m_translator->trCiteReferences()); }
+    QCString trCopyright()
+    { return toUtf8(m_translator->trCopyright()); }
+    QCString trDirDepGraph(const char *name)
+    { return toUtf8(m_translator->trDirDepGraph(fromUtf8(name))); }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    QCString trDetailLevel()
+    { return toUtf8(m_translator->trDetailLevel()); }
+    QCString trTemplateParameters()
+    { return toUtf8(m_translator->trTemplateParameters()); }
+    QCString trAndMore(const QCString &number)
+    { return toUtf8(m_translator->trAndMore(fromUtf8(number))); }
+    QCString trEnumGeneratedFromFiles(bool single)
+    { return toUtf8(m_translator->trEnumGeneratedFromFiles(single)); }
+    QCString trEnumReference(const char *name)
+    { return toUtf8(m_translator->trEnumReference(fromUtf8(name))); }
+    QCString trInheritedFrom(const char *members,const char *what)
+    { return toUtf8(m_translator->trInheritedFrom(fromUtf8(members),fromUtf8(what))); }
+    QCString trAdditionalInheritedMembers()
+    { return toUtf8(m_translator->trAdditionalInheritedMembers()); }
 
 
 //////////////////////////////////////////////////////////////////////////

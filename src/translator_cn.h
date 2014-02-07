@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,17 +22,17 @@
    If you want insert a space whenever Chinese meets English charactors, set
    CN_SPC to " ", else null.
 */
-#define CN_SPC
+#define CN_SPC " "
 
-class TranslatorChinese : public TranslatorAdapter_1_6_0
+class TranslatorChinese : public Translator
 {
   public:
-		/*! Used for identification of the language. The identification
-		 * should not be translated. It should be replaced by the name
-		 * of the language in English using lower-case characters only
-		 * (e.g. "czech", "japanese", "russian", etc.). It sould be equal to
-		 * the identification used in the language.cpp.
-		 */
+    /*! Used for identification of the language. The identification
+     * should not be translated. It should be replaced by the name
+     * of the language in English using lower-case characters only
+     * (e.g. "czech", "japanese", "russian", etc.). It sould be equal to
+     * the identification used in the language.cpp.
+     */
     
     virtual QCString idLanguage()
     { return "chinese"; }
@@ -57,486 +57,481 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     }
 
 
-		/*! return the language charset. This will be used for the HTML output */
+    /*! return the language charset. This will be used for the HTML output */
     virtual QCString idLanguageCharset()
-    { return "gb2312"; }
+    { return "UTF-8"; }
 
-		/*! used in the compound documentation before a list of related functions. 
-		 */
+    /*! used in the compound documentation before a list of related functions. 
+     */
     virtual QCString trRelatedFunctions()
-    { return "Ïà¹Øº¯Êı"; }
+    { return "ç›¸å…³å‡½æ•°"; }
 
-		/*! subscript for the related functions. */
+    /*! subscript for the related functions. */
     virtual QCString trRelatedSubscript()
-    { return "£¨×¢Òâ£ºÕâĞ©²»ÊÇ³ÉÔ±º¯Êı¡££©"; }
+    { return "(è¯·æ³¨æ„: è¿™äº›ä¸æ˜¯æˆå‘˜å‡½æ•°.)"; }
 
-		/*! header that is put before the detailed description of files, 
-		 * classes and namespaces. 
-		 */
+    /*! header that is put before the detailed description of files, 
+     * classes and namespaces. 
+     */
     virtual QCString trDetailedDescription()
-    { return "ÏêÏ¸ÃèÊö"; }
+    { return "è¯¦ç»†æè¿°"; }
 
-		/*! header that is put before the list of typedefs. */
+    /*! header that is put before the list of typedefs. */
     virtual QCString trMemberTypedefDocumentation()
-    { return "³ÉÔ±ÀàĞÍ¶¨ÒåÎÄµµ"; }
+    { return "æˆå‘˜ç±»å‹å®šä¹‰è¯´æ˜"; }
 
-		/*! header that is put before the list of enumerations. */
+    /*! header that is put before the list of enumerations. */
     virtual QCString trMemberEnumerationDocumentation()
-    { return "³ÉÔ±Ã¶¾ÙÀàĞÍÎÄµµ"; }
+    { return "æˆå‘˜æšä¸¾ç±»å‹è¯´æ˜"; }
 
-		/*! header that is put before the list of member function. */
+    /*! header that is put before the list of member function. */
     virtual QCString trMemberFunctionDocumentation()
-    { return "³ÉÔ±º¯ÊıÎÄµµ"; }
+    { return "æˆå‘˜å‡½æ•°è¯´æ˜"; }
 
-		/*! header that is put before the list of member attributes. */
+    /*! header that is put before the list of member attributes. */
     virtual QCString trMemberDataDocumentation()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) 
-			{
-				return "×Ö¶ÎÎÄµµ"; 
-			}
-			else {
-				return "³ÉÔ±Êı¾İÎÄµµ"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+      {
+        return "ç»“æ„ä½“æˆå‘˜å˜é‡è¯´æ˜"; 
+      }
+      else
+      {
+        return "ç±»æˆå‘˜å˜é‡è¯´æ˜"; 
+      }
+    }
 
-		/*! this is the text of a link put after brief descriptions. */
+    /*! this is the text of a link put after brief descriptions. */
     virtual QCString trMore()
-    { return "¸ü¶à..."; }
+    { return "æ›´å¤š..."; }
 
-		/*! put in the class documention */
+    /*! put in the class documention */
     virtual QCString trListOfAllMembers()
-    { return "ËùÓĞ³ÉÔ±µÄÁĞ±í¡£"; }
+    { return "æ‰€æœ‰æˆå‘˜åˆ—è¡¨"; }
 
-		/*! used as the title of the "list of all members" page of a class */
+    /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()
-    { return "³ÉÔ±ÁĞ±í"; }
+    { return "æˆå‘˜åˆ—è¡¨"; }
 
-		/*! this is the first part of a sentence that is followed by a class name */
+    /*! this is the first part of a sentence that is followed by a class name */
     virtual QCString trThisIsTheListOfAllMembers()
-    { return "³ÉÔ±µÄÍêÕûÁĞ±í£¬ÕâĞ©³ÉÔ±ÊôÓÚ"CN_SPC; }
+    { return "æˆå‘˜çš„å®Œæ•´åˆ—è¡¨ï¼Œè¿™äº›æˆå‘˜å±äº"CN_SPC; }
 
-		/*! this is the remainder of the sentence after the class name */
+    /*! this is the remainder of the sentence after the class name */
     virtual QCString trIncludingInheritedMembers()
-    { return "£¬°üÀ¨ËùÓĞ¼Ì³Ğ¶øÀ´µÄ³ÉÔ±"; }
+    { return ",åŒ…æ‹¬æ‰€æœ‰ç»§æ‰¿è€Œæ¥çš„ç±»æˆå‘˜"; }
 
-		/*! this is put at the author sections at the bottom of man pages.
-		 *  parameter s is name of the project name.
-		 */
+    /*! this is put at the author sections at the bottom of man pages.
+     *  parameter s is name of the project name.
+     */
     virtual QCString trGeneratedAutomatically(const char *s)
-    {
-			QCString result;
-      if (s) result=(QCString)"Îª"CN_SPC+s+"£¬";
-      result+="ÓÉ"CN_SPC"Doyxgen"CN_SPC"Í¨¹ı·ÖÎöÔ´´úÂë×Ô¶¯Éú³É¡£"; 
+    { QCString result;
+      result = "ç”±"CN_SPC"Doyxgen"CN_SPC"é€šè¿‡åˆ†æ"CN_SPC;
+      if (s) result += ((QCString)s+CN_SPC"çš„"CN_SPC);
+      result+= "æºä»£ç è‡ªåŠ¨ç”Ÿæˆ."; 
       return result;
     }
 
-		/*! put after an enum name in the list of all members */
+    /*! put after an enum name in the list of all members */
     virtual QCString trEnumName()
-    { return "Ã¶¾ÙÃû³Æ"; }
+    { return "æšä¸¾åç§°"; }
 
-		/*! put after an enum value in the list of all members */
+    /*! put after an enum value in the list of all members */
     virtual QCString trEnumValue()
-    { return "Ã¶¾ÙÖµ"; }
+    { return "æšä¸¾å€¼"; }
 
-		/*! put after an undocumented member in the list of all members */
+    /*! put after an undocumented member in the list of all members */
     virtual QCString trDefinedIn()
-    { return "¶¨ÒåÓÚ"CN_SPC; }
+    { return "å®šä¹‰äº"CN_SPC; }
 
-		// quick reference sections
+    // quick reference sections
 
-
-		/*! This is put above each page as a link to the list of all groups of 
-		 *  compounds or files (see the \\group command).
-		 */
+    /*! This is put above each page as a link to the list of all groups of 
+     *  compounds or files (see the \\group command).
+     */
     virtual QCString trModules()
-    { return "Ä£¿é"; }
+    { return "æ¨¡å—"; }
 
-		/*! This is put above each page as a link to the class hierarchy */
- 		virtual QCString trClassHierarchy()
-    { return "Àà¼Ì³Ğ¹ØÏµ"; }
+    /*! This is put above each page as a link to the class hierarchy */
+     virtual QCString trClassHierarchy()
+    { return "ç±»ç»§æ‰¿å…³ç³»"; }
 
-		/*! This is put above each page as a link to the list of annotated class */
- 		virtual QCString trCompoundList()
+    /*! This is put above each page as a link to the list of annotated class */
+     virtual QCString trCompoundList()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
-				return "Êı¾İ½á¹¹"; 
-			}
-			else {
-				return "×éºÏÀàĞÍÁĞ±í"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
+        return "ç»“æ„ä½“"; 
+      }
+      else {
+        return "ç±»åˆ—è¡¨"; 
+      }
+    }
 
-		/*! This is put above each page as a link to the list of documented files */
+    /*! This is put above each page as a link to the list of documented files */
     virtual QCString trFileList()
-    { return "ÎÄ¼şÁĞ±í"; }
+    { return "æ–‡ä»¶åˆ—è¡¨"; }
 
-		/*! This is put above each page as a link to all members of compounds. */
+    /*! This is put above each page as a link to all members of compounds. */
     virtual QCString trCompoundMembers()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) { 
-				return "Êı¾İ×Ö¶Î"; 
-			}
-			else {
-				return "×éºÏÀàĞÍ³ÉÔ±"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) { 
+        return "æˆå‘˜å˜é‡"; 
+      }
+      else {
+        return "ç±»æˆå‘˜"; 
+      }
+    }
 
-		/*! This is put above each page as a link to all member of files. */
+    /*! This is put above each page as a link to all member of files. */
     virtual QCString trFileMembers()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
-				return "È«¾Ö¶¨Òå"; 
-			} else {
-				return "ÎÄ¼ş³ÉÔ±"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
+        return "å…¨å±€å®šä¹‰"; 
+      } else {
+        return "æ–‡ä»¶æˆå‘˜"; 
+      }
+    }
 
-		/*! This is put above each page as a link to all related pages. */
+    /*! This is put above each page as a link to all related pages. */
     virtual QCString trRelatedPages()
-    { return "Ïà¹ØÒ³Ãæ"; }
+    { return "ç›¸å…³é¡µé¢"; }
 
-		/*! This is put above each page as a link to all examples. */
+    /*! This is put above each page as a link to all examples. */
     virtual QCString trExamples()
-    { return "Ê¾Àı"; }
+    { return "ç¤ºä¾‹"; }
 
     virtual QCString trSearch()
-    { return "ËÑË÷"; }
+    { return "æœç´¢"; }
 
     virtual QCString trClassHierarchyDescription()
-    { return "´ËÁĞ±í»ù±¾°´×ÖµäË³ĞòÅÅĞò£º"; }
+    { return "æ­¤ç»§æ‰¿å…³ç³»åˆ—è¡¨æŒ‰å­—å…¸é¡ºåºç²—ç•¥çš„æ’åº:"CN_SPC; }
 
     virtual QCString trFileListDescription(bool extractAll)
     {
-   		QCString result="ÕâÀïÁĞ³öËùÓĞ";
-      if (!extractAll) result+="ÎÄµµ»¯µÄ";
-      result+="ÎÄ¼ş£¬¸½´ø¼òÒªËµÃ÷£º";
+      QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
+      if (!extractAll) result+="æ–‡æ¡£åŒ–çš„";
+      result+="æ–‡ä»¶ï¼Œå¹¶é™„å¸¦ç®€è¦è¯´æ˜:";
       return result;
     }
 
     virtual QCString trCompoundListDescription()
     { 
-
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
-			{
-				return "ÕâÀïÁĞ³öËùÓĞÊı¾İ½á¹¹£¬¸½´ø¼òÒªËµÃ÷£º"; 
-			}
-			else
-			{
-				return "ÕâÀïÁĞ³öËùÓĞÀà¡¢½á¹¹¡¢ÁªºÏÒÔ¼°½Ó¿Ú¶¨Òå£¬¸½´ø¼òÒªËµÃ÷£º"; 
-			}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+      {
+        return "è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰ç»“æ„ä½“ï¼Œå¹¶é™„å¸¦ç®€è¦è¯´æ˜:"; 
+      }
+      else
+      {
+        return "è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰ç±»ã€ç»“æ„ã€è”åˆä»¥åŠæ¥å£å®šä¹‰ç­‰ï¼Œå¹¶é™„å¸¦ç®€è¦è¯´æ˜:"; 
+      }
     }
 
     virtual QCString trCompoundMembersDescription(bool extractAll)
     {
-   		QCString result="ÕâÀïÁĞ³öËùÓĞ";
+      QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
       if (!extractAll) {
-				result+="ÎÄµµ»¯µÄ";
-			}
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
-				result+="½á¹¹ºÍÁªºÏµÄ³ÉÔ±£¬¸½´ø";
-			}
-			else {
-				result+="Àà³ÉÔ±£¬¸½´ø";
-			}
-
-      if (extractAll) {
-				if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
-					result+="ËùÔÚ½á¹¹£¯ÁªºÏµÄÎÄµµµÄÁ´½Ó£º";
-				}
-				else {
-					result+="ËùÔÚÀàµÄÎÄµµµÄÁ´½Ó£º";
-				}
-			}
+        result+="æ–‡æ¡£åŒ–çš„";
+      }
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
+        result+="ç»“æ„ä½“å’Œè”åˆä½“çš„æˆå‘˜å˜é‡ï¼Œå¹¶é™„å¸¦";
+      }
       else {
-				if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
-					result+="ËùÊô½á¹¹£¯ÁªºÏµÄÁ´½Ó£º";
-				}
-				else {
-					result+="ËùÊôÀàµÄÁ´½Ó£º";
-				}
-			}
+        result+="ç±»æˆå‘˜ï¼Œå¹¶é™„å¸¦";
+      }
+      //result+=" with links to ";
+      if (extractAll) {
+        if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
+          result+="ç»“æ„ä½“æˆ–è”åˆçš„è¯¦ç»†è¯´æ˜:";
+        }
+        else {
+          result+="ç±»çš„è¯¦ç»†è¯´æ˜:";
+        }
+      }
+      else {
+        if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
+          result+="ç»“æ„æˆ–è”åˆæ‰€å±çš„æ–‡ä»¶:";
+        }
+        else {
+          result+="ç±»æ‰€å±çš„æ–‡ä»¶:";
+        }
+      }
       return result;
     }
 
     virtual QCString trFileMembersDescription(bool extractAll)
     {
-   		QCString result="ÕâÀïÁĞ³öËùÓĞ";
+      QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
       if (!extractAll) 
-				result +="ÎÄµµ»¯µÄ";
-
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
-				result +="º¯Êı£¬±äÁ¿£¬ºê£¬Ã¶¾ÙºÍÀàĞÍ¶¨Òå£¬¸½´ø";
-			} 
-			else {
-				result +="ÎÄ¼ş³ÉÔ±£¬¸½´ø";
-			}
+        result +="æ–‡æ¡£åŒ–çš„";
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C")) {
+        result +="å‡½æ•°,å˜é‡,å®,æšä¸¾å’Œç±»å‹å®šä¹‰ç­‰,å¹¶é™„å¸¦";
+      } 
+      else {
+        result +="æ–‡ä»¶æˆå‘˜,å¹¶é™„å¸¦";
+      }
 
       if (extractAll) 
-				result+="ËùÔÚÎÄ¼şµÄÎÄµµµÄÁ´½Ó£º";
+        result+="å…¶æ‰€å±çš„æ–‡ä»¶:";
       else 
-				result+="ËùÔÚÎÄ¼şµÄÁ´½Ó£º";
+        result+="å…¶è¯¦ç»†è¯´æ˜:";
       return result;
     }
 
     virtual QCString trExamplesDescription()
-    { return "ÕâÀïÁĞ³öËùÓĞÊ¾Àı£º"; }
+    { return "è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰ç¤ºä¾‹:"; }
 
     virtual QCString trRelatedPagesDescription()
-    { return "ÕâÀïÁĞ³öËùÓĞÏà¹ØµÄÒ³Ãæ£º"; }
+    { return "è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰ç›¸å…³é¡µé¢:"; }
 
     virtual QCString trModulesDescription()
-    { return "ÕâÀïÁĞ³öËùÓĞÄ£¿é"; }
+    { return "è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰æ¨¡å—:"; }
 
     virtual QCString trDocumentation()
-    { return "ÎÄµµ"; }
+    { return "æ–‡æ¡£"; }
 
     virtual QCString trModuleIndex()
-    { return "Ä£¿éË÷Òı"; }
+    { return "æ¨¡å—ç´¢å¼•"; }
 
     virtual QCString trHierarchicalIndex()
-    { return "¼Ì³Ğ¹ØÏµË÷Òı"; }
+    { return "ç»§æ‰¿å…³ç³»ç´¢å¼•"; }
 
     virtual QCString trCompoundIndex()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
-			{
-				return "Êı¾İ½á¹¹Ë÷Òı"; 
-			} 
-			else {
-				return "×éºÏÀàĞÍË÷Òı"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+      {
+        return "ç»“æ„ä½“ç´¢å¼•"; 
+      } 
+      else {
+        return "ç±»ç´¢å¼•"; 
+      }
+    }
 
     virtual QCString trFileIndex() 
-    { return "ÎÄ¼şË÷Òı"; }
+    { return "æ–‡ä»¶ç´¢å¼•"; }
 
     virtual QCString trModuleDocumentation()
-    { return "Ä£¿éÎÄµµ"; }
+    { return "æ¨¡å—è¯´æ˜"; }
 
     virtual QCString trClassDocumentation()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
-			{
-				return "Êı¾İ½á¹¹ÎÄµµ";
-			}
-			else {
-				return "ÀàÎÄµµ"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+      {
+        return "ç»“æ„ä½“è¯´æ˜";
+      }
+      else {
+        return "ç±»è¯´æ˜"; 
+      }
+    }
 
     virtual QCString trFileDocumentation()
-    { return "ÎÄ¼şÎÄµµ"; }
+    { return "æ–‡ä»¶è¯´æ˜"; }
 
     virtual QCString trExampleDocumentation()
-    { return "Ê¾ÀıÎÄµµ"; }
+    { return "ç¤ºä¾‹è¯´æ˜"; }
 
     virtual QCString trPageDocumentation()
-    { return "Ò³ÃæÎÄµµ"; }
+    { return "é¡µé¢è¯´æ˜"; }
 
     virtual QCString trReferenceManual()
-    { return "²Î¿¼ÊÖ²á"; }
+    { return "å‚è€ƒæ‰‹å†Œ"; }
 
     virtual QCString trDefines()
-    { return "ºê¶¨Òå"; }
+    { return "å®å®šä¹‰"; }
 
     virtual QCString trFuncProtos()
-    { return "º¯ÊıÔ­ĞÍ"; }
+    { return "å‡½æ•°åŸå‹"; }
 
     virtual QCString trTypedefs()
-    { return "ÀàĞÍ¶¨Òå"; }
+    { return "ç±»å‹å®šä¹‰"; }
 
     virtual QCString trEnumerations()
-    { return "Ã¶¾Ù"; }
+    { return "æšä¸¾"; }
 
     virtual QCString trFunctions()
-    { return "º¯Êı"; }
+    { return "å‡½æ•°"; }
 
     virtual QCString trVariables()
-    { return "±äÁ¿"; }
+    { return "å˜é‡"; }
 
     virtual QCString trEnumerationValues()
-    { return "Ã¶¾ÙÖµ"; }
+    { return "æšä¸¾å€¼"; }
 
 
- 		virtual QCString trDefineDocumentation()
-    { return "ºê¶¨ÒåÎÄµµ"; }
+    virtual QCString trDefineDocumentation()
+    { return "å®å®šä¹‰è¯´æ˜"; }
 
- 		virtual QCString trFunctionPrototypeDocumentation()
-    { return "º¯ÊıÔ­ĞÍÎÄµµ"; }
+     virtual QCString trFunctionPrototypeDocumentation()
+    { return "å‡½æ•°åŸå‹è¯´æ˜"; }
 
- 		virtual QCString trTypedefDocumentation()
-    { return "ÀàĞÍ¶¨ÒåÎÄµµ"; }
+    virtual QCString trTypedefDocumentation()
+    { return "ç±»å‹å®šä¹‰è¯´æ˜"; }
 
- 		virtual QCString trEnumerationTypeDocumentation()
-    { return "Ã¶¾ÙÀàĞÍÎÄµµ"; }
+    virtual QCString trEnumerationTypeDocumentation()
+    { return "æšä¸¾ç±»å‹è¯´æ˜"; }
 
- 		virtual QCString trFunctionDocumentation()
-    { return "º¯ÊıÎÄµµ"; }
+    virtual QCString trFunctionDocumentation()
+    { return "å‡½æ•°è¯´æ˜"; }
 
- 		virtual QCString trVariableDocumentation()
-    { return "±äÁ¿ÎÄµµ"; }
+    virtual QCString trVariableDocumentation()
+    { return "å˜é‡è¯´æ˜"; }
 
- 		virtual QCString trCompounds()
+    virtual QCString trCompounds()
     { 
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
-			{ 
-				return "Êı¾İ½á¹¹";
-			}
-			else {
-				return "×éºÏÀàĞÍ"; 
-			}
-		}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+      { 
+        return "ç»“æ„ä½“";
+      }
+      else {
+        return "ç±»"; 
+      }
+    }
 
- 		virtual QCString trGeneratedAt(const char *date,const char *projName)
-    { 
-   		QCString result=(QCString)"Generated at "+date;
-      if (projName) result+=(QCString)" for "+projName;
-      result+=(QCString)" by";
+    virtual QCString trGeneratedAt(const char *date,const char *projName)
+    { QCString result=(QCString)"ç”Ÿæˆäº"CN_SPC+date;
+      if (projName) result+=(QCString)CN_SPC", ä¸º"CN_SPC+projName;
+      result+=(QCString)"ä½¿ç”¨"CN_SPC;
       return result;
     }
 
- 		virtual QCString trWrittenBy()
+    virtual QCString trWrittenBy()
     {
-      return "written by";
+      return "ä½œè€…";
     }
 
- 		virtual QCString trClassDiagram(const char *clName)
+    virtual QCString trClassDiagram(const char *clName)
     {
-      return (QCString)"¼Ì³ĞÍ¼£¬Àà"CN_SPC+clName;
+      return (QCString)"ç±»"CN_SPC+clName+CN_SPC"ç»§æ‰¿å…³ç³»å›¾:";
     }
 
- 		virtual QCString trForInternalUseOnly()
-    { return "½öÏŞÄÚ²¿Ê¹ÓÃ¡£"; }
+     virtual QCString trForInternalUseOnly()
+    { return "ä»…é™å†…éƒ¨ä½¿ç”¨."; }
 
- 		virtual QCString trWarning()
-    { return "¾¯¸æ"; }
+     virtual QCString trWarning()
+    { return "è­¦å‘Š"; }
 
- 		virtual QCString trVersion()
-    { return "°æ±¾"; }
+     virtual QCString trVersion()
+    { return "ç‰ˆæœ¬"; }
 
- 		virtual QCString trDate()
-    { return "ÈÕÆÚ"; }
+     virtual QCString trDate()
+    { return "æ—¥æœŸ"; }
 
- 		virtual QCString trReturns()
-    { return "·µ»Ø"; }
+     virtual QCString trReturns()
+    { return "è¿”å›"; }
 
- 		virtual QCString trSeeAlso()
-    { return "²Î¼û"; }
+     virtual QCString trSeeAlso()
+    { return "å‚è§"; }
 
- 		virtual QCString trParameters()
-    { return "²ÎÊı"; }
+     virtual QCString trParameters()
+    { return "å‚æ•°"; }
 
- 		virtual QCString trExceptions()
-    { return "Òì³£"; }
+     virtual QCString trExceptions()
+    { return "å¼‚å¸¸"; }
 
- 		virtual QCString trGeneratedBy()
-    { return "ÖÆ×÷Õß"; }
+     virtual QCString trGeneratedBy()
+    { return "åˆ¶ä½œè€…"; }
     
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-990307 
 //////////////////////////////////////////////////////////////////////////
     
- 		virtual QCString trNamespaceList()
-    { return "Ãû×Ö¿Õ¼äÁĞ±í"; }
+     virtual QCString trNamespaceList()
+    { return "å‘½åç©ºé—´åˆ—è¡¨"; }
 
- 		virtual QCString trNamespaceListDescription(bool extractAll)
+     virtual QCString trNamespaceListDescription(bool extractAll)
     {
-   		QCString result="ÕâÀïÁĞ³öËùÓĞ";
-      if (!extractAll) result+="ÎÄµµ»¯µÄ";
-      result+="Ãû×Ö¿Õ¼ä¶¨Òå£¬¸½´ø¼òÒªËµÃ÷£º";
+       QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
+      if (!extractAll) result+="æ–‡æ¡£åŒ–çš„";
+      result+="å‘½åç©ºé—´å®šä¹‰,é™„å¸¦ç®€è¦è¯´æ˜:";
       return result;
     }
 
- 		virtual QCString trFriends()
-    { return "ÓÑÔª"; }
+     virtual QCString trFriends()
+    { return "å‹å…ƒ"; }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-990405
 //////////////////////////////////////////////////////////////////////////
     
- 		virtual QCString trRelatedFunctionDocumentation()
-    { return "ÓÑÔª¼°Ïà¹Øº¯ÊıÎÄµµ"; }
+     virtual QCString trRelatedFunctionDocumentation()
+    { return "å‹å…ƒåŠç›¸å…³å‡½æ•°æ–‡æ¡£"; }
     
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-990425
 //////////////////////////////////////////////////////////////////////////
 
- 		virtual QCString trCompoundReference(const char *clName,
+     virtual QCString trCompoundReference(const char *clName,
                                  ClassDef::CompoundType compType,
                                  bool isTemplate)
       // used as the title of the HTML page of a class/struct/union
     {
-   		QCString result=(QCString)clName;
-      if (isTemplate) result+=CN_SPC"Ä£°å";
+       QCString result=(QCString)clName;
+      if (isTemplate) result+=CN_SPC"æ¨¡æ¿";
       switch(compType)
       {
-        case ClassDef::Class:  result+="Àà"; break;
-        case ClassDef::Struct: result+="½á¹¹"; break;
-        case ClassDef::Union:  result+="ÁªºÏ"; break;
-        case ClassDef::Interface:  result+="½Ó¿Ú"; break;
-        case ClassDef::Protocol:   result+="Ğ­Òé"; break;
-        case ClassDef::Category:   result+="·ÖÀà"; break;
-        case ClassDef::Exception:  result+="Òì³£"; break;
+        case ClassDef::Class:  result+="ç±»"; break;
+        case ClassDef::Struct: result+="ç»“æ„ä½“"; break;
+        case ClassDef::Union:  result+="è”åˆä½“"; break;
+        case ClassDef::Interface:  result+="æ¥å£"; break;
+        case ClassDef::Protocol:   result+="åè®®"; break;
+        case ClassDef::Category:   result+="åˆ†ç±»"; break;
+        case ClassDef::Exception:  result+="å¼‚å¸¸"; break;
       }
-      result+="²Î¿¼";
+      result+=CN_SPC"å‚è€ƒ";
       return result;
     }
 
- 		virtual QCString trFileReference(const char *fileName)
-      // used as the title of the HTML page of a file
+    /*! used as the title of the HTML page of a file */
+    virtual QCString trFileReference(const char *fileName)
     {
-   		QCString result=fileName;
-      result+=CN_SPC"ÎÄ¼ş²Î¿¼"; 
+      QCString result=fileName;
+      result+=CN_SPC"æ–‡ä»¶å‚è€ƒ"; 
       return result;
     }
 
- 		virtual QCString trNamespaceReference(const char *namespaceName)
-      // used as the title of the HTML page of a namespace
-    {
-   		QCString result=namespaceName;
-      result+=CN_SPC"Ãû×Ö¿Õ¼ä²Î¿¼";
+    /*! used as the title of the HTML page of a namespace */
+    virtual QCString trNamespaceReference(const char *namespaceName)
+    { QCString result=namespaceName;
+      result+=CN_SPC"å‘½åç©ºé—´å‚è€ƒ";
       return result;
     }
     
     // these are for the member sections of a class, struct or union 
- 		virtual QCString trPublicMembers()
-    { return "¹«ÓĞ³ÉÔ±"; }
+    virtual QCString trPublicMembers()
+    { return "Public æˆå‘˜å‡½æ•°"; }
 
- 		virtual QCString trPublicSlots()
-    { return "¹«ÓĞ²Û"; }
+    virtual QCString trPublicSlots()
+    { return "Public æ§½"; }
 
- 		virtual QCString trSignals()
-    { return "ĞÅºÅ"; }
+    virtual QCString trSignals()
+    { return "ä¿¡å·"; }
 
- 		virtual QCString trStaticPublicMembers()
-    { return "¾²Ì¬¹«ÓĞ³ÉÔ±"; }
+    virtual QCString trStaticPublicMembers()
+    { return "é™æ€ Public æˆå‘˜å‡½æ•°"; }
 
- 		virtual QCString trProtectedMembers()
-    { return "±£»¤³ÉÔ±"; }
+    virtual QCString trProtectedMembers()
+    { return "Protected æˆå‘˜å‡½æ•°"; }
 
- 		virtual QCString trProtectedSlots()
-    { return "±£»¤²Û"; }
+    virtual QCString trProtectedSlots()
+    { return "Protected æ§½"; }
 
- 		virtual QCString trStaticProtectedMembers()
-    { return "¾²Ì¬±£»¤³ÉÔ±"; }
-		
- 		virtual QCString trPrivateMembers()
-    { return "Ë½ÓĞ³ÉÔ±"; }
-		
- 		virtual QCString trPrivateSlots()
-    { return "Ë½ÓĞ²Û"; }
-		
- 		virtual QCString trStaticPrivateMembers()
-    { return "¾²Ì¬Ë½ÓĞ³ÉÔ±"; }
-		
-    // end of member sections 
+    virtual QCString trStaticProtectedMembers()
+    { return "é™æ€ Protected æˆå‘˜å‡½æ•°"; }
     
- 		virtual QCString trWriteList(int numEntries)
+    virtual QCString trPrivateMembers()
+    { return "Private æˆå‘˜å‡½æ•°"; }
+    
+    virtual QCString trPrivateSlots()
+    { return "Private æ§½"; }
+    
+    virtual QCString trStaticPrivateMembers()
+    { return "é™æ€ Private æˆå‘˜å‡½æ•°"; }
+    
+    // end of member sections 
+    virtual QCString trWriteList(int numEntries)
     {
       // this function is used to produce a comma-separated list of items.
       // use generateMarker(i) to indicate where item i should be put.
-   		QCString result;
+      QCString result;
       int i;
       // the inherits list contain `numEntries' classes
       for (i=0;i<numEntries;i++) 
@@ -548,68 +543,72 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
         if (i!=numEntries-1)  // not the last entry, so we need a separator
         {
           if (i<numEntries-2) // not the fore last entry 
-            result+="¡¢";
+            result+=",";
           else                // the fore last entry
-            result+=CN_SPC"¼°"CN_SPC;
+            result+=CN_SPC", ä»¥åŠ"CN_SPC;
         }
       }
       return result; 
     }
     
- 		virtual QCString trInheritsList(int numEntries)
-      // used in class documentation to produce a list of base classes,
-      // if class diagrams are disabled.
+    /*! used in class documentation to produce a list of base classes,
+     *  if class diagrams are disabled.
+     */
+    virtual QCString trInheritsList(int numEntries)
+    { return "ç»§æ‰¿è‡ª"CN_SPC+trWriteList(numEntries)+CN_SPC".";  }
+
+    /*! used in class documentation to produce a list of super classes,
+     *  if class diagrams are disabled.
+     */
+    virtual QCString trInheritedByList(int numEntries)
     {
-      return "¼Ì³Ğ×Ô"CN_SPC+trWriteList(numEntries)+"¡£";
+      return "è¢«"CN_SPC+trWriteList(numEntries)+CN_SPC"ç»§æ‰¿.";
+    }
+    
+    /*! used in member documentation blocks to produce a list of 
+     *  members that are hidden by this one.
+     */
+    virtual QCString trReimplementedFromList(int numEntries)
+    {
+      return "é‡è½½"CN_SPC+trWriteList(numEntries)+CN_SPC".";
+    }
+    
+    /*! used in member documentation blocks to produce a list of
+     *  all member that overwrite the implementation of this member.
+     */
+    virtual QCString trReimplementedInList(int numEntries)
+    {
+      return "è¢«"CN_SPC+trWriteList(numEntries)+CN_SPC"é‡è½½.";
     }
 
- 		virtual QCString trInheritedByList(int numEntries)
-      // used in class documentation to produce a list of super classes,
-      // if class diagrams are disabled.
-    {
-      return "±»"CN_SPC+trWriteList(numEntries)+CN_SPC"¼Ì³Ğ.";
-    }
-		
- 		virtual QCString trReimplementedFromList(int numEntries)
-      // used in member documentation blocks to produce a list of 
-      // members that are hidden by this one.
-    {
-      return "ÖØÔØ"CN_SPC+trWriteList(numEntries)+"¡£";
-    }
-		
- 		virtual QCString trReimplementedInList(int numEntries)
-    {
-      // used in member documentation blocks to produce a list of
-      // all member that overwrite the implementation of this member.
-      return "±»"CN_SPC+trWriteList(numEntries)+CN_SPC"ÖØÔØ¡£";
-    }
-
- 		virtual QCString trNamespaceMembers()
-      // This is put above each page as a link to all members of namespaces.
-    { return "Ãû×Ö¿Õ¼ä³ÉÔ±"; }
-		
- 		virtual QCString trNamespaceMemberDescription(bool extractAll)
-      // This is an introduction to the page with all namespace members
+    /*! This is put above each page as a link to all members of namespaces. */
+    virtual QCString trNamespaceMembers()
+    { return "å‘½åç©ºé—´æˆå‘˜"; }
+    
+    /*! This is an introduction to the page with all namespace members */
+    virtual QCString trNamespaceMemberDescription(bool extractAll)
     { 
-   		QCString result="ÕâÀïÁĞ³öÁËËùÓĞ";
-      if (!extractAll) result+="ÎÄµµ»¯µÄ";
-      result+="Ãû×Ö¿Õ¼ä³ÉÔ±£¬¸½´ø";
+       QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
+      if (!extractAll) result+="æ–‡æ¡£åŒ–çš„";
+      result+="å‘½åç©ºé—´æˆå‘˜ï¼Œå¹¶é™„å¸¦";
       if (extractAll) 
-        result+="ËùÔÚÀàµÄÎÄµµµÄÁ´½Ó£º";
+        result+="å…¶è¯´æ˜æ–‡æ¡£:";
       else 
-        result+="ËùÔÚÀàµÄÁ´½Ó£º";
+        result+="å…¶æ‰€å±çš„æ–‡ä»¶:";
       return result;
     }
 
- 		virtual QCString trNamespaceIndex()
-      // This is used in LaTeX as the title of the chapter with the 
-      // index of all namespaces.
-    { return "Ãû×Ö¿Õ¼äË÷Òı"; }
+    /*! This is used in LaTeX as the title of the chapter with the 
+     *  index of all namespaces.
+     */
+    virtual QCString trNamespaceIndex()
+    { return "å‘½åç©ºé—´ç´¢å¼•"; }
 
- 		virtual QCString trNamespaceDocumentation()
-      // This is used in LaTeX as the title of the chapter containing
-      // the documentation of all namespaces.
-    { return "Ãû×Ö¿Õ¼äÎÄµµ"; }
+    /*! This is used in LaTeX as the title of the chapter containing
+     *  the documentation of all namespaces.
+     */
+    virtual QCString trNamespaceDocumentation()
+    { return "å‘½åç©ºé—´æ–‡æ¡£"; }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-990522
@@ -618,10 +617,9 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     /*! This is used in the documentation before the list of all
      *  namespaces in a file.
      */
- 		virtual QCString trNamespaces()
+    virtual QCString trNamespaces()
     {
-      // return "Namespaces";
-      return "Ãû×Ö¿Õ¼ä";
+      return "å‘½åç©ºé—´";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -631,71 +629,71 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     /*! This is put at the bottom of a class documentation page and is
      *  followed by a list of files that were used to generate the page.
      */
- 		virtual QCString trGeneratedFromFiles(ClassDef::CompoundType compType,
+    virtual QCString trGeneratedFromFiles(ClassDef::CompoundType compType,
         bool)
     { // here s is one of " Class", " Struct" or " Union"
       // single is true implies a single file
-   		QCString result=(QCString)"¸Ã";
+       QCString result=(QCString)"è¯¥";
       switch(compType)
       {
-        case ClassDef::Class:      result+="Àà"; break;
-        case ClassDef::Struct:     result+="½á¹¹"; break;
-        case ClassDef::Union:      result+="ÁªºÏ"; break;
-        case ClassDef::Interface:  result+="½Ó¿Ú"; break;
-        case ClassDef::Protocol:   result+="Ğ­Òé"; break;
-        case ClassDef::Category:   result+="·ÖÀà"; break;
-        case ClassDef::Exception:  result+="Òì³£"; break;
+        case ClassDef::Class:      result+="ç±»"; break;
+        case ClassDef::Struct:     result+="ç»“æ„ä½“"; break;
+        case ClassDef::Union:      result+="è”åˆä½“"; break;
+        case ClassDef::Interface:  result+="æ¥å£"; break;
+        case ClassDef::Protocol:   result+="åè®®"; break;
+        case ClassDef::Category:   result+="åˆ†ç±»"; break;
+        case ClassDef::Exception:  result+="å¼‚å¸¸"; break;
       }
-      result+="µÄÎÄµµÓÉÒÔÏÂÎÄ¼şÉú³É£º";
+      result+="çš„æ–‡æ¡£ç”±ä»¥ä¸‹æ–‡ä»¶ç”Ÿæˆ:";
       return result;
     }
 
     /*! This is in the (quick) index as a link to the alphabetical compound
      * list.
      */
- 		virtual QCString trAlphabeticalList()
-    { return "°´×ÖµäË³ĞòÅÅĞòµÄÁĞ±í"; }
+    virtual QCString trAlphabeticalList()
+    { return "æŒ‰å­—å…¸é¡ºåºæ’åºçš„åˆ—è¡¨"; }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-990901
 //////////////////////////////////////////////////////////////////////////
 
     /*! This is used as the heading text for the retval command. */
- 		virtual QCString trReturnValues()
-    { return "·µ»ØÖµ"; }
+    virtual QCString trReturnValues()
+    { return "è¿”å›å€¼"; }
 
     /*! This is in the (quick) index as a link to the main page (index.html)
      */
- 		virtual QCString trMainPage()
-    { return "Ê×Ò³"; }
+    virtual QCString trMainPage()
+    { return "é¦–é¡µ"; }
 
     /*! This is used in references to page that are put in the LaTeX 
      *  documentation. It should be an abbreviation of the word page.
      */
- 		virtual QCString trPageAbbreviation()
+    virtual QCString trPageAbbreviation()
     { return "p."; }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-991106
 //////////////////////////////////////////////////////////////////////////
 
-                virtual QCString trDefinedAtLineInSourceFile()
+    virtual QCString trDefinedAtLineInSourceFile()
     {
-      return "ÔÚÎÄ¼ş"CN_SPC"@1"CN_SPC"µÚ"CN_SPC"@0"CN_SPC"ĞĞ¶¨Òå¡£";
+      return "åœ¨æ–‡ä»¶"CN_SPC"@1"CN_SPC"ç¬¬"CN_SPC"@0"CN_SPC"è¡Œå®šä¹‰.";
     }
 
- 		virtual QCString trDefinedInSourceFile()
+    virtual QCString trDefinedInSourceFile()
     {
-      return "ÔÚÎÄ¼ş"CN_SPC"@0"CN_SPC"ÖĞ¶¨Òå¡£";
+      return "åœ¨æ–‡ä»¶"CN_SPC"@0"CN_SPC"ä¸­å®šä¹‰.";
     }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 0.49-991205
 //////////////////////////////////////////////////////////////////////////
 
- 		virtual QCString trDeprecated()
+    virtual QCString trDeprecated()
     {
-      return "Deprecated";
+      return "å¼ƒç”¨";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -703,143 +701,143 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
 //////////////////////////////////////////////////////////////////////////
 
     /*! this text is put before a collaboration diagram */
- 		virtual QCString trCollaborationDiagram(const char *clName)
+    virtual QCString trCollaborationDiagram(const char *clName)
     {
-      return (QCString)clName+CN_SPC"ºÏ×÷Í¼£º";
+      return (QCString)clName+CN_SPC"çš„åä½œå›¾:";
     }
 
     /*! this text is put before an include dependency graph */
- 		virtual QCString trInclDepGraph(const char *fName)
+    virtual QCString trInclDepGraph(const char *fName)
     {
-      return (QCString)fName+CN_SPC"°üº¬/ÒÀÀµ¹ØÏµÍ¼£º";
+      return (QCString)fName+CN_SPC"çš„å¼•ç”¨(Include)å…³ç³»å›¾:";
     }
 
     /*! header that is put before the list of constructor/destructors. */
- 		virtual QCString trConstructorDocumentation()
+    virtual QCString trConstructorDocumentation()
     {
-      return "¹¹Ôì¼°Îö¹¹º¯ÊıÎÄµµ"; 
+      return "æ„é€ åŠææ„å‡½æ•°è¯´æ˜"; 
     }
 
     /*! Used in the file documentation to point to the corresponding sources. */
- 		virtual QCString trGotoSourceCode()
+    virtual QCString trGotoSourceCode()
     {
-      return "ä¯ÀÀ¸ÃÎÄ¼şµÄÔ´´úÂë¡£";
+      return "æµè§ˆæºä»£ç .";
     }
 
     /*! Used in the file sources to point to the corresponding documentation. */
- 		virtual QCString trGotoDocumentation()
+    virtual QCString trGotoDocumentation()
     {
-      return "ä¯ÀÀ¸ÃÎÄ¼şµÄÎÄµµ¡£";
+      return "æµè§ˆè¯¥æ–‡ä»¶çš„æ–‡æ¡£.";
     }
 
     /*! Text for the \\pre command */
- 		virtual QCString trPrecondition()
+    virtual QCString trPrecondition()
     {
-      return "Ç°ÖÃÌõ¼ş";
+      return "å‰ç½®æ¡ä»¶";
     }
 
     /*! Text for the \\post command */
- 		virtual QCString trPostcondition()
+    virtual QCString trPostcondition()
     {
-      return "ºóÖÃÌõ¼ş";
+      return "åç½®æ¡ä»¶";
     }
 
     /*! Text for the \\invariant command */
- 		virtual QCString trInvariant()
+    virtual QCString trInvariant()
     {
-      return "²»±äĞÔ";
+      return "ä¸å˜æ€§";
     }
 
     /*! Text shown before a multi-line variable/enum initialization */
- 		virtual QCString trInitialValue()
+    virtual QCString trInitialValue()
     {
-      return "³õÊ¼»¯ĞòÁĞ£º";
+      return "åˆå§‹å€¼:";
     }
 
     /*! Text used the source code in the file index */
- 		virtual QCString trCode()
+    virtual QCString trCode()
     {
-      return "´úÂë";
+      return "ä»£ç ";
     }
 
- 		virtual QCString trGraphicalHierarchy()
+    virtual QCString trGraphicalHierarchy()
     {
-      return "Àà¼Ì³Ğ¹ØÏµÍ¼";
+      return "ç±»ç»§æ‰¿å…³ç³»å›¾";
     }
 
- 		virtual QCString trGotoGraphicalHierarchy()
+    virtual QCString trGotoGraphicalHierarchy()
     {
-      return "ä¯ÀÀÀà¼Ì³Ğ¹ØÏµÍ¼";
+      return "æµè§ˆç±»ç»§æ‰¿å…³ç³»å›¾";
     }
 
- 		virtual QCString trGotoTextualHierarchy()
+    virtual QCString trGotoTextualHierarchy()
     {
-      return "ä¯ÀÀÀà¼Ì³Ğ¹ØÏµ±í";
+      return "æµè§ˆç±»ç»§æ‰¿å…³ç³»è¡¨";
     }
 
- 		virtual QCString trPageIndex()
+    virtual QCString trPageIndex()
     {
-      return "Ò³ÃæË÷Òı";
+      return "é¡µé¢ç´¢å¼•";
     }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 1.1.0
 //////////////////////////////////////////////////////////////////////////
     
- 		virtual QCString trNote()
+    virtual QCString trNote()
     {
-      return "×¢½â";
+      return "æ³¨è§£";
     }
 
- 		virtual QCString trPublicTypes()
+    virtual QCString trPublicTypes()
     {
-      return "¹«ÓĞÀàĞÍ";
+      return "Public ç±»å‹";
     }
 
- 		virtual QCString trPublicAttribs()
+    virtual QCString trPublicAttribs()
     {
-			 if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
-			 { 
-				 return "Êı¾İ³ÉÔ±";
-			 }
-			 else {
-				 return "¹«ÓĞÊôĞÔ";
-			 }
+       if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+       { 
+         return "æˆå‘˜å˜é‡";
+       }
+       else {
+         return "Public å±æ€§";
+       }
     }
 
- 		virtual QCString trStaticPublicAttribs()
+    virtual QCString trStaticPublicAttribs()
     {
-      return "¾²Ì¬¹«ÓĞÊôĞÔ";
+      return "é™æ€ Public å±æ€§";
     }
 
- 		virtual QCString trProtectedTypes()
+    virtual QCString trProtectedTypes()
     {
-      return "±£»¤ÀàĞÍ";
+      return "Protected ç±»å‹";
     }
 
- 		virtual QCString trProtectedAttribs()
+    virtual QCString trProtectedAttribs()
     {
-      return "±£»¤ÊôĞÔ";
+      return "Protected å±æ€§";
     }
 
- 		virtual QCString trStaticProtectedAttribs()
+    virtual QCString trStaticProtectedAttribs()
     {
-      return "¾²Ì¬±£»¤ÊôĞÔ";
+      return "é™æ€ Protected å±æ€§";
     }
 
- 		virtual QCString trPrivateTypes()
+    virtual QCString trPrivateTypes()
     {
-      return "Ë½ÓĞÀàĞÍ";
+      return "Private ç±»å‹";
     }
 
- 		virtual QCString trPrivateAttribs()
+    virtual QCString trPrivateAttribs()
     {
-      return "Ë½ÓĞÊôĞÔ";
+      return "Private å±æ€§";
     }
 
- 		virtual QCString trStaticPrivateAttribs()
+    virtual QCString trStaticPrivateAttribs()
     {
-      return "¾²Ì¬Ë½ÓĞÊôĞÔ";
+      return "é™æ€ Private å±æ€§";
     }
 
 
@@ -848,44 +846,44 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
 //////////////////////////////////////////////////////////////////////////
 
     /*! Used as a marker that is put before a todo item */
- 		virtual QCString trTodo()
+    virtual QCString trTodo()
     {
-      return "TODO";
+      return "å¾…åŠäº‹é¡¹";
     }
 
     /*! Used as the header of the todo list */
- 		virtual QCString trTodoList()
+    virtual QCString trTodoList()
     {
-      return "TODO"CN_SPC"ÁĞ±í";
+      return "å¾…åŠäº‹é¡¹åˆ—è¡¨";
     }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 1.1.4
 //////////////////////////////////////////////////////////////////////////
 
- 		virtual QCString trReferencedBy()
+    virtual QCString trReferencedBy()
     {
-      return "²Î¿¼×Ô";
+      return "å‚è€ƒè‡ª";
     }
 
- 		virtual QCString trRemarks()
+    virtual QCString trRemarks()
     {
-      return "ÆÀÂÛ";
+      return "å¤‡æ³¨";
     }
 
- 		virtual QCString trAttention()
+    virtual QCString trAttention()
     {
-      return "×¢Òâ";
+      return "æ³¨æ„";
     }
 
- 		virtual QCString trInclByDepGraph()
+    virtual QCString trInclByDepGraph()
     {
-      return "´ËÍ¼Õ¹Ê¾Ö±½Ó»ò¼ä½Ó°üº¬¸ÃÎÄ¼şµÄÎÄ¼ş£º";
+      return "æ­¤å›¾å±•ç¤ºè¯¥æ–‡ä»¶ç›´æ¥æˆ–é—´æ¥çš„è¢«å“ªäº›æ–‡ä»¶å¼•ç”¨äº†:";
     }
 
- 		virtual QCString trSince()
+    virtual QCString trSince()
     {
-      return "×Ô´Ó";
+      return "è‡ªä»";
     }
     
 //////////////////////////////////////////////////////////////////////////
@@ -893,35 +891,34 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
 //////////////////////////////////////////////////////////////////////////
 
     /*! title of the graph legend page */
- 		virtual QCString trLegendTitle()
+    virtual QCString trLegendTitle()
     {
-      return "Í¼Àı";
+      return "å›¾ä¾‹";
     }
 
     /*! page explaining how the dot graph's should be interpreted */
- 		virtual QCString trLegendDocs()
+    virtual QCString trLegendDocs()
     {
-      return 
-        "±¾Ò³ÏòÄúÕ¹Ê¾ÈçºÎÀí½âÓÉ"CN_SPC"Doxygen"CN_SPC"Éú³ÉµÄÍ¼ĞÎ¡£<p>\n"
-        "Çë¿¼ÂÇÈçÏÂÊ¾Àı£º\n"
+      return "æœ¬é¡µå°†å‘æ‚¨è§£é‡Šå¦‚ä½•ç†è§£ç”±"CN_SPC"doxygen"CN_SPC"ç”Ÿæˆçš„å›¾.<p>\n"
+        "è€ƒè™‘å¦‚ä¸‹ä¾‹å­:\n"
         "\\code\n"
-        "/*! ÓÉÓÚ½ØÈ¡¶øÊ¹¸ÃÀà²»¿É¼û */\n"
+        "/*! ç”±äºæˆªæ–­è€Œä½¿ Invisible ä¸å¯è§ */\n"
         "class Invisible { };\n\n"
-        "/*! ±»½ØÈ¡µÄÀà£¬¼Ì³Ğ¹ØÏµ±»Òş²ØÆğÀ´ÁË */\n"
+        "/*! Truncated çš„ç»§æ‰¿å…³ç³»å°†è¢«éšè— */\n"
         "class Truncated : public Invisible { };\n\n"
-        "/* Ã»ÓĞ±»"CN_SPC"doxygen"CN_SPC"µÄ×¢ÊÍÎÄµµ»¯µÄÀà */\n"
+        "/* æ²¡æœ‰è¢«doxygenæ–‡æ¡£åŒ–çš„ç±» */\n"
         "class Undocumented { };\n\n"
-        "/*! ±»¹«ÓĞ¼Ì³ĞµÄÀà */\n"
+        "/*! public ç»§æ‰¿å…³ç³»çš„ç±» */\n"
         "class PublicBase : public Truncated { };\n\n"
-        "/*! A template class */\n"
+        "/*! ä¸€ä¸ªæ¨¡æ¿ç±» */\n"
         "template<class T> class Templ { };\n\n"
-        "/*! ±»±£»¤¼Ì³ĞµÄÀà */\n"
+        "/*! protected ç»§æ‰¿å…³ç³»çš„ç±» */\n"
         "class ProtectedBase { };\n\n"
-        "/*! ±»Ë½ÓĞ¼Ì³ĞµÄÀà */\n"
+        "/*! private ç»§æ‰¿å…³ç³»çš„ç±» */\n"
         "class PrivateBase { };\n\n"
-        "/*! ±»Ê¹ÓÃµÄÀà */\n"
+        "/*! è¢« Inherited ä½¿ç”¨çš„ç±» */\n"
         "class Used { };\n\n"
-        "/*! ¼Ì³ĞÁËÈô¸ÉÆäËüÀàµÄÀà */\n"
+        "/*! ç»§æ‰¿è‡ªå…¶å®ƒè‹¥å¹²ç±»çš„è¶…çº§ç±» */\n"
         "class Inherited : public PublicBase,\n"
         "                  protected ProtectedBase,\n"
         "                  private PrivateBase,\n"
@@ -932,31 +929,34 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
         "    Used *m_usedClass;\n"
         "};\n"
         "\\endcode\n"
-        "Èç¹ûÔÚÅäÖÃÎÄ¼şÖĞÖ¸¶¨ÁË"CN_SPC"MAX_DOT_GRAPH_HEIGHT"CN_SPC"µÄÖµÎª200£¬"
-        "ÔòDoxygen½«Éú³ÉÈçÏÂµÄÍ¼ĞÎ£º"
-        "<p><center><img src=\"graph_legend."+Config_getEnum("DOT_IMAGE_FORMAT")+"\"></center>\n"
+        "ç»“æœå°†ä¼šç”Ÿæˆä»¥ä¸‹å›¾:"
+        "<p><center><img alt=\"\" src=\"graph_legend."+Config_getEnum("DOT_IMAGE_FORMAT")+"\"></center></p>\n"
         "<p>\n"
-        "ÒÔÉÏÍ¼ĞÎÖĞµÄ¾ØĞÎÓĞÈçÏÂµÄº¬Òå£º\n"
+        "ä¸Šå›¾ä¸­çš„çŸ©å½¢æœ‰å¦‚ä¸‹æ„ä¹‰:\n"
+        "</p>\n"
         "<ul>\n"
-        "<li>±»ºÚÉ«Ìî³äµÄ¾ØĞÎ´ú±íµ±Ç°µÄÀà»ò½á¹¹¡£\n"
-        "<li>ºÚÉ«±ß¿òµÄ¾ØĞÎ´ú±í<i>ÎÄµµ»¯</i>µÄÀà»ò½á¹¹¡£\n"
-        "<li>»ÒÉ«±ß¿òµÄ¾ØĞÎ´ú±íÃ»ÓĞ<i>ÎÄµµ»¯</i>µÄÀà»ò½á¹¹¡£\n"
-        "<li>ºìÉ«±ß¿òµÄ¾ØĞÎ´ú±í¼Ì³Ğ/°üº¬¹ØÏµÃ»ÓĞ±»ÍêÕûÏÔÊ¾³öµÄÀà»ò½á¹¹¡£Èç¹ûÒ»·ùÍ¼ÏñµÄ³ß"
-        "´ç´óÓÚÖ¸¶¨³ß´ç£¬Ëü½«±»½ØÈ¡¡£"
+        "<li>%ç°è‰²å¡«å……çš„çŸ©å½¢ è¡¨ç¤ºä¸Šå›¾æ˜¯ç”±è¯¥ç»“æ„ä½“æˆ–ç±»ç”Ÿæˆ.</li>\n"
+        "<li>%é»‘è‰²è¾¹æ¡†çš„çŸ©å½¢ è¡¨ç¤ºå·²ç»è¢«æ–‡æ¡£åŒ–çš„ç»“æ„ä½“æˆ–ç±».</li>\n"
+        "<li>%ç°è‰²è¾¹æ¡†çš„çŸ©å½¢ è¡¨ç¤ºæœªè¢«æ–‡æ¡£åŒ–çš„ç»“æ„ä½“æˆ–ç±».</li>\n"
+        "<li>%çº¢è‰²è¾¹æ¡†çš„çŸ©å½¢ è¡¨ç¤ºè¯¥ç»“æ„ä½“æˆ–ç±»çš„å…³ç³»æ²¡æœ‰è¢«å®Œå…¨æ˜¾ç¤º."
+        "%å¦‚æœç”Ÿæˆçš„å›¾ä¸èƒ½è°ƒæ•´åˆ°åˆ¶å®šçš„å°ºå¯¸ï¼Œæœ‰ä¸€äº›å…³ç³»å°±ä¼šè¢«æˆªæ–­è€Œä¸æ˜¾ç¤ºå‡ºæ¥.</li>\n"
         "</ul>\n"
-        "¸÷¸ö¼ıÍ·ÓĞÈçÏÂµÄº¬Òå£º\n"
+        "<p>\n"
+        "ç®­å¤´æœ‰å¦‚ä¸‹æ„ä¹‰:\n"
+        "</p>\n"
         "<ul>\n"
-        "<li>ÉîÀ¶É«µÄ¼ıÍ·ÓÃÓÚÏÔÊ¾Á½¸öÀàÖ®¼äµÄ¹«ÓĞ¼Ì³Ğ¹ØÏµ¡£\n"
-        "<li>ÉîÂÌÉ«µÄ¼ıÍ·ÓÃÓÚÏÔÊ¾±£»¤¼Ì³Ğ¹ØÏµ¡£\n"
-        "<li>ÉîºìÉ«µÄ¼ıÍ·ÓÃÓÚÏÔÊ¾Ë½ÓĞ¼Ì³Ğ¹ØÏµ¡£\n"
-        "<li>×ÏÉ«µã×´ÏßÌõµÄ¼ıÍ·ÓÃÓÚÏÔÊ¾Á½¸öÀàÖ®¼ä°üº¬»òÕßÊ¹ÓÃµÄ¹ØÏµ¡£Í¨¹ı¼ıÍ·ÅÔ±ßµÄ±äÁ¿¿ÉÒÔ"
-        "·ÃÎÊµ½¼ıÍ·ËùÖ¸µÄÀà»ò½á¹¹¡£\n"
+        "<li>%æ·±è“è‰²çš„ç®­å¤´è¢«ç”¨äºå±•ç¤º public çš„ç»§æ‰¿å…³ç³».</li>\n"
+        "<li>%æ·±ç»¿è‰²çš„ç®­å¤´è¡¨ç¤º protected çš„ç»§æ‰¿å…³ç³».</li>\n"
+        "<li>%æ·±çº¢è‰²çš„ç®­å¤´è¯´æ˜äº†æ˜¯ privated çš„ç»§æ‰¿å…³ç³».</li>\n"
+        "<li>%ç´«è‰²è™šçº¿ç®­å¤´ç”¨æ¥è¡¨ç¤ºä¸¤ä¸ªç±»ä¹‹é—´çš„èšåˆå…³ç³». è¢«ç®­å¤´æŒ‡å‘çš„ç±»çš„ç±»å‹çš„å˜é‡,å¯ä»¥é€šè¿‡ç®­å¤´æ—æ ‡æ˜çš„å˜é‡å»è®¿é—®.</li>\n"
+        "<li>%é»„è‰²è™šçº¿ç®­å¤´è¡¨ç¤ºæ¨¡æ¿ç±»å®ä¾‹å’Œæ¨¡æ¿ç±»ä¹‹é—´çš„å…³ç³». ç®­å¤´æ—è¾¹æ ‡æ˜äº†æ¨¡æ¿ç±»å®ä¾‹åŒ–çš„å‚æ•°.</li>\n"
         "</ul>\n";
     }
+    
     /*! text for the link to the legend page */
- 		virtual QCString trLegend()
+    virtual QCString trLegend()
     {
-      return "Í¼Àı";
+      return "å›¾ä¾‹";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -966,39 +966,39 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     /*! Used as a marker that is put before a test item */
     virtual QCString trTest()
     {
-      return "²âÊÔ";
+      return "æµ‹è¯•";
     }
 
     /*! Used as the header of the test list */
     virtual QCString trTestList()
     {
-      return "²âÊÔÁĞ±í";
+      return "æµ‹è¯•åˆ—è¡¨";
     }
 
 //////////////////////////////////////////////////////////////////////////
 //// new since 1.2.1
 ////////////////////////////////////////////////////////////////////////////
-		/*! Used as a section header for KDE-2 IDL methods */
-		virtual QCString trDCOPMethods()
-		{
-			return "DCOP"CN_SPC"·½·¨";
-		}
+    /*! Used as a section header for KDE-2 IDL methods */
+    virtual QCString trDCOPMethods()
+    {
+      return "DCOP"CN_SPC"æˆå‘˜å‡½æ•°";
+    }
 
 //////////////////////////////////////////////////////////////////////////
 //// new since 1.2.2
 ////////////////////////////////////////////////////////////////////////////
 
-		/*! Used as a section header for IDL properties */
-		virtual QCString trProperties()
-		{
-			return "ÊôĞÔ";
-		}
+    /*! Used as a section header for IDL properties */
+    virtual QCString trProperties()
+    {
+      return "å±æ€§";
+    }
 
-		/*! Used as a section header for IDL property documentation */
-		virtual QCString trPropertyDocumentation()
-		{
-			return "ÊôĞÔÎÄµµ";
-		}
+    /*! Used as a section header for IDL property documentation */
+    virtual QCString trPropertyDocumentation()
+    {
+      return "å±æ€§è¯´æ˜";
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 1.2.4
@@ -1007,58 +1007,58 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     /*! Used for Java classes in the summary section of Java packages */
     virtual QCString trClasses()
     {
-			if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
-			{
-				return "Êı¾İ½á¹¹";
-			}
-			else
-			{
-				return "Àà";
-			}
+      if (Config_getBool("OPTIMIZE_OUTPUT_FOR_C"))
+      {
+        return "ç»“æ„ä½“";
+      }
+      else
+      {
+        return "ç±»";
+      }
     }
 
     /*! Used as the title of a Java package */
     virtual QCString trPackage(const char *name)
     {
-      return (QCString)"°ü "+name;
+      return (QCString)"åŒ…"CN_SPC+name;
     }
-		
+    
     /*! Title of the package index page */
     virtual QCString trPackageList()
     {
-      return "°üÁĞ±í";
+      return "åŒ…åˆ—è¡¨";
     }
 
     /*! The description of the package index page */
     virtual QCString trPackageListDescription()
     {
-			 return "ÕâÀïÁĞ³öËùÓĞµÄ°ü£¬¸½´ø¼òÒªËµÃ÷(Èç¹ûÓĞµÄ»°)£º"; 
+       return "è¿™é‡Œåˆ—å‡ºæ‰€æœ‰çš„åŒ…ï¼Œé™„å¸¦ç®€è¦è¯´æ˜(å¦‚æœæœ‰çš„è¯):"; 
     }
 
     /*! The link name in the Quick links header for each page */
     virtual QCString trPackages()
     {
-      return "°ü";
+      return "åŒ…";
     }
 
     /*! Text shown before a multi-line define */
     virtual QCString trDefineValue()
     {
-      return 	"Öµ:";
+      return "å€¼:";
     }
 
 ////////////////////////////////////////////////////////////////////////////
 //// new since 1.2.6
 ////////////////////////////////////////////////////////////////////////////
-		virtual QCString trBug ()
-		{
-			return "È±Ïİ";
-		}
+    virtual QCString trBug ()
+    {
+      return "Bug";
+    }
 
-		virtual QCString trBugList ()
-		{
-			return "È±ÏİÁĞ±í";
-		}
+    virtual QCString trBugList ()
+    {
+      return "Bug"CN_SPC"åˆ—è¡¨";
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 1.2.6
@@ -1106,7 +1106,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     /*! Used as header RTF general index */
     virtual QCString trRTFGeneralIndex()
     {
-      return "Ë÷Òı";
+      return "ç´¢å¼•";
     }
 
    
@@ -1116,12 +1116,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trClass(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "Class" : "class"));
+      /*
+       QCString result((first_capital ? "Class" : "class"));
       if (!singular)  result+="es";
       return result; 
-			*/
-			return "Àà";
+      */
+      return "ç±»";
     }
 
     /*! This is used for translation of the word that will possibly
@@ -1130,12 +1130,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trFile(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "File" : "file"));
+      /*
+       QCString result((first_capital ? "File" : "file"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "ÎÄ¼ş";
+      */
+      return "æ–‡ä»¶";
 
     }
 
@@ -1145,12 +1145,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trNamespace(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "Namespace" : "namespace"));
+      /*
+       QCString result((first_capital ? "Namespace" : "namespace"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "Ãû×Ö¿Õ¼ä";
+      */
+      return "å‘½åç©ºé—´";
     }
 
     /*! This is used for translation of the word that will possibly
@@ -1159,12 +1159,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trGroup(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "Group" : "group"));
+      /*
+       QCString result((first_capital ? "Group" : "group"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "×é";
+      */
+      return "ç»„";
     }
 
     /*! This is used for translation of the word that will possibly
@@ -1173,12 +1173,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trPage(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "Page" : "page"));
+      /*
+       QCString result((first_capital ? "Page" : "page"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "Ò³";
+      */
+      return "é¡µ";
     }
 
     /*! This is used for translation of the word that will possibly
@@ -1187,12 +1187,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trMember(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "Member" : "member"));
+      /*
+       QCString result((first_capital ? "Member" : "member"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "³ÉÔ±";
+      */
+      return "æˆå‘˜";
     }
    
     /*! This is used for translation of the word that will possibly
@@ -1201,12 +1201,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trGlobal(bool /*first_capital*/, bool /*singular*/)
     { 
-			/*
-   		QCString result((first_capital ? "Global" : "global"));
+      /*
+       QCString result((first_capital ? "Global" : "global"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "È«¾Ö¶¨Òå";
+      */
+      return "å…¨å±€";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1217,12 +1217,12 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      *  for the author section in man pages. */
     virtual QCString trAuthor(bool /*first_capital*/, bool /*singular*/)
     {                                                                         
-			/*
-   		QCString result((first_capital ? "Author" : "author"));
+      /*
+       QCString result((first_capital ? "Author" : "author"));
       if (!singular)  result+="s";
       return result; 
-			*/
-			return "×÷Õß";
+      */
+      return "ä½œè€…";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1233,7 +1233,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trReferences()
     {
-      return "²Î¿¼";
+      return "å‚è€ƒ";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1246,7 +1246,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     virtual QCString trImplementedFromList(int numEntries)
     {
       /* return "Implements "+trWriteList(numEntries)+"."; */
-      return "ÊµÏÖÁË"CN_SPC+trWriteList(numEntries)+"¡£";
+      return "å®ç°äº†"CN_SPC+trWriteList(numEntries)+".";
     }
 
     /*! used in member documentation blocks to produce a list of
@@ -1255,7 +1255,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     virtual QCString trImplementedInList(int numEntries)
     {
       /* return "Implemented in "+trWriteList(numEntries)+"."; */
-      return "ÔÚ"CN_SPC+trWriteList(numEntries)+CN_SPC"ÄÚ±»ÊµÏÖ¡£";
+      return "åœ¨"CN_SPC+trWriteList(numEntries)+CN_SPC"å†…è¢«å®ç°.";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1268,7 +1268,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     virtual QCString trRTFTableOfContents()
     {
       /* return "Table of Contents"; */
-      return "Ä¿Â¼";
+      return "ç›®å½•";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1280,8 +1280,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trDeprecatedList()
     {
-/*    return "Deprecated List";  */
-      return "¹ıÊ±ÁĞ±í";
+      return "å¼ƒç”¨åˆ—è¡¨";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1293,14 +1292,13 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trEvents()
     {
-      /*      return "Events"; */
-      return "ÊÂ¼ş";
+      return "äº‹ä»¶";
     }
+    
     /*! Header used for the documentation section of a class' events. */
     virtual QCString trEventDocumentation()
     {
-      /* return "Event Documentation"; */
-      return "ÊÂ¼şÎÄµµ";
+      return "äº‹ä»¶è¯´æ˜";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1311,40 +1309,39 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trPackageTypes()
     { 
-      /* return "Package Types"; */
-      return "Ä£¿éÀàĞÍ";
+      return "åŒ…ç±»å‹";
     }
+    
     /*! Used as a heading for a list of Java class functions with package 
      * scope. 
      */
     virtual QCString trPackageMembers()
     { 
-      /* return "Package Functions"; */
-      return "Ä£¿éº¯Êı";
+      return "åŒ…å‡½æ•°";
     }
+    
     /*! Used as a heading for a list of static Java class functions with 
      *  package scope.
      */
     virtual QCString trStaticPackageMembers()
     { 
-      /* return "Static Package Functions"; */
-      return "¾²Ì¬Ä£¿éº¯Êı";
+      return "é™æ€åŒ…å‡½æ•°";
     }
+    
     /*! Used as a heading for a list of Java class variables with package 
      * scope.
      */
     virtual QCString trPackageAttribs()
     { 
-      /* return "Package Attributes"; */
-      return "Ä£¿éÊôĞÔ";
+      return "åŒ…å±æ€§";
     }
+    
     /*! Used as a heading for a list of static Java class variables with 
      * package scope.
      */
     virtual QCString trStaticPackageAttribs()
-    { 
-      /* return "Static Package Attributes"; */
-      return "¾²Ì¬Ä£¿éÊôĞÔ";
+    {
+      return "é™æ€åŒ…å±æ€§";
     }
     
 //////////////////////////////////////////////////////////////////////////
@@ -1356,14 +1353,13 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trAll()
     {
-      /* return "All"; */
-      return "È«²¿";
+      return "å…¨éƒ¨";
     }
+    
     /*! Put in front of the call graph for a function. */
     virtual QCString trCallGraph()
     {
-      /* return "Here is the call graph for this function:"; */
-      return "º¯Êıµ÷ÓÃÍ¼:";
+      return "å‡½æ•°è°ƒç”¨å›¾:";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1376,17 +1372,16 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trSearchForIndex()
     {
-      /* return "Search for"; */
-      return "ËÑË÷";
+      return "æœç´¢"CN_SPC;
     }
     /*! This string is used as the title for the page listing the search
      *  results.
      */
     virtual QCString trSearchResultsTitle()
     {
-      /* return "Search Results"; */
-      return "ËÑË÷½á¹û";
+      return "æœç´¢ç»“æœ";
     }
+    
     /*! This string is put just before listing the search results. The
      *  text can be different depending on the number of documents found.
      *  Inside the text you can put the special marker $num to insert
@@ -1399,20 +1394,16 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     {
       if (numDocuments==0)
       {
-        /* return "Sorry, no documents matching your query."; */
-        return "¶Ô²»Æğ£¬ÕÒ²»µ½ÓëÄãµÄ²éÑ¯Ïà·ûµÄÎÄµµ¡£";
+        return "æŠ±æ­‰,æœªæ‰¾åˆ°ä¸æ‚¨æŸ¥è¯¢ç›¸ç¬¦çš„æ–‡æ¡£.";
       }
       else if (numDocuments==1)
       {
-        /* return "Found <b>1</b> document matching your query."; */
-        return "ÕÒµ½<b>1</b>ÆªÓëÄãµÄ²éÑ¯Ïà·ûµÄÎÄµµ¡£";
+        return "æ‰¾åˆ°<b>1</b>ç¯‡ä¸æ‚¨æŸ¥è¯¢ç›¸ç¬¦çš„æ–‡æ¡£.";
       }
       else 
       {
-        /* return "Found <b>$num</b> documents matching your query. "
-               "Showing best matches first."; */
-        return "ÕÒµ½<b>$num</b>ÆªÓëÄãµÄ²éÑ¯Ïà·ûµÄÎÄµµ¡£"
-               "ÏÈÏÔÊ¾×îÎÇºÏµÄÎÄµµ¡£";
+        return "æ‰¾åˆ°<b>$num</b>ç¯‡ä¸æ‚¨æŸ¥è¯¢ç›¸ç¬¦çš„æ–‡æ¡£."
+               "ä¼˜å…ˆæ˜¾ç¤ºæœ€ç¬¦åˆçš„æ–‡æ¡£.";
       }
     }
     /*! This string is put before the list of matched words, for each search 
@@ -1420,8 +1411,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trSearchMatches()
     {
-      /* return "Matches:"; */
-      return "·ûºÏµÄ½á¹û:";
+      return "ç¬¦åˆçš„ç»“æœ:";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1433,7 +1423,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     virtual QCString trSourceFile(QCString& filename)
     {
       /* return filename + " Source File"; */
-      return filename + CN_SPC"Ô´ÎÄ¼ş";
+      return filename + CN_SPC"æºæ–‡ä»¶";
     }
 //////////////////////////////////////////////////////////////////////////
 // new since 1.3.9
@@ -1443,60 +1433,48 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      *  hierarchy.
      */
     virtual QCString trDirIndex()
-    /*     { return "Directory Hierarchy"; } */
     {
-      return "Ä¿Â¼½á¹¹";
+      return "ç›®å½•ç»“æ„";
     }
 
     /*! This is used as the name of the chapter containing the documentation
      *  of the directories.
      */
     virtual QCString trDirDocumentation()
-    /*     { return "Directory Documentation"; } */
     {
-      return "Ä¿Â¼ÎÄµµ";
+      return "ç›®å½•è¯´æ˜";
     }
 
-    /*! This is used as the title of the directory index and also in the
-     *  Quick links of a HTML page, to link to the directory hierarchy.
+		/*! This is used as the title of the directory index and also in the
+     *  Quick links of an HTML page, to link to the directory hierarchy.
      */
     virtual QCString trDirectories()
-    /*     { return "Directories"; } */
-    {
-      return "Ä¿Â¼";
-    }
+    { return "ç›®å½•"; }
 
     /*! This returns a sentences that introduces the directory hierarchy. 
      *  and the fact that it is sorted alphabetically per level
      */
     virtual QCString trDirDescription()
-/*     { return "This directory hierarchy is sorted roughly, " */
-/*              "but not completely, alphabetically:"; */
-/*     } */
     {
-      return "Ä¿Â¼½á¹¹½ö¾­¹ı´ÖÂÔµÄÅÅĞò";
+      return "æ­¤ç»§æ‰¿å…³ç³»åˆ—è¡¨æŒ‰å­—å…¸é¡ºåºç²—ç•¥çš„æ’åº:"CN_SPC;
     }
 
     /*! This returns the title of a directory page. The name of the
      *  directory is passed via \a dirName.
      */
     virtual QCString trDirReference(const char *dirName)
-    /*     { QCString result=dirName; result+=" Directory Reference"; return result; } */
     {
       QCString result=dirName;
-      result+=CN_SPC"Ä¿Â¼²Î¿¼"; 
+      result+=CN_SPC"ç›®å½•å‚è€ƒ"; 
       return result;
     }
 
     /*! This returns the word directory with or without starting capital
      *  (\a first_capital) and in sigular or plural form (\a singular).
      */
-    virtual QCString trDir(bool, bool)
+    virtual QCString trDir(bool /*first_capital*/, bool /*singular*/)
     { 
-      /*       QCString result((first_capital ? "Director" : "director")); */
-      /*       if (singular) result+="y"; else result+="ies"; */
-      /*       return result;  */
-      return "Ä¿Â¼";
+      return "ç›®å½•";
     }
     
 //////////////////////////////////////////////////////////////////////////
@@ -1508,11 +1486,8 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trOverloadText()
     {
-       /* return "This is an overloaded member function, "
-              "provided for convenience. It differs from the above "
-              "function only in what argument(s) it accepts."; */
-      return "ÕâÊÇÎª±ãÓÚÊ¹ÓÃ¶øÌá¹©µÄÒ»¸öÖØÔØ³ÉÔ±º¯Êı¡£"
-             "ÓëÉÏÃæµÄº¯ÊıÏà±È£¬Ëü½ÓÊÜ²»Í¬ÀàĞÍµÄ²ÎÊı¡£";
+      return "è¿™æ˜¯ä¸ºä¾¿äºä½¿ç”¨è€Œæä¾›çš„ä¸€ä¸ªé‡è½½æˆå‘˜å‡½æ•°."
+             "ä¸ä¸Šé¢çš„å‡½æ•°ç›¸æ¯”ï¼Œå®ƒæ¥å—ä¸åŒç±»å‹çš„å‚æ•°.";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1522,8 +1497,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     /*! This is used to introduce a caller (or called-by) graph */
     virtual QCString trCallerGraph()
     {
-      /* return "Here is the caller graph for this function:"; */
-      return "ÕâÊÇÕâ¸öº¯ÊıµÄµ÷ÓÃÍ¼¡£";
+      return "è¿™æ˜¯è¿™ä¸ªå‡½æ•°çš„è°ƒç”¨å…³ç³»å›¾:";
     }
 
     /*! This is used in the documentation of a file/namespace before the list 
@@ -1531,8 +1505,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trEnumerationValueDocumentation()
     { 
-      /* return "Enumerator Documentation"; */
-      return "Ã¶¾Ù±äÁ¿ÎÄµµ";
+      return "æšä¸¾å˜é‡è¯´æ˜";
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1541,105 +1514,84 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
     
     /*! header that is put before the list of member subprograms (Fortran). */
     virtual QCString trMemberFunctionDocumentationFortran()
-    // { return "Member Function/Subroutine Documentation"; }
-    { return "³ÉÔ±º¯Êı¼°¹ı³ÌÎÄµµ"; }
+    { return "æˆå‘˜å‡½æ•°/å­ç¨‹åºè¯´æ˜"; }
 
     /*! This is put above each page as a link to the list of annotated data types (Fortran). */    
     virtual QCString trCompoundListFortran()
-    // { return "Data Types List"; }
-    { return "Êı¾İÀàĞÍÁĞ±í"; }
+    { return "æ•°æ®ç±»å‹åˆ—è¡¨"; }
 
     /*! This is put above each page as a link to all members of compounds (Fortran). */
     virtual QCString trCompoundMembersFortran()
-    // { return "Data Fields"; }
-    { return "Êı¾İÏî"; }
+    { return "æ•°æ®é¡¹"; }
 
     /*! This is an introduction to the annotated compound list (Fortran). */
     virtual QCString trCompoundListDescriptionFortran()
-    // { return "Here are the data types with brief descriptions:"; }
-    { return "´ø¼òÒªÃèÊöµÄÊı¾İÀàĞÍÁĞ±í:"; }
+    { return "å¸¦ç®€è¦æè¿°çš„æ•°æ®ç±»å‹åˆ—è¡¨:"; }
 
     /*! This is an introduction to the page with all data types (Fortran). */
     virtual QCString trCompoundMembersDescriptionFortran(bool extractAll)
     {
-    //   QCString result="Here is a list of all ";
-    //   if (!extractAll)
-    //   {
-    //     result+="documented ";
-    //   }
-    //   result+="data types members";
-    //   result+=" with links to ";
-    //   if (!extractAll) 
-    //   {
-    //      result+="the data structure documentation for each member";
-    //   }
-    //   else 
-    //   {
-    //      result+="the data types they belong to:";
-    //   }
-    //   return result;
-      if(!extractAll) {
-        return "ÕâÀïÊÇÓĞÎÄµµµÄÊı¾İÀàĞÍ³ÉÔ±ÁĞ±í£¬º¬ÓĞµ½Ã¿¸ö³ÉÔ±µÄÊı¾İ½á¹¹ÎÄµµµÄÁ´½Ó";
-      } else {
-        return "ÕâÀïÊÇÊı¾İÀàĞÍ³ÉÔ±ÁĞ±í£¬º¬ÓĞµ½³ÉÔ±ËùÊôµÄÊı¾İÀàĞÍµÄÁ´½Ó:";
+      QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
+      if (!extractAll)
+      {
+        result+="æ–‡æ¡£åŒ–çš„";
       }
-
+      result+="æ•°æ®ç±»å‹æˆå‘˜,å¹¶é™„å¸¦";
+      //result+=" with links to ";
+      if (!extractAll) 
+      {
+        result+="å…¶è¯´æ˜æ–‡æ¡£:";
+      }
+      else 
+      {
+        result+="å…¶æ‰€å±çš„æ–‡ä»¶:";
+      }
+      return result;
     }
 
     /*! This is used in LaTeX as the title of the chapter with the 
      * annotated compound index (Fortran).
      */
     virtual QCString trCompoundIndexFortran()
-    // { return "Data Type Index"; }
-    { return "Êı¾İÀàĞÍË÷Òı"; }
+    { return "æ•°æ®ç±»å‹ç´¢å¼•"; }
 
 
     /*! This is used in LaTeX as the title of the chapter containing
      *  the documentation of all data types (Fortran).
      */
     virtual QCString trTypeDocumentation()
-    // { return "Data Type Documentation"; }
-    { return "Êı¾İÀàĞÍÎÄµµ"; }
+    { return "æ•°æ®ç±»å‹æ–‡æ¡£"; }
 
     /*! This is used in the documentation of a file as a header before the 
      *  list of (global) subprograms (Fortran).
      */
     virtual QCString trSubprograms()
-    //{ return "Functions/Subroutines"; }
-    { return "º¯Êı/¹ı³Ì"; }
+    { return "å‡½æ•°/å­ç¨‹åº"; }
 
     /*! This is used in the documentation of a file/namespace before the list 
      *  of documentation blocks for subprograms (Fortran)
      */
     virtual QCString trSubprogramDocumentation()
-    //{ return "Function/Subroutine Documentation"; }
-    { return "º¯Êı/¹ı³ÌÎÄµµ"; }
+    { return "å‡½æ•°/å­ç¨‹åºè¯´æ˜"; }
 
 
     /*! This is used in the documentation of a file/namespace/group before 
      *  the list of links to documented compounds (Fortran)
      */
      virtual QCString trDataTypes()
-    // { return "Data Types"; }
-    { return "Êı¾İÀàĞÍ"; }
+    { return "æ•°æ®ç±»å‹"; }
     
     /*! used as the title of page containing all the index of all modules (Fortran). */
     virtual QCString trModulesList()
-    // { return "Modules List"; }
-    { return "Ä£¿éÁĞ±í"; }
+    { return "æ¨¡å—åˆ—è¡¨"; }
 
     /*! used as an introduction to the modules list (Fortran) */
     virtual QCString trModulesListDescription(bool extractAll)
     {
-      // QCString result="Here is a list of all ";
-      // if (!extractAll) result+="documented ";
-      // result+="modules with brief descriptions:";
-      // return result;
-      if(!extractAll) {
-        return "´ø¼òÒªÃèÊöµÄÓĞÎÄµµµÄÄ£¿éÁĞ±í:";
-      } else {
-        return "´ø¼òÒªÃèÊöµÄÄ£¿éÁĞ±í:";
-      }
+      QCString result="è¿™é‡Œåˆ—å‡ºäº†æ‰€æœ‰";
+      if (!extractAll) result+="æ–‡æ¡£åŒ–çš„";
+      result+="æ¨¡å—ï¼Œå¹¶é™„å¸¦ç®€è¦è¯´æ˜:";
+      return result;
     }
 
     /*! used as the title of the HTML page of a module/type (Fortran) */
@@ -1647,48 +1599,33 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
                                     ClassDef::CompoundType compType,
                                     bool isTemplate)
     {
-      // QCString result=(QCString)clName;
-      // switch(compType)
-      // {
-      //   case ClassDef::Class:      result+=" Module"; break;
-      //   case ClassDef::Struct:     result+=" Type"; break;
-      //   case ClassDef::Union:      result+=" Union"; break;
-      //   case ClassDef::Interface:  result+=" Interface"; break;
-      //   case ClassDef::Protocol:   result+=" Protocol"; break;
-      //   case ClassDef::Category:   result+=" Category"; break;
-      //   case ClassDef::Exception:  result+=" Exception"; break;
-      // }
-      // if (isTemplate) result+=" Template";
-      // result+=" Reference";
-      // return result;
       QCString result=(QCString)clName;
       switch(compType)
       {
-        case ClassDef::Class:      result+=CN_SPC"Ä£¿é"; break;
-        case ClassDef::Struct:     result+=CN_SPC"ÀàĞÍ"; break;
-        case ClassDef::Union:      result+=CN_SPC"ÁªºÏ"; break;
-        case ClassDef::Interface:  result+=CN_SPC"½çÃæ"; break;
-        case ClassDef::Protocol:   result+=CN_SPC"½Ó¿Ú"; break;
-        case ClassDef::Category:   result+=CN_SPC"Ä¿Â¼"; break;
-        case ClassDef::Exception:  result+=CN_SPC"Òì³£"; break;
+        case ClassDef::Class:      result+=CN_SPC"æ¨¡å—"; break;
+        case ClassDef::Struct:     result+=CN_SPC"ç±»å‹"; break;
+        case ClassDef::Union:      result+=CN_SPC"è”åˆä½“"; break;
+        case ClassDef::Interface:  result+=CN_SPC"æ¥å£"; break;
+        case ClassDef::Protocol:   result+=CN_SPC"åè®®"; break;
+        case ClassDef::Category:   result+=CN_SPC"ç›®å½•"; break;
+        case ClassDef::Exception:  result+=CN_SPC"å¼‚å¸¸"; break;
       }
-      if (isTemplate) result+="Ä£°å";
-      result+="²Î¿¼ÊÖ²á";
+      if (isTemplate) result+="æ¨¡æ¿"CN_SPC;
+      result+="å‚è€ƒæ‰‹å†Œ";
       return result;
     }
+    
     /*! used as the title of the HTML page of a module (Fortran) */
     virtual QCString trModuleReference(const char *namespaceName)
     {
-      QCString result=namespaceName;
-      // result+=" Module Reference";        
-      result += CN_SPC"Ä£¿é²Î¿¼ÊÖ²á";
+      QCString result=namespaceName;  
+      result += CN_SPC"æ¨¡å—å‚è€ƒæ‰‹å†Œ";
       return result;
     }
     
     /*! This is put above each page as a link to all members of modules. (Fortran) */
     virtual QCString trModulesMembers()
-    // { return "Module Members"; }
-    { return "Ä£¿é³ÉÔ±"; }
+    { return "æ¨¡å—æˆå‘˜"; }
 
     /*! This is an introduction to the page with all modules members (Fortran) */
     virtual QCString trModulesMemberDescription(bool extractAll)
@@ -1706,9 +1643,9 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
       // }
       // return result;
       if(!extractAll) {
-        return "ÕâÀïÊÇÓĞÎÄµµµÄÄ£¿é³ÉÔ±ÁĞ±í£¬º¬ÓĞµ½Ã¿¸ö³ÉÔ±ËùÔÚÄ£¿éµÄÎÄµµµÄÁ´½Ó";
+        return "è¿™é‡Œæ˜¯æœ‰æ–‡æ¡£çš„æ¨¡å—æˆå‘˜åˆ—è¡¨ï¼Œå«æœ‰åˆ°æ¯ä¸ªæˆå‘˜æ‰€åœ¨æ¨¡å—çš„æ–‡æ¡£çš„é“¾æ¥:";
       } else {
-        return "ÕâÀïÊÇÄ£¿é³ÉÔ±ÁĞ±í£¬º¬ÓĞµ½³ÉÔ±ËùÊôµÄÄ£¿éµÄÁ´½Ó:";
+        return "è¿™é‡Œæ˜¯æ¨¡å—æˆå‘˜åˆ—è¡¨ï¼Œå«æœ‰åˆ°æˆå‘˜æ‰€å±çš„æ¨¡å—çš„é“¾æ¥:";
       }
     }
 
@@ -1717,7 +1654,7 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
      */
     virtual QCString trModulesIndex()
     // { return "Modules Index"; }
-    { return "Ä£¿éË÷Òı"; }
+    { return "æ¨¡å—ç´¢å¼•"; }
     
     /*! This is used for translation of the word that will possibly
      *  be followed by a single name or by a list of names 
@@ -1728,65 +1665,175 @@ class TranslatorChinese : public TranslatorAdapter_1_6_0
       // QCString result((first_capital ? "Module" : "module"));
       // if (!singular)  result+="s";
       // return result; 
-      return "Ä£¿é";
+      return "æ¨¡å—";
     }
     /*! This is put at the bottom of a module documentation page and is
      *  followed by a list of files that were used to generate the page.
      */
     virtual QCString trGeneratedFromFilesFortran(ClassDef::CompoundType compType,
         bool)
-    { // here s is one of " Module", " Struct" or " Union"
-      // single is true implies a single file
-      // QCString result=(QCString)"The documentation for this ";
-      // switch(compType)
-      // {
-      //   case ClassDef::Class:      result+="module"; break;
-      //   case ClassDef::Struct:     result+="type"; break;
-      //   case ClassDef::Union:      result+="union"; break;
-      //   case ClassDef::Interface:  result+="interface"; break;
-      //   case ClassDef::Protocol:   result+="protocol"; break;
-      //   case ClassDef::Category:   result+="category"; break;
-      //   case ClassDef::Exception:  result+="exception"; break;
-      // }
-      // result+=" was generated from the following file";
-      // if (single) result+=":"; else result+="s:";
-      // return result;
-      QCString result="¸Ã";
+    { 
+      QCString result="è¯¥";
       switch(compType)
       {
-        case ClassDef::Class:      result+=CN_SPC"Ä£¿é"; break;
-        case ClassDef::Struct:     result+=CN_SPC"ÀàĞÍ"; break;
-        case ClassDef::Union:      result+=CN_SPC"ÁªºÏ"; break;
-        case ClassDef::Interface:  result+=CN_SPC"½çÃæ"; break;
-        case ClassDef::Protocol:   result+=CN_SPC"½Ó¿Ú"; break;
-        case ClassDef::Category:   result+=CN_SPC"Ä¿Â¼"; break;
-        case ClassDef::Exception:  result+=CN_SPC"Òì³£"; break;
+        case ClassDef::Class:      result+=CN_SPC"æ¨¡å—"; break;
+        case ClassDef::Struct:     result+=CN_SPC"ç»“æ„ä½“"; break;
+        case ClassDef::Union:      result+=CN_SPC"è”åˆä½“"; break;
+        case ClassDef::Interface:  result+=CN_SPC"æ¥å£"; break;
+        case ClassDef::Protocol:   result+=CN_SPC"åè®®"; break;
+        case ClassDef::Category:   result+=CN_SPC"ç›®å½•"; break;
+        case ClassDef::Exception:  result+=CN_SPC"å¼‚å¸¸"; break;
       }
-      result+="µÄÎÄµµÓÉÒÔÏÂÎÄ¼şÉú³É:";
+      result+=CN_SPC"çš„æ–‡æ¡£ç”±ä»¥ä¸‹æ–‡ä»¶ç”Ÿæˆ:";
       return result;
     }
+    
     /*! This is used for translation of the word that will possibly
      *  be followed by a single name or by a list of names 
      *  of the category.
      */
     virtual QCString trType(bool, bool)
     { 
-      return "ÀàĞÍ";
+      return "ç±»å‹";
     }
+    
     /*! This is used for translation of the word that will possibly
      *  be followed by a single name or by a list of names 
      *  of the category.
      */
     virtual QCString trSubprogram(bool, bool)
     { 
-      return "×Ó³ÌĞò";
+      return "å­ç¨‹åº";
     }
 
     /*! C# Type Constraint list */
     virtual QCString trTypeConstraints()
     {
-      return "ÀàĞÍÏŞÖÆ";
+      return "ç±»å‹é™åˆ¶";
     }
+  
+//////////////////////////////////////////////////////////////////////////
+// new since 1.6.0
+//////////////////////////////////////////////////////////////////////////
+  virtual QCString trDirRelation(const char *name)
+  {
+    // return QCString(name)+" Relation";
+    // unsure
+    return QCString(name)+CN_SPC"å…³ç³»";
+  }
+  
+    virtual QCString trLoading()
+  {
+    return "è½½å…¥ä¸­...";
+  }
+    
+  virtual QCString trGlobalNamespace()
+  {
+    return "å…¨å±€å‘½åç©ºé—´";
+  }
+  
+    virtual QCString trSearching()
+  {
+    return "æœç´¢ä¸­...";
+  }
+    
+  virtual QCString trNoMatches()
+  {
+    return "æœªæ‰¾åˆ°";
+  }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.6.3
+//////////////////////////////////////////////////////////////////////////
+
+  virtual QCString trDirDependency(const char *name)
+  {
+    return QCString(name)+CN_SPC"çš„ç›®å½•ä¾èµ–å…³ç³»å›¾";
+  }
+    
+  virtual QCString trFileIn(const char *name)
+  {
+    return (QCString)"æ–‡ä»¶åœ¨"+CN_SPC+name;
+  }
+  
+  virtual QCString trIncludesFileIn(const char *name)
+  {
+    return (QCString)"åœ¨"CN_SPC+name+CN_SPC"ä¸­å¼•ç”¨";
+  }
+
+  virtual QCString trDateTime(int year,int month,int day,int dayOfWeek,
+                                int hour,int minutes,int seconds,
+                                bool includeTime)
+  {
+    static const char *days[]   = { "ä¸€","äºŒ","ä¸‰","å››","äº”","å…­","æ—¥" };
+      static const char *months[] = { "ä¸€","äºŒ","ä¸‰","å››","äº”","å…­","ä¸ƒ","å…«","ä¹","å","åä¸€","åäºŒ" };
+      
+    QCString sdate;
+      
+    sdate.sprintf("%då¹´"CN_SPC"%sæœˆ"CN_SPC"%dæ—¥"CN_SPC"æ˜ŸæœŸ%s",year, months[month-1], day, days[dayOfWeek-1]);
+      
+    if (includeTime)
+    {
+      QCString stime;
+      stime.sprintf(" %.2d:%.2d:%.2d",hour,minutes,seconds);
+      sdate+=stime;
+    }
+    return sdate;
+  }
+    
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "å‚è€ƒä¹¦ç›®"; }
+
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    { return "ç‰ˆæƒæ‰€æœ‰"; }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    {
+      return QCString(name)+CN_SPC"çš„ç›®å½•ä¾èµ–å…³ç³»å›¾";
+    } 
+    
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////  
+
+    /*! Detail level selector shown for hierarchical indices */
+    virtual QCString trDetailLevel()
+    { return "è¯¦æƒ…çº§åˆ«"; }
+
+    /*! Section header for list of template parameters */
+    virtual QCString trTemplateParameters()
+    { return "æ¨¡æ¿å‚æ•°"; }
+
+    /*! Used in dot graph when UML_LOOK is enabled and there are many fields */
+    virtual QCString trAndMore(const QCString &number)
+    { return "å’Œ"CN_SPC+number+CN_SPC"æ›´å¤š..."; }
+
+    /*! Used file list for a Java enum */
+    virtual QCString trEnumGeneratedFromFiles(bool /*single*/)
+    { return "æšä¸¾è¯´æ˜æ–‡æ¡£ä»ä¸‹åˆ—æ–‡ä»¶ç”Ÿæˆ:"; }
+
+    /*! Header of a Java enum page (Java enums are represented as classes). */
+    virtual QCString trEnumReference(const char *name)
+    { return QCString(name)+CN_SPC"æšä¸¾ç±»å‹å‚è€ƒ"; }
+
+    /*! Used for a section containing inherited members */
+    virtual QCString trInheritedFrom(const char *members,const char *what)
+    { return QCString(members)+CN_SPC"ç»§æ‰¿è‡ª"CN_SPC+what; }
+
+    /*! Header of the sections with inherited members specific for the 
+     *  base class(es) 
+     */
+    virtual QCString trAdditionalInheritedMembers()
+    { return "é¢å¤–ç»§æ‰¿çš„æˆå‘˜å‡½æ•°"; }
+
+//////////////////////////////////////////////////////////////////////////
 };
 
 #endif

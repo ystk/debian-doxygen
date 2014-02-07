@@ -2,7 +2,7 @@
  *
  * $Id: outputgen.cpp,v 1.15 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -58,6 +58,7 @@ void OutputGenerator::startPlainFile(const char *name)
 
 void OutputGenerator::endPlainFile()
 {
+  t.unsetDevice();
   delete file;
   file=0;
   fileName.resize(0);
@@ -66,10 +67,12 @@ void OutputGenerator::endPlainFile()
 void OutputGenerator::pushGeneratorState()
 {
   genStack->push(new bool(isEnabled()));
+  //printf("%p:pushGeneratorState(%d) enabled=%d\n",this,genStack->count(),isEnabled());
 }
 
 void OutputGenerator::popGeneratorState()
 {
+  //printf("%p:popGeneratorState(%d) enabled=%d\n",this,genStack->count(),isEnabled());
   bool *lb = genStack->pop();
   ASSERT(lb!=0);
   if (lb==0) return; // for some robustness against superfluous \endhtmlonly commands.

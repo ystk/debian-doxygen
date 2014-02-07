@@ -3,7 +3,7 @@
  * $Id: sortdict.h,v 1.3 2001/03/19 19:27:41 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -74,7 +74,7 @@ const uint SDict_primes[] =
 template<class T> class SDict;
 template<class T> class SIntDict;
 
-/*! internal wrapper class that redirects compareItems() to the 
+/** internal wrapper class that redirects compareItems() to the 
  *  dictionary 
  */
 template<class T>
@@ -91,7 +91,7 @@ class SList : public QList<T>
     SDict<T> *m_owner;  
 };
 
-/*! Ordered dictionary of elements of type T. 
+/** Ordered dictionary of elements of type T. 
  *  Internally uses a QList<T> and a QDict<T>.
  */
 template<class T>
@@ -207,6 +207,18 @@ class SDict
 #endif
     }
 
+    void insertAt(int i,const char *key,const T *d)
+    {
+      m_list->insert(i,d);
+      m_dict->insert(key,d);
+#if AUTORESIZE
+      if (m_dict->size()>SDict_primes[m_sizeIndex])
+      {
+        m_dict->resize(SDict_primes[++m_sizeIndex]);
+      }
+#endif
+    }
+
     /*! Indicates whether or not the dictionary owns its elements */
     void setAutoDelete(bool val)
     {
@@ -229,6 +241,12 @@ class SDict
     T *find(const QString &key)
     {
       return m_dict->find(key);
+    }
+    int findAt(const QCString &key)
+    {
+      T *item = find(key);
+      if (item==0) return -1;
+      return m_list->find(item);
     }
 
     /*! Equavalent to find(). */
@@ -335,7 +353,7 @@ class SDict
 
     class IteratorDict;         // first forward declare
     friend class IteratorDict;  // then make it a friend
-    /*! Simple iterator for SDict. It iterates in over the dictionary elements
+    /*! Simple iterator for SDict. It iterates over the dictionary elements
      *  in an unsorted way, but does provide information about the element's key.
      */
     class IteratorDict
@@ -404,7 +422,7 @@ class SDict
     };
 };
 
-/*! internal wrapper class that redirects compareItems() to the 
+/** internal wrapper class that redirects compareItems() to the 
  *  dictionary 
  */
 template<class T>
@@ -421,7 +439,7 @@ class SIntList : public QList<T>
     SIntDict<T> *m_owner;  
 };
 
-/*! Ordered dictionary of elements of type T. 
+/** Ordered dictionary of elements of type T. 
  *  Internally uses a QList<T> and a QIntDict<T>.
  */
 template<class T>

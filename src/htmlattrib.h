@@ -2,7 +2,7 @@
  *
  * $Id: htmlattrib.h,v 1.2 2001/01/01 10:15:18 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -35,6 +35,18 @@ class HtmlAttribList : public QList<HtmlAttrib>
     { operator=(l); }
     HtmlAttribList &operator=(const HtmlAttribList &l)
     { clear(); QList<HtmlAttrib>::operator=(l); return *this; }
+    QCString find(const QCString name) const
+    {
+      HtmlAttribList *that = (HtmlAttribList *)this;
+      QCString result;
+      HtmlAttrib *attr=that->first();
+      while (attr)
+      {
+        if (attr->name==name) return attr->value;
+        attr=that->next();
+      }
+      return result;
+    }
     QCString toString() const
     {
       HtmlAttribList *that = (HtmlAttribList *)this;

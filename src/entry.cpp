@@ -2,7 +2,7 @@
  *
  * $Id: entry.cpp,v 1.29 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -22,27 +22,12 @@
 #include "util.h"
 #include "section.h"
 #include "doxygen.h"
+#include "filestorage.h"
+#include "arguments.h"
 
 //------------------------------------------------------------------
 
 #define HEADER ('D'<<24)+('O'<<16)+('X'<<8)+'!'
-
-//------------------------------------------------------------------
-
-/*! the argument list is documented if one of its
- *  arguments is documented 
- */
-bool ArgumentList::hasDocumentation() const
-{
-  bool hasDocs=FALSE;
-  ArgumentListIterator ali(*this);
-  Argument *a;
-  for (ali.toFirst();!hasDocs && (a=ali.current());++ali)
-  {
-    hasDocs = hasDocs || a->hasDocumentation(); 
-  }
-  return hasDocs;
-}
 
 //------------------------------------------------------------------
 
@@ -360,13 +345,19 @@ void Entry::addSpecialListItem(const char *listName,int itemId)
   sli->append(ili);
 }
 
+Entry *Entry::removeSubEntry(Entry *e)
+{
+ int i = m_sublist->find(e);
+ return i!=-1 ? m_sublist->take(i) : 0;
+}
+
 //------------------------------------------------------------------
 
 
 EntryNav::EntryNav(EntryNav *parent, Entry *e)
              : m_parent(parent), m_subList(0), m_section(e->section), m_type(e->type),
-              m_name(e->name), m_fileDef(0), m_info(0), m_offset(-1), 
-              m_noLoad(FALSE)
+              m_name(e->name), m_fileDef(0), m_lang(e->lang), 
+              m_info(0), m_offset(-1), m_noLoad(FALSE) 
 {
   if (e->tagInfo)
   {

@@ -1,4 +1,4 @@
-%define version 1.7.1
+%define version 1.8.1.2
 %define revision 1
 %define mmn 1
 %define name doxygen
@@ -19,8 +19,8 @@ License: GNU General Public License
 Group: Development/Tools
 Source: %{name}-%{version}.src.tar.gz
 BuildRoot: %{buildroot}
-BuildPrereq: libstdc++-devel >= 2.96, /usr/bin/perl, /usr/bin/latex, /usr/bin/dvips, /usr/bin/gs
-Prereq: /sbin/chkconfig, /bin/mktemp, /bin/rm, /bin/mv, libstdc++ >= 2.96
+BuildRequires: libstdc++-devel >= 2.96, /usr/bin/perl, /usr/bin/latex, /usr/bin/dvips, /usr/bin/gs
+Requires: /sbin/chkconfig, /bin/mktemp, /bin/rm, /bin/mv, libstdc++ >= 2.96
 Provides: doxygen = %{mmn}
 
 %description
@@ -70,10 +70,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %doc README LICENSE LANGUAGE.HOWTO examples ./latex/*.pdf
 %doc /usr/man/man1/doxygen.1.gz
-%doc /usr/man/man1/doxytag.1.gz
 
 %{_bindir}/doxygen
-%{_bindir}/doxytag
 
 %if %{?_with_doxywizard:1}%{!?_with_doxywizard:0}
 %files doxywizard

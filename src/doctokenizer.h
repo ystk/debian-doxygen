@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -59,9 +59,11 @@ enum Tokens
   RetVal_EndTable       = 0x10010,
   RetVal_Internal       = 0x10011,
   RetVal_SwitchLang     = 0x10012,
-  RetVal_CloseXml       = 0x10013
+  RetVal_CloseXml       = 0x10013,
+  RetVal_EndBlockQuote  = 0x10014
 };
 
+/** @brief Data associated with a token used by the comment block parser. */
 struct TokenInfo
 {
   // unknown token
@@ -133,6 +135,7 @@ void doctokenizerYYsetStateHtmlOnly();
 void doctokenizerYYsetStateManOnly();
 void doctokenizerYYsetStateLatexOnly();
 void doctokenizerYYsetStateXmlOnly();
+void doctokenizerYYsetStateRtfOnly();
 void doctokenizerYYsetStateVerbatim();
 void doctokenizerYYsetStateDot();
 void doctokenizerYYsetStateMsc();
@@ -141,11 +144,14 @@ void doctokenizerYYsetStateXRefItem();
 void doctokenizerYYsetStateFile();
 void doctokenizerYYsetStatePattern();
 void doctokenizerYYsetStateLink();
+void doctokenizerYYsetStateCite();
 void doctokenizerYYsetStateRef();
 void doctokenizerYYsetStateInternalRef();
 void doctokenizerYYsetStateText();
 void doctokenizerYYsetStateSkipTitle();
+void doctokenizerYYsetStateAnchor();
 void doctokenizerYYsetInsidePre(bool b);
 void doctokenizerYYpushBackHtmlTag(const char *tag);
+void doctokenizerYYsetStateSnippet();
 
 #endif

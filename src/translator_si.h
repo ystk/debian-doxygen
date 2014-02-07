@@ -2,7 +2,7 @@
  *
  * $Id: translator_si.h,v 1.1 2000/07/22 17:04:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -66,7 +66,7 @@ class TranslatorSlovene : public TranslatorAdapter_1_4_6
     QCString trMore()
     { return "..."; }
     QCString trListOfAllMembers()
-    { return "Seznam vseh metod / atributov."; }
+    { return "Seznam vseh metod / atributov"; }
     QCString trMemberList()
     { return " - seznam metod in atributov."; }
     QCString trThisIsTheListOfAllMembers()

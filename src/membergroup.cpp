@@ -2,7 +2,7 @@
  *
  * $Id: membergroup.cpp,v 1.19 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -58,7 +58,6 @@ MemberGroup::MemberGroup(Definition *parent,
   m_parent        = parent;
   m_docFile       = docFile;
   m_xrefListItems = 0;
-  doc.prepend("<a name=\""+anchor()+"\"></a>");
   //printf("Member group docs=`%s'\n",doc.data());
 }
 
@@ -70,11 +69,13 @@ MemberGroup::~MemberGroup()
 void MemberGroup::insertMember(MemberDef *md)
 {
   //printf("MemberGroup::insertMember m_parent=%s memberList=%p count=%d"
-  //       " member section list: %p\n",
+  //       " member section list: %p: md=%p:%s\n",
   //       m_parent ? m_parent->name().data() : "<null>",
   //       memberList->first() ? memberList->first()->getSectionList(m_parent) : 0,
   //       memberList->count(),
-  //       md->getSectionList(m_parent));
+  //       md->getSectionList(m_parent),
+  //       md,md->name().data());
+
   MemberDef *firstMd = memberList->first();
   if (inSameSection && memberList->count()>0 && 
       firstMd->getSectionList(m_parent)!=md->getSectionList(m_parent))
@@ -106,24 +107,28 @@ void MemberGroup::setAnchors(ClassDef *context)
 }
 
 void MemberGroup::writeDeclarations(OutputList &ol,
-               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd)
+               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
+               bool showInline)
 {
-  //printf("MemberGroup::writeDeclarations() memberList->count()=%d\n",memberList->count());
-  memberList->writeDeclarations(ol,cd,nd,fd,gd,grpHeader,doc/*,TRUE,TRUE*/);
+  //printf("MemberGroup::writeDeclarations() %s\n",grpHeader.data());
+  QCString ldoc = doc;
+  if (!ldoc.isEmpty()) ldoc.prepend("<a name=\""+anchor()+"\" id=\""+anchor()+"\"></a>");
+  memberList->writeDeclarations(ol,cd,nd,fd,gd,grpHeader,ldoc,FALSE,showInline);
 }
 
 void MemberGroup::writePlainDeclarations(OutputList &ol,
-               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd
+               ClassDef *cd,NamespaceDef *nd,FileDef *fd,GroupDef *gd,
+               ClassDef *inheritedFrom,const char *inheritId
               )
 {
   //printf("MemberGroup::writePlainDeclarations() memberList->count()=%d\n",memberList->count());
-  memberList->writePlainDeclarations(ol,cd,nd,fd,gd);
+  memberList->writePlainDeclarations(ol,cd,nd,fd,gd,inheritedFrom,inheritId);
 }
 
 void MemberGroup::writeDocumentation(OutputList &ol,const char *scopeName,
-               Definition *container)
+               Definition *container,bool showEnumValues,bool showInline)
 {
-  memberList->writeDocumentation(ol,scopeName,container,0);
+  memberList->writeDocumentation(ol,scopeName,container,0,showEnumValues,showInline);
 }
 
 void MemberGroup::writeDocumentationPage(OutputList &ol,const char *scopeName,
@@ -131,6 +136,43 @@ void MemberGroup::writeDocumentationPage(OutputList &ol,const char *scopeName,
 {
   memberList->writeDocumentationPage(ol,scopeName,container);
 }
+
+void MemberGroup::addGroupedInheritedMembers(OutputList &ol,ClassDef *cd,
+               MemberList::ListType lt,
+               ClassDef *inheritedFrom,const QCString &inheritId)
+{
+  //printf("** addGroupedInheritedMembers()\n");
+  MemberListIterator li(*memberList);
+  MemberDef *md;
+  for (li.toFirst();(md=li.current());++li)
+  {
+    //printf("matching %d == %d\n",lt,md->getSectionList(m_parent)->listType());
+    if (lt==md->getSectionList(m_parent)->listType())
+    {
+      MemberList ml(lt);
+      ml.append(md);
+      ml.writePlainDeclarations(ol,cd,0,0,0,inheritedFrom,inheritId);
+    }
+  }
+}
+
+int MemberGroup::countGroupedInheritedMembers(MemberList::ListType lt)
+{
+  //printf("** countGroupedInheritedMembers()\n");
+  int count=0;
+  MemberListIterator li(*memberList);
+  MemberDef *md;
+  for (li.toFirst();(md=li.current());++li)
+  {
+    //printf("matching %d == %d\n",lt,md->getSectionList(m_parent)->listType());
+    if (lt==md->getSectionList(m_parent)->listType())
+    {
+      count++;
+    }
+  }
+  return count;
+}
+
 
 /*! Add this group as a subsection of the declaration section, instead
  *  of rendering it in its own section
@@ -145,11 +187,11 @@ void MemberGroup::addToDeclarationSection()
   }
 }
 
-int MemberGroup::countDecMembers(/*bool sectionPerType*/)
+int MemberGroup::countDecMembers(GroupDef *gd)
 {
   if (m_numDecMembers==-1) /* number of member not cached */
   {
-    memberList->countDecMembers(/*TRUE,TRUE,sectionPerType*/);
+    memberList->countDecMembers(gd);
     m_numDecMembers = memberList->numDecMembers();
   }
   return m_numDecMembers;
@@ -164,6 +206,12 @@ int MemberGroup::countDocMembers()
   }
   return m_numDocMembers;
 }
+
+int MemberGroup::countInheritableMembers(ClassDef *inheritedFrom) const
+{
+  return memberList->countInheritableMembers(inheritedFrom);
+}
+
 
 void MemberGroup::distributeMemberGroupDocumentation()
 {
@@ -263,7 +311,9 @@ QCString MemberGroup::anchor() const
 {
   uchar md5_sig[16];
   QCString sigStr(33);
-  MD5Buffer((const unsigned char *)grpHeader.data(),grpHeader.length(),md5_sig);
+  QCString locHeader = grpHeader;
+  if (locHeader.isEmpty()) locHeader="[NOHEADER]";
+  MD5Buffer((const unsigned char *)locHeader.data(),locHeader.length(),md5_sig);
   MD5SigToString(md5_sig,sigStr.data(),33);
   return "amgrp"+sigStr;
 }

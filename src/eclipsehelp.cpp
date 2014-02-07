@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -84,7 +84,9 @@ void EclipseHelp::initialize()
   {
     title = "Doxygen generated documentation";
   }
-  m_tocstream << "<toc label=\"" << convertToXML(title) << "\">" << endl;
+  m_tocstream << "<toc label=\"" << convertToXML(title) 
+              << "\" topic=\"" << convertToXML(m_pathprefix) 
+              << "index" << Doxygen::htmlFileExtension << "\">" << endl;
   ++ m_depth;
 }
 
@@ -153,20 +155,26 @@ void EclipseHelp::decContentsDepth()
  * @param ref URL of the item
  * @param file Name of a file which the item is defined in (without extension)
  * @param anchor Name of an anchor of the item.
+ * @param separateIndex not used.
+ * @param addToNavIndex not used.
+ * @param def not used.
  */
 void EclipseHelp::addContentsItem(
-    bool isDir,
+    bool /* isDir */,
     const char *name,
     const char * /* ref */,
     const char *file,
-    const char *anchor) 
+    const char *anchor,
+    bool /* separateIndex */,
+    bool /* addToNavIndex */,
+    Definition * /*def*/) 
 {
   // -- write the topic tag 
   closedTag();
   indent();
   m_tocstream << "<topic label=\"" << convertToXML(name) << "\"";
-  if (!isDir && file) 
-  {  // -- Eclipse help cannot handle directories 
+  if (file) 
+  { 
     m_tocstream << " href=\"" << convertToXML(m_pathprefix) 
                 << file << Doxygen::htmlFileExtension;
     if (anchor)
@@ -181,8 +189,7 @@ void EclipseHelp::addContentsItem(
 void EclipseHelp::addIndexItem(
     Definition * /* context */,
     MemberDef * /* md */,
-    const char * /* anchor */,
-    const char * /* word */) 
+    const char * /* title */)
 {
 }
 

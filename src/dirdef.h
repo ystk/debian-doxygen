@@ -2,7 +2,7 @@
  *
  * $Id: $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -34,14 +34,14 @@ class FTextStream;
 
 class DirDef;
 
-/** A list of directories */
+/** A list of directories. */
 class DirList : public QList<DirDef>
 {
   public:
    int compareItems(GCI item1,GCI item2);
 };
 
-/** A directory */
+/** A model of a directory symbol. */
 class DirDef : public Definition
 {
   public:
@@ -49,11 +49,12 @@ class DirDef : public Definition
     virtual ~DirDef();
 
     // accessors
-    virtual DefType definitionType() const { return TypeDir; }
-    virtual QCString getOutputFileBase() const;
-    virtual bool isLinkableInProject() const;
-    virtual bool isLinkable() const;
-    QCString displayName() const { return m_dispName; }
+    DefType definitionType() const { return TypeDir; }
+    QCString getOutputFileBase() const;
+    QCString anchor() const { return QCString(); }
+    bool isLinkableInProject() const;
+    bool isLinkable() const;
+    QCString displayName(bool=TRUE) const { return m_dispName; }
     QCString shortName() const { return m_shortName; }
     void addSubDir(DirDef *subdir);
     FileList *   getFiles() const        { return m_fileList; }
@@ -73,6 +74,7 @@ class DirDef : public Definition
 
     static DirDef *mergeDirectoryInTree(const QCString &path);
     bool visited;
+    void setDiskName(const QCString &name) { m_diskName = name; }
 
   private:
     friend void computeDirDependencies();
@@ -95,6 +97,7 @@ class DirDef : public Definition
     DirList m_subdirs;
     QCString m_dispName;
     QCString m_shortName;
+    QCString m_diskName;
     FileList *m_fileList;                 // list of files in the group
     int m_dirCount;
     int m_level;
@@ -102,6 +105,7 @@ class DirDef : public Definition
     QDict<UsedDir> *m_usedDirs;
 };
 
+/** Class representing a pair of FileDef objects */
 class FilePair 
 {
   public:
@@ -113,6 +117,7 @@ class FilePair
     FileDef *m_dst;
 };
 
+/** A sorted dictionary of FilePair objects. */
 class FilePairDict : public SDict<FilePair>
 {
   public:
@@ -120,7 +125,7 @@ class FilePairDict : public SDict<FilePair>
     int compareItems(GCI item1,GCI item2);
 };
 
-/** Usage information of a directory . */
+/** Usage information of a directory. */
 class UsedDir
 {
   public:
@@ -138,7 +143,7 @@ class UsedDir
     bool m_inherited;
 };
 
-/** A usage relation between two direction. */
+/** A usage relation between two directories. */
 class DirRelation
 {
   public:
@@ -160,6 +165,7 @@ inline int DirList::compareItems(GCI item1,GCI item2)
   return stricmp(((DirDef *)item1)->shortName(),((DirDef *)item2)->shortName());
 }
 
+/** A sorted dictionary of DirDef objects. */
 class DirSDict : public SDict<DirDef>
 {
   public:

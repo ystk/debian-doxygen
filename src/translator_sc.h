@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -125,7 +125,7 @@ class TranslatorSerbianCyrilic : public TranslatorAdapter_1_6_0
 
     /*! put in the class documentation */
     virtual QCString trListOfAllMembers()
-    { return "Списак свих чланова."; }
+    { return "Списак свих чланова"; }
 
     /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()

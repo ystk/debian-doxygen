@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -65,19 +65,21 @@ class DocIncOperator;
 class DocHtmlHeader;
 class DocImage;
 class DocDotFile;
+class DocMscFile;
 class DocLink;
+class DocCite;
 class DocRef;
 class DocFormula;
 class DocSecRefItem;
 class DocSecRefList;
-//class DocLanguage;
 class DocLinkedWord;
 class DocParamSect;
 class DocParamList;
 class DocInternalRef;
-class DocCopy;
+class DocCopy; // TODO: no longer generated => remove
 class DocText;
 class DocSimpleSectSep;
+class DocHtmlBlockQuote;
 
 /*! @brief Abstract visitor that participates in the visitor pattern.
  */
@@ -107,6 +109,7 @@ class DocVisitor
     virtual void visit(DocLinkedWord *) = 0;
     virtual void visit(DocIndexEntry *) = 0;
     virtual void visit(DocSimpleSectSep *) = 0;
+    virtual void visit(DocCite *) = 0;
     /*! @} */
 
     /*! @name Visitor functions for internal nodes 
@@ -158,6 +161,8 @@ class DocVisitor
     virtual void visitPost(DocImage *) = 0;
     virtual void visitPre(DocDotFile *) = 0;
     virtual void visitPost(DocDotFile *) = 0;
+    virtual void visitPre(DocMscFile *) = 0;
+    virtual void visitPost(DocMscFile *) = 0;   
     virtual void visitPre(DocLink *) = 0;
     virtual void visitPost(DocLink *) = 0;
     virtual void visitPre(DocRef *) = 0;
@@ -166,8 +171,6 @@ class DocVisitor
     virtual void visitPost(DocSecRefItem *) = 0;
     virtual void visitPre(DocSecRefList *) = 0;
     virtual void visitPost(DocSecRefList *) = 0;
-    //virtual void visitPre(DocLanguage *) = 0;
-    //virtual void visitPost(DocLanguage *) = 0;
     virtual void visitPre(DocParamSect *) = 0;
     virtual void visitPost(DocParamSect *) = 0;
     virtual void visitPre(DocParamList *) = 0;
@@ -180,6 +183,8 @@ class DocVisitor
     virtual void visitPost(DocCopy *) = 0;
     virtual void visitPre(DocText *) = 0;
     virtual void visitPost(DocText *) = 0;
+    virtual void visitPre(DocHtmlBlockQuote *) = 0;
+    virtual void visitPost(DocHtmlBlockQuote *) = 0;
     /*! @} */
 };
 

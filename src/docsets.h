@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -25,7 +25,8 @@
 class QFile;
 class Definition;
 
-/*! A class that generates docset files.
+/** A class that generates docset files.
+ *
  *  These files can be used to create context help 
  *  for use within Apple's Xcode 3.0 development environment
  */
@@ -41,15 +42,14 @@ class DocSets  : public IndexIntf
     void decContentsDepth();
     void addContentsItem(bool isDir,
                          const char *name, 
-                         const char *ref = 0, 
-                         const char *file = 0,
-                         const char *anchor = 0
+                         const char *ref, 
+                         const char *file,
+                         const char *anchor,
+                         bool separateIndex,
+                         bool addToNavIndex,
+                         Definition *def
                         );
-    //void addIndexItem(const char *level1, const char *level2, 
-    //                  const char *contRef, const char *memRef,
-    //                  const char *anchor,const MemberDef *md);
-    void addIndexItem(Definition *context,MemberDef *md,
-                      const char *anchor,const char *word);
+    void addIndexItem(Definition *context,MemberDef *md,const char *title);
     void addIndexFile(const char *name);
     void addImageFile(const char *) {}
     void addStyleSheetFile(const char *) {}

@@ -3,7 +3,7 @@
  * $Id: $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -51,6 +51,7 @@ class RTFDocVisitor : public DocVisitor
     void visit(DocFormula *);
     void visit(DocIndexEntry *);
     void visit(DocSimpleSectSep *);
+    void visit(DocCite *);
 
     //--------------------------------------
     // visitor functions for compound nodes
@@ -104,7 +105,9 @@ class RTFDocVisitor : public DocVisitor
     void visitPost(DocImage *);
     void visitPre(DocDotFile *);
     void visitPost(DocDotFile *);
-    void visitPre(DocLink *lnk);
+    void visitPre(DocMscFile *);
+    void visitPost(DocMscFile *);
+    void visitPre(DocLink *);
     void visitPost(DocLink *);
     void visitPre(DocRef *ref);
     void visitPost(DocRef *);
@@ -112,8 +115,6 @@ class RTFDocVisitor : public DocVisitor
     void visitPost(DocSecRefItem *);
     void visitPre(DocSecRefList *);
     void visitPost(DocSecRefList *);
-    //void visitPre(DocLanguage *);
-    //void visitPost(DocLanguage *);
     void visitPre(DocParamSect *);
     void visitPost(DocParamSect *);
     void visitPre(DocParamList *);
@@ -126,6 +127,8 @@ class RTFDocVisitor : public DocVisitor
     void visitPost(DocCopy *);
     void visitPre(DocText *);
     void visitPost(DocText *);
+    void visitPre(DocHtmlBlockQuote *);
+    void visitPost(DocHtmlBlockQuote *);
 
   private:
 

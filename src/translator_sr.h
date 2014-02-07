@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -128,7 +128,7 @@ private:
 
     /*! put in the class documentation */
     virtual QCString trListOfAllMembers()
-    { return decode( "Spisak svih članova." ); }
+    { return decode( "Spisak svih članova" ); }
 
     /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()
@@ -1589,7 +1589,7 @@ private:
     { return "Dokumentacija funkcija i procedura"; }
 
     /*! This is put above each page as a link to the list of annotated data types (Fortran). */    
-    /*! @todo Koji je prevod za Compound u Fortran kontekstu */
+    /* TODO: Koji je prevod za Compound u Fortran kontekstu */
     virtual QCString trCompoundListFortran()
     { return "Složeni tipovi podataka"; }
 

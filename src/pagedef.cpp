@@ -17,6 +17,7 @@ PageDef::PageDef(const char *f,int l,const char *n,
   m_subPageDict = new PageSDict(7);
   m_pageScope = 0;
   m_nestingLevel = 0;
+  m_showToc = FALSE;
 }
 
 PageDef::~PageDef()
@@ -69,11 +70,13 @@ bool PageDef::hasParentPage() const
 
 void PageDef::writeDocumentation(OutputList &ol)
 {
+  static bool generateTreeView = Config_getBool("GENERATE_TREEVIEW");
+
   //outputList->disable(OutputGenerator::Man);
   QCString pageName;
   pageName=escapeCharsInString(name(),FALSE,TRUE);
 
-  startFile(ol,getOutputFileBase(),pageName,title(),HLI_Pages,TRUE);
+  //printf("PageDef::writeDocumentation: %s\n",getOutputFileBase().data());
 
   ol.pushGeneratorState();
   //1.{ 
@@ -90,12 +93,17 @@ void PageDef::writeDocumentation(OutputList &ol)
     ol.enable(OutputGenerator::Html);
   }
 
-  if (getOuterScope()!=Doxygen::globalScope && !Config_getBool("DISABLE_INDEX"))
-  {
-    getOuterScope()->writeNavigationPath(ol);
-  }
+  startFile(ol,getOutputFileBase(),pageName,title(),HLI_Pages,!generateTreeView);
 
-  ol.endQuickIndices();
+  if (!generateTreeView)
+  {
+    if (getOuterScope()!=Doxygen::globalScope && !Config_getBool("DISABLE_INDEX"))
+    {
+      getOuterScope()->writeNavigationPath(ol);
+    }
+    ol.endQuickIndices();
+  }
+  SectionInfo *si=Doxygen::sectionDict.find(name());
 
   // save old generator state and write title only to Man generator
   ol.pushGeneratorState();
@@ -103,6 +111,11 @@ void PageDef::writeDocumentation(OutputList &ol)
   ol.disableAllBut(OutputGenerator::Man);
   ol.startTitleHead(pageName);
   ol.endTitleHead(pageName, pageName);
+  if (si)
+  {
+    ol.parseDoc(docFile(),docLine(),this,0,si->title,TRUE,FALSE,0,TRUE,FALSE);
+    ol.endSection(si->label,si->type);
+  }
   ol.popGeneratorState();
   //2.}
 
@@ -111,9 +124,8 @@ void PageDef::writeDocumentation(OutputList &ol)
   //2.{
   ol.disable(OutputGenerator::Latex);
   ol.disable(OutputGenerator::RTF);
-  SectionInfo *si=0;
-  if (!title().isEmpty() && !name().isEmpty() &&
-      (si=Doxygen::sectionDict.find(name()))!=0)
+  ol.disable(OutputGenerator::Man);
+  if (!title().isEmpty() && !name().isEmpty() && si!=0)
   {
     //ol.startSection(si->label,si->title,si->type);
     startTitle(ol,getOutputFileBase(),this);
@@ -128,12 +140,25 @@ void PageDef::writeDocumentation(OutputList &ol)
   ol.popGeneratorState();
   //2.}
 
+  if (m_showToc && hasSections())
+  {
+    writeToc(ol);
+  }
+
   writePageDocumentation(ol);
+
+  if (generateTreeView && getOuterScope()!=Doxygen::globalScope && !Config_getBool("DISABLE_INDEX"))
+  {
+    ol.endContents();
+    endFileWithNavPath(getOuterScope(),ol);
+  }
+  else
+  {
+    endFile(ol);
+  }
 
   ol.popGeneratorState();
   //1.}
-
-  endFile(ol);
 
   if (!Config_getString("GENERATE_TAGFILE").isEmpty())
   {
@@ -159,11 +184,18 @@ void PageDef::writeDocumentation(OutputList &ol)
     }
   }
 
-  Doxygen::indexList.addIndexItem(this,0,0,filterTitle(title()));
+  Doxygen::indexList.addIndexItem(this,0,filterTitle(title()));
 }
 
 void PageDef::writePageDocumentation(OutputList &ol)
 {
+
+  bool markdownEnabled = Doxygen::markdownSupport;
+  if (getLanguage()==SrcLangExt_Markdown)
+  {
+    Doxygen::markdownSupport = TRUE;
+  }
+
   ol.startTextBlock();
   ol.parseDoc(
       docFile(),           // fileName
@@ -175,6 +207,8 @@ void PageDef::writePageDocumentation(OutputList &ol)
       FALSE                // not an example
       );
   ol.endTextBlock();
+
+  Doxygen::markdownSupport = markdownEnabled;
 
   if (hasSubPages())
   {
@@ -214,14 +248,17 @@ void PageDef::writePageDocumentation(OutputList &ol)
 
 bool PageDef::visibleInIndex() const
 {
-   return // not part of a group
-          !getGroupDef() && 
-          // not an externally defined page
-          (!isReference() || Config_getBool("ALLEXTERNALS")) &&
-          // not a subpage
-          (getOuterScope()==0 || 
-           getOuterScope()->definitionType()!=Definition::TypePage
-          );
+  static bool allExternals = Config_getBool("ALLEXTERNALS");
+  return // not part of a group
+         !getGroupDef() && 
+         // not an externally defined page
+         (!isReference() || allExternals) 
+         // &&
+         // not a subpage
+         //(getOuterScope()==0 || 
+         // getOuterScope()->definitionType()!=Definition::TypePage
+         //)
+         ;
 }
 
 bool PageDef::documentedPage() const
@@ -240,5 +277,10 @@ bool PageDef::hasSubPages() const
 void PageDef::setNestingLevel(int l)
 {
   m_nestingLevel = l;
+}
+
+void PageDef::setShowToc(bool b)
+{
+  m_showToc = b;
 }
 

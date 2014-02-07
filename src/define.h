@@ -2,7 +2,7 @@
  *
  * $Id: define.h,v 1.21 2001/03/19 19:27:40 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -24,6 +24,7 @@
 
 class FileDef;
 
+/** A class representing a macro definition. */
 class Define
 {
   public:
@@ -47,6 +48,7 @@ class Define
     bool nonRecursive;
 };
 
+/** A list of Define objects. */
 class DefineList : public QList<Define>
 {
   public:
@@ -58,6 +60,7 @@ class DefineList : public QList<Define>
     }
 };
 
+/** A list of Define objects associated with a specific name. */
 class DefineName : public QList<Define>
 {
   public:
@@ -73,6 +76,7 @@ class DefineName : public QList<Define>
     QCString name;
 };
 
+/** A list of DefineName objects. */
 class DefineNameList : public QList<DefineName>
 {
   public:
@@ -85,7 +89,10 @@ class DefineNameList : public QList<DefineName>
     }
 };
 
+/** An unsorted dictionary of Define objects. */
 typedef QDict<Define> DefineDict;
+
+/** A sorted dictionary of DefineName object. */
 typedef QDict<DefineName> DefineNameDict;
 
 #endif

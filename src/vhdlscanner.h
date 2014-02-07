@@ -2,7 +2,7 @@
  *
  * $Id: vhdlscanner.h,v 1.9 2001/03/19 19:27:39 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -32,21 +32,6 @@
 #include "entry.h"
 #include "memberlist.h"
 
-#if 0
-#include "qcstring.h"
-#include "qlist.h"
-#include "qstringlist.h"
-#include "filedef.h"
-#include "classlist.h"
-#include "classdef.h"
-#include "translator.h"
-#include "qregexp.h"
-#include "outputlist.h"
-#include "membername.h"
-#include "memberdef.h"
-#include "memberlist.h"
-#endif
-
 class Entry;
 class ClassSDict;
 class FileStorage;
@@ -55,7 +40,7 @@ class MemberDef;
 class QStringList;
 
 
-/** \brief VHDL parser using state-based lexical scanning.
+/** VHDL parser using state-based lexical scanning.
  *
  * This is the VHDL language parser for doxygen.
  */
@@ -83,8 +68,68 @@ class VHDLLanguageScanner : public ParserInterface
     void parsePrototype(const char *text);
 };
 
+/** Container for vhdlscanner */
+struct VhdlContainer
+{
+  int yyLineNr;          // current line no
+  int iLine;             // line no of last t_identifier  
+  QCString qstr;         //  t_identifier 
+  QCString fileName;     // current file
+  Entry*  root;          // root
+};   
+
+/** Configuation node for VHDL */
+struct VhdlConfNode
+{ 
+  VhdlConfNode *prevNode;
+  VhdlConfNode(const char*  a,const char*  b,const char* config) 
+  { 
+    arch=a;              // architecture  e.g. for iobuffer
+    binding=b;           // binding e.g.  use entiy work.xxx(bev)
+    confVhdl=config;     // configuration foo is bar
+    isBind=false;
+    prevNode=NULL;
+    isRoot=false;          
+    isInlineConf=false;  // primary configuration?
+  };
+
+  QCString confVhdl;
+  QCString arch;
+  QCString binding;
+  QList<VhdlConfNode> confN;
+  bool isBind;
+  bool isInlineConf;
+  bool isRoot;
+
+  void addNode(VhdlConfNode* n) { confN.append(n); }
+  bool isBinding()          { return binding.isEmpty(); }
+};
+
+// returns the current conpound entity,architecture, package,package body 
+Entry* getVhdlCompound();
+
+// return the current parsed entry
+Entry* getCurrentVhdlEntry();
+
+void newVhdlEntry();
+
+void initVhdlParser();
+
+struct VhdlContainer* getVhdlCont();
+
+// returns the  parsed line 
+// @ param object index of vhdl keyword like t_Identifier t_Entity 
+int getParsedLine(int object);
+
 void vhdlscanFreeScanner();
 
-//---------------------------------------------------------------------------------
+void vhdlParse();
 
+// return the list of component instantiations e.g. foo: component bar 
+QList<Entry> &  getVhdlInstList();
+
+// returns the list of found configurations
+QList<VhdlConfNode>& getVhdlConfiguration();
+
+void isVhdlDocPending();
 #endif

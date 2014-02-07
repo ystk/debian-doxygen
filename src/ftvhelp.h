@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -30,44 +30,11 @@
 #include "index.h"
 
 class QFile;
+class Definition;
 struct FTVNode;
 class FTextStream;
 
-struct FTVImageInfo
-{
-  const char *alt;
-  const char *name;
-  const unsigned char *data;
-  unsigned int len;
-  unsigned short width, height;
-};
-
-extern FTVImageInfo image_info[];
-
-#define FTVIMG_blank        0
-#define FTVIMG_doc          1
-#define FTVIMG_folderclosed 2
-#define FTVIMG_folderopen   3
-#define FTVIMG_lastnode     4
-#define FTVIMG_link         5
-#define FTVIMG_mlastnode    6
-#define FTVIMG_mnode        7
-#define FTVIMG_node         8
-#define FTVIMG_plastnode    9
-#define FTVIMG_pnode       10
-#define FTVIMG_vertline    11
-
-#define FTV_S(name) #name
-#define FTV_ICON_FILE(name) "ftv2" FTV_S(name) ".png"
-#define FTVIMG_INDEX(name) FTVIMG_ ## name
-#define FTV_INFO(name) ( image_info[FTVIMG_INDEX(name)] )
-#define FTV_IMGATTRIBS(name) \
-    "src=\"" FTV_ICON_FILE(name) "\" " \
-    "alt=\"" << FTV_INFO(name).alt << "\" " \
-    "width=\"" << FTV_INFO(name).width << "\" " \
-    "height=\"" << FTV_INFO(name).height << "\" "
-
-/*! A class that generates a dynamic tree view side panel.
+/** A class that generates a dynamic tree view side panel.
  */
 class FTVHelp : public IndexIntf
 {
@@ -82,22 +49,26 @@ class FTVHelp : public IndexIntf
                          const char *name,
                          const char *ref,
                          const char *file,
-                         const char *anchor);
-    //void addIndexItem(const char *, const char *, 
-    //                  const char *, const char *,
-    //                  const char *, const MemberDef *) {}
-    void addIndexItem(Definition *,MemberDef *,const char *,const char *) {}
+                         const char *anchor,
+                         bool separateIndex,
+                         bool addToNavIndex,
+                         Definition *def);
+    void addIndexItem(Definition *,MemberDef *,const char *) {}
     void addIndexFile(const char *) {}
     void addImageFile(const char *) {}
     void addStyleSheetFile(const char *) {}
     void generateTreeView();
     void generateTreeViewInline(FTextStream &t);
     static void generateTreeViewImages();
+    void generateTreeViewScripts();
   private:
-    void generateScript(FTextStream &t);
-    void generateTree(FTextStream &t,const QList<FTVNode> &nl,int level);
-    void generateIndent(FTextStream &t,FTVNode *n,int level);
+    void generateTree(FTextStream &t,const QList<FTVNode> &nl,int level,int maxLevel,int &index);
+    //bool generateJSTree(FTextStream &tidx,FTextStream &t,const QList<FTVNode> &nl,int level,bool &first);
+    //bool generateJSTreeTopLevel(FTextStream &tidx,FTextStream &t,const QList<FTVNode> &nl,int level,bool &first);
+    QCString generateIndentLabel(FTVNode *n,int level);
+    void generateIndent(FTextStream &t,FTVNode *n,int level,bool opened);
     void generateLink(FTextStream &t,FTVNode *n);
+    //void generateJSLink(FTextStream &t,FTVNode *n);
     QList<FTVNode> *m_indentNodes;
     int m_indent;
     bool m_topLevelIndex;

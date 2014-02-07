@@ -32,9 +32,11 @@ void addConfigOptions(Config *cfg)
   //----
   cs = cfg->addString(
                  "PROJECT_NAME",
-                 "The PROJECT_NAME tag is a single word (or a sequence of words surrounded\n"
-                 "by quotes) that should identify the project."
+                 "The PROJECT_NAME tag is a single word (or sequence of words) that should\n"
+                 "identify the project. Note that if you do not use Doxywizard you need\n"
+                 "to put quotes around the project name if it contains spaces."
                 );
+  cs->setDefaultValue("My Project");
   //----
   cs = cfg->addString(
                  "PROJECT_NUMBER",
@@ -42,6 +44,22 @@ void addConfigOptions(Config *cfg)
                  "This could be handy for archiving the generated documentation or\n"
                  "if some version control system is used."
                 );
+  //----
+  cs = cfg->addString(
+                 "PROJECT_BRIEF",
+                 "Using the PROJECT_BRIEF tag one can provide an optional one line description\n"
+                 "for a project that appears at the top of each page and should give viewer\n"
+                 "a quick idea about the purpose of the project. Keep the description short."
+                );
+  //----
+  cs = cfg->addString(
+                 "PROJECT_LOGO",
+                 "With the PROJECT_LOGO tag one can specify an logo or icon that is\n"
+                 "included in the documentation. The maximum height of the logo should not\n"
+                 "exceed 55 pixels and the maximum width should not exceed 200 pixels.\n"
+                 "Doxygen will copy the logo to the output directory."
+                );
+  cs->setWidgetType(ConfigString::File);
   //----
   cs = cfg->addString(
                  "OUTPUT_DIRECTORY",
@@ -73,7 +91,7 @@ void addConfigOptions(Config *cfg)
                  "Croatian, Czech, Danish, Dutch, Esperanto, Farsi, Finnish, French, German,\n"
                  "Greek, Hungarian, Italian, Japanese, Japanese-en (Japanese with English\n"
                  "messages), Korean, Korean-en, Lithuanian, Norwegian, Macedonian, Persian,\n"
-                 "Polish, Portuguese, Romanian, Russian, Serbian, Serbian-Cyrilic, Slovak,\n"
+                 "Polish, Portuguese, Romanian, Russian, Serbian, Serbian-Cyrillic, Slovak,\n"
                  "Slovene, Spanish, Swedish, Ukrainian, and Vietnamese.",
                  "English"
                 );
@@ -208,7 +226,7 @@ void addConfigOptions(Config *cfg)
   cb = cfg->addBool(
                  "SHORT_NAMES",
                  "If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter\n"
-                 "(but less readable) file names. This can be useful is your file systems\n"
+                 "(but less readable) file names. This can be useful if your file system\n"
                  "doesn't support long names like on DOS, Mac, or CD-ROM.",
                  FALSE
                 );
@@ -276,6 +294,14 @@ void addConfigOptions(Config *cfg)
                  "You can put \\n's in the value part of an alias to insert newlines."
                 );
   //----
+  cl = cfg->addList(
+                 "TCL_SUBST",
+                 "This tag can be used to specify a number of word-keyword mappings (TCL only).\n"
+                 "A mapping has the form \"name=value\". For example adding\n"
+                 "\"class=itcl::class\" will allow you to use the command class in the\n"
+                 "itcl::class meaning."
+                );
+  //----
   cb = cfg->addBool(
                  "OPTIMIZE_OUTPUT_FOR_C",
                  "Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C\n"
@@ -324,12 +350,23 @@ void addConfigOptions(Config *cfg)
                 );
   //----
   cb = cfg->addBool(
+                 "MARKDOWN_SUPPORT",
+                 "If MARKDOWN_SUPPORT is enabled (the default) then doxygen pre-processes all\n"
+                 "comments according to the Markdown format, which allows for more readable\n"
+                 "documentation. See http://daringfireball.net/projects/markdown/ for details.\n"
+                 "The output of markdown processing is further processed by doxygen, so you\n"
+                 "can mix doxygen, HTML, and XML commands with Markdown formatting.\n"
+                 "Disable only in case of backward compatibilities issues.",
+                 TRUE
+                );
+  //----
+  cb = cfg->addBool(
                  "BUILTIN_STL_SUPPORT",
                  "If you use STL classes (i.e. std::string, std::vector, etc.) but do not want\n"
                  "to include (a tag file for) the STL sources as input, then you should\n"
                  "set this tag to YES in order to let doxygen match functions declarations and\n"
                  "definitions whose arguments contain STL classes (e.g. func(std::string); v.s.\n"
-                 "func(std::string) {}). This also make the inheritance and collaboration\n"
+                 "func(std::string) {}). This also makes the inheritance and collaboration\n"
                  "diagrams that involve STL classes more complete and accurate.",
                  FALSE
                 );
@@ -353,7 +390,7 @@ void addConfigOptions(Config *cfg)
                  "IDL_PROPERTY_SUPPORT",
                  "For Microsoft's IDL there are propget and propput attributes to indicate getter\n"
                  "and setter methods for a property. Setting this option to YES (the default)\n"
-                 "will make doxygen to replace the get and set methods by a property in the\n"
+                 "will make doxygen replace the get and set methods by a property in the\n"
                  "documentation. This will only work if the methods are indeed getting or\n"
                  "setting a simple type. If this is not the case, or you want to show the\n"
                  "methods anyway, you should set this option to NO.",
@@ -380,6 +417,26 @@ void addConfigOptions(Config *cfg)
                 );
   //----
   cb = cfg->addBool(
+                 "INLINE_GROUPED_CLASSES",
+                 "When the INLINE_GROUPED_CLASSES tag is set to YES, classes, structs and\n"
+                 "unions are shown inside the group in which they are included (e.g. using\n"
+                 "@ingroup) instead of on a separate page (for HTML and Man pages) or\n"
+                 "section (for LaTeX and RTF).",
+                 FALSE
+                );
+  //----
+  cb = cfg->addBool(
+                 "INLINE_SIMPLE_STRUCTS",
+                 "When the INLINE_SIMPLE_STRUCTS tag is set to YES, structs, classes, and\n"
+                 "unions with only public data fields will be shown inline in the documentation\n"
+                 "of the scope in which they are defined (i.e. file, namespace, or group\n"
+                 "documentation), provided this scope is documented. If set to NO (the default),\n"
+                 "structs, classes, and unions are shown on a separate page (for HTML and Man\n"
+                 "pages) or section (for LaTeX and RTF).",
+                 FALSE
+                );
+  //----
+  cb = cfg->addBool(
                  "TYPEDEF_HIDES_STRUCT",
                  "When TYPEDEF_HIDES_STRUCT is enabled, a typedef of a struct, union, or enum\n"
                  "is documented as struct, union, or enum with the name of the typedef. So\n"
@@ -399,13 +456,26 @@ void addConfigOptions(Config *cfg)
                  "For small to medium size projects (<1000 input files) the default value is\n"
                  "probably good enough. For larger projects a too small cache size can cause\n"
                  "doxygen to be busy swapping symbols to and from disk most of the time\n"
-                 "causing a significant performance penality.\n"
+                 "causing a significant performance penalty.\n"
                  "If the system has enough physical memory increasing the cache will improve the\n"
                  "performance by keeping more symbols in memory. Note that the value works on\n"
-                 "a logarithmic scale so increasing the size by one will rougly double the\n"
+                 "a logarithmic scale so increasing the size by one will roughly double the\n"
                  "memory usage. The cache size is given by this formula:\n"
                  "2^(16+SYMBOL_CACHE_SIZE). The valid range is 0..9, the default is 0,\n"
-                 "corresponding to a cache size of 2^16 = 65536 symbols",
+                 "corresponding to a cache size of 2^16 = 65536 symbols.",
+                 0,9,0
+                );
+  //----
+  ci = cfg->addInt(
+                 "LOOKUP_CACHE_SIZE",
+                 "Similar to the SYMBOL_CACHE_SIZE the size of the symbol lookup cache can be\n"
+                 "set using LOOKUP_CACHE_SIZE. This cache is used to resolve symbols given\n"
+                 "their name and scope. Since this can be an expensive process and often the\n"
+                 "same symbol appear multiple times in the code, doxygen keeps a cache of\n"
+                 "pre-resolved symbols. If the cache is too small doxygen will become slower.\n"
+                 "If the cache is too large, memory is wasted. The cache size is given by this\n"
+                 "formula: 2^(16+LOOKUP_CACHE_SIZE). The valid range is 0..9, the default is 0,\n"
+                 "corresponding to a cache size of 2^16 = 65536 symbols.",
                  0,9,0
                 );
   //---------------------------------------------------------------------------
@@ -426,6 +496,12 @@ void addConfigOptions(Config *cfg)
                  "EXTRACT_PRIVATE",
                  "If the EXTRACT_PRIVATE tag is set to YES all private members of a class\n"
                  "will be included in the documentation.",
+                 FALSE
+                );
+  //----
+  cb = cfg->addBool(
+                 "EXTRACT_PACKAGE",
+                 "If the EXTRACT_PACKAGE tag is set to YES all members with package or internal scope will be included in the documentation.",
                  FALSE
                 );
   //----
@@ -459,7 +535,7 @@ void addConfigOptions(Config *cfg)
                  "extracted and appear in the documentation as a namespace called\n"
                  "'anonymous_namespace{file}', where file will be replaced with the base\n"
                  "name of the file that contains the anonymous namespace. By default\n"
-                 "anonymous namespace are hidden.",
+                 "anonymous namespaces are hidden.",
                  FALSE
                 );
   //----
@@ -601,6 +677,17 @@ void addConfigOptions(Config *cfg)
                 );
   //----
   cb = cfg->addBool(
+                 "STRICT_PROTO_MATCHING",
+                 "If the STRICT_PROTO_MATCHING option is enabled and doxygen fails to\n"
+                 "do proper type resolution of all parameters of a function it will reject a\n"
+                 "match between the prototype and the implementation of a member function even\n"
+                 "if there is only one candidate or it is obvious which candidate to choose\n"
+                 "by doing a simple string match. By disabling STRICT_PROTO_MATCHING doxygen\n"
+                 "will still accept a match between prototype and implementation in such cases.",
+                 FALSE
+                );
+  //----
+  cb = cfg->addBool(
                  "GENERATE_TODOLIST",
                  "The GENERATE_TODOLIST tag can be used to enable (YES) or\n"
                  "disable (NO) the todo list. This list is created by putting \\todo\n"
@@ -641,10 +728,10 @@ void addConfigOptions(Config *cfg)
   ci = cfg->addInt(
                  "MAX_INITIALIZER_LINES",
                  "The MAX_INITIALIZER_LINES tag determines the maximum number of lines\n"
-                 "the initial value of a variable or define consists of for it to appear in\n"
+                 "the initial value of a variable or macro consists of for it to appear in\n"
                  "the documentation. If the initializer consists of more lines than specified\n"
                  "here it will be hidden. Use a value of 0 to hide initializers completely.\n"
-                 "The appearance of the initializer of individual variables and defines in the\n"
+                 "The appearance of the initializer of individual variables and macros in the\n"
                  "documentation can be controlled using \\showinitializer or \\hideinitializer\n"
                  "command in the documentation regardless of this setting.",
                  0,10000,30
@@ -656,14 +743,6 @@ void addConfigOptions(Config *cfg)
                  "at the bottom of the documentation of classes and structs. If set to YES the\n"
                  "list will mention the files that were used to generate the documentation.",
                  TRUE
-                );
-  //----
-  cb = cfg->addBool(
-                 "SHOW_DIRECTORIES",
-                 "If the sources in your project are distributed over multiple directories\n"
-                 "then setting the SHOW_DIRECTORIES tag to YES will show the directory hierarchy\n"
-                 "in the documentation. The default is NO.",
-                 FALSE
                 );
   //----
   cb = cfg->addBool(
@@ -699,12 +778,24 @@ void addConfigOptions(Config *cfg)
                  "LAYOUT_FILE",
                  "The LAYOUT_FILE tag can be used to specify a layout file which will be parsed\n"
                  "by doxygen. The layout file controls the global structure of the generated\n"
-                 "output files in an output format independent way. The create the layout file\n"
+                 "output files in an output format independent way. To create the layout file\n"
                  "that represents doxygen's defaults, run doxygen with the -l option.\n"
                  "You can optionally specify a file name after the option, if omitted\n"
                  "DoxygenLayout.xml will be used as the name of the layout file."
                 );
   cs->setWidgetType(ConfigString::File);
+  //----
+  cl = cfg->addList(
+                 "CITE_BIB_FILES",
+                 "The CITE_BIB_FILES tag can be used to specify one or more bib files\n"
+                 "containing the references data. This must be a list of .bib files. The\n"
+                 ".bib extension is automatically appended if omitted. Using this command\n"
+                 "requires the bibtex tool to be installed. See also\n"
+                 "http://en.wikipedia.org/wiki/BibTeX for more info. For LaTeX the style\n"
+                 "of the bibliography can be controlled using LATEX_BIB_STYLE. To use this\n"
+                 "feature you need bibtex and perl available in the search path."
+                );
+  cl->setWidgetType(ConfigList::File);
   //---------------------------------------------------------------------------
   cfg->addInfo("Messages","configuration options related to warning and progress messages");
   //---------------------------------------------------------------------------
@@ -744,7 +835,7 @@ void addConfigOptions(Config *cfg)
   //----
   cb = cfg->addBool(
                  "WARN_NO_PARAMDOC",
-                 "This WARN_NO_PARAMDOC option can be abled to get warnings for\n"
+                 "The WARN_NO_PARAMDOC option can be enabled to get warnings for\n"
                  "functions that are documented, but have no documentation for their parameters\n"
                  "or return value. If set to NO (the default) doxygen will only warn about\n"
                  "wrong or incomplete parameter documentation, but not about the absence of\n"
@@ -801,8 +892,9 @@ void addConfigOptions(Config *cfg)
                  "FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp\n"
                  "and *.h) to filter out the source-files in the directories. If left\n"
                  "blank the following patterns are tested:\n"
-                 "*.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx\n"
-                 "*.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.py *.f90"
+                 "*.c *.cc *.cxx *.cpp *.c++ *.d *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh\n"
+                 "*.hxx *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.dox *.py\n"
+                 "*.f90 *.f *.for *.vhd *.vhdl"
                 );
   cl->addValue("*.c");
   cl->addValue("*.cc");
@@ -828,11 +920,14 @@ void addConfigOptions(Config *cfg)
   cl->addValue("*.php3");
   cl->addValue("*.inc");
   cl->addValue("*.m");
+  cl->addValue("*.markdown");
+  cl->addValue("*.md");
   cl->addValue("*.mm");
   cl->addValue("*.dox");
   cl->addValue("*.py");
   cl->addValue("*.f90");
   cl->addValue("*.f");
+  cl->addValue("*.for");
   cl->addValue("*.vhd");
   cl->addValue("*.vhdl");
   //----
@@ -846,16 +941,18 @@ void addConfigOptions(Config *cfg)
   //----
   cl = cfg->addList(
                  "EXCLUDE",
-                 "The EXCLUDE tag can be used to specify files and/or directories that should\n"
+                 "The EXCLUDE tag can be used to specify files and/or directories that should be\n"
                  "excluded from the INPUT source files. This way you can easily exclude a\n"
-                 "subdirectory from a directory tree whose root is specified with the INPUT tag."
+                 "subdirectory from a directory tree whose root is specified with the INPUT tag.\n"
+                 "Note that relative paths are relative to the directory from which doxygen is\n"
+                 "run."
                 );
   cl->setWidgetType(ConfigList::FileAndDir);
   //----
   cb = cfg->addBool(
                  "EXCLUDE_SYMLINKS",
-                 "The EXCLUDE_SYMLINKS tag can be used select whether or not files or\n"
-                 "directories that are symbolic links (a Unix filesystem feature) are excluded\n"
+                 "The EXCLUDE_SYMLINKS tag can be used to select whether or not files or\n"
+                 "directories that are symbolic links (a Unix file system feature) are excluded\n"
                  "from the input.",
                  FALSE
                 );
@@ -933,10 +1030,9 @@ void addConfigOptions(Config *cfg)
                  "filter if there is a match.\n"
                  "The filters are a list of the form:\n"
                  "pattern=filter (like *.cpp=my_cpp_filter). See INPUT_FILTER for further\n"
-                 "info on how filters are used. If FILTER_PATTERNS is empty, INPUT_FILTER\n"
-                 "is applied to all files."
+                 "info on how filters are used. If FILTER_PATTERNS is empty or if\n"
+                 "non of the patterns match the file name, INPUT_FILTER is applied."
                 );
-  cl->setWidgetType(ConfigList::File);
   //----
   cb = cfg->addBool(
                  "FILTER_SOURCE_FILES",
@@ -945,6 +1041,16 @@ void addConfigOptions(Config *cfg)
                  "files to browse (i.e. when SOURCE_BROWSER is set to YES).",
                  FALSE
                 );
+  //----
+  cl = cfg->addList(
+                 "FILTER_SOURCE_PATTERNS",
+                 "The FILTER_SOURCE_PATTERNS tag can be used to specify source filters per file\n"
+                 "pattern. A pattern will override the setting for FILTER_PATTERN (if any)\n"
+                 "and it is also possible to disable source filtering for a specific pattern\n"
+                 "using *.ext= (so without naming a filter). This option only has effect when\n"
+                 "FILTER_SOURCE_FILES is enabled."
+                );
+  cl->addDependency("FILTER_SOURCE_FILES");
   //---------------------------------------------------------------------------
   cfg->addInfo("Source Browser","configuration options related to source browsing");
   //---------------------------------------------------------------------------
@@ -970,7 +1076,7 @@ void addConfigOptions(Config *cfg)
                  "STRIP_CODE_COMMENTS",
                  "Setting the STRIP_CODE_COMMENTS tag to YES (the default) will instruct\n"
                  "doxygen to hide any special comment blocks from generated source code\n"
-                 "fragments. Normal C and C++ comments will always remain visible.",
+                 "fragments. Normal C, C++ and Fortran comments will always remain visible.",
                  TRUE
                 );
   //----
@@ -1081,7 +1187,14 @@ void addConfigOptions(Config *cfg)
                  "HTML_HEADER",
                  "The HTML_HEADER tag can be used to specify a personal HTML header for\n"
                  "each generated HTML page. If it is left blank doxygen will generate a\n"
-                 "standard header."
+                 "standard header. Note that when using a custom header you are responsible\n"
+                 " for the proper inclusion of any scripts and style sheets that doxygen\n"
+                 "needs, which is dependent on the configuration options used.\n"
+                 "It is advised to generate a default header using \"doxygen -w html\n"
+                 "header.html footer.html stylesheet.css YourConfigFile\" and then modify\n"
+                 "that header. Note that the header is subject to change so you typically\n"
+                 "have to redo this when upgrading to a newer version of doxygen or when\n"
+                 "changing the value of configuration settings such as GENERATE_TREEVIEW!"
                 );
   cs->setWidgetType(ConfigString::File);
   cs->addDependency("GENERATE_HTML");
@@ -1102,15 +1215,27 @@ void addConfigOptions(Config *cfg)
                  "fine-tune the look of the HTML output. If the tag is left blank doxygen\n"
                  "will generate a default style sheet. Note that doxygen will try to copy\n"
                  "the style sheet file to the HTML output directory, so don't put your own\n"
-                 "stylesheet in the HTML output directory as well, or it will be erased!"
+                 "style sheet in the HTML output directory as well, or it will be erased!"
                 );
   cs->setWidgetType(ConfigString::File);
   cs->addDependency("GENERATE_HTML");
   //----
+  cl = cfg->addList(
+                 "HTML_EXTRA_FILES",
+                 "The HTML_EXTRA_FILES tag can be used to specify one or more extra images or\n"
+                 "other source files which should be copied to the HTML output directory. Note\n"
+                 "that these files will be copied to the base HTML output directory. Use the\n"
+                 "$relpath$ marker in the HTML_HEADER and/or HTML_FOOTER files to load these\n"
+                 "files. In the HTML_STYLESHEET file, use the file name only. Also note that\n"
+                 "the files will be copied as-is; there are no commands or markers available."
+                );
+  cl->addDependency("GENERATE_HTML");
+  cl->setWidgetType(ConfigList::File);
+  //----
   ci = cfg->addInt(
                  "HTML_COLORSTYLE_HUE",
                  "The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.\n"
-                 "Doxygen will adjust the colors in the stylesheet and background images\n"
+                 "Doxygen will adjust the colors in the style sheet and background images\n"
                  "according to this color. Hue is specified as an angle on a colorwheel,\n"
                  "see http://en.wikipedia.org/wiki/Hue for more information.\n"
                  "For instance the value 0 represents red, 60 is yellow, 120 is green,\n"
@@ -1150,24 +1275,26 @@ void addConfigOptions(Config *cfg)
   cb->addDependency("GENERATE_HTML");
   //----
   cb = cfg->addBool(
-                 "HTML_ALIGN_MEMBERS",
-                 "If the HTML_ALIGN_MEMBERS tag is set to YES, the members of classes,\n"
-                 "files or namespaces will be aligned in HTML using tables. If set to\n"
-                 "NO a bullet list will be used.",
-                 TRUE
-                );
-  cb->addDependency("GENERATE_HTML");
-  //----
-  cb = cfg->addBool(
                  "HTML_DYNAMIC_SECTIONS",
                  "If the HTML_DYNAMIC_SECTIONS tag is set to YES then the generated HTML\n"
                  "documentation will contain sections that can be hidden and shown after the\n"
-                 "page has loaded. For this to work a browser that supports\n"
-                 "JavaScript and DHTML is required (for instance Mozilla 1.0+, Firefox\n"
-                 "Netscape 6.0+, Internet explorer 5.0+, Konqueror, or Safari).",
+                 "page has loaded.",
                  FALSE
                 );
   cb->addDependency("GENERATE_HTML");
+  //----
+  ci = cfg->addInt(
+                 "HTML_INDEX_NUM_ENTRIES",
+                 "With HTML_INDEX_NUM_ENTRIES one can control the preferred number of\n"
+                 "entries shown in the various tree structured indices initially; the user\n"
+                 "can expand and collapse entries dynamically later on. Doxygen will expand\n"
+                 "the tree to such a level that at most the specified number of entries are\n"
+                 "visible (unless a fully collapsed tree already exceeds this amount).\n"
+                 "So setting the number of entries 1 will produce a full collapsed tree by\n"
+                 "default. 0 is a special value representing an infinite number of entries\n"
+                 "and will result in a full expanded tree by default.",
+                 0,9999,100
+                );
   //----
   cb = cfg->addBool(
                  "GENERATE_DOCSET",
@@ -1384,20 +1511,14 @@ void addConfigOptions(Config *cfg)
   //----
   cb = cfg->addBool(
                  "DISABLE_INDEX",
-                 "The DISABLE_INDEX tag can be used to turn on/off the condensed index at\n"
-                 "top of each HTML page. The value NO (the default) enables the index and\n"
-                 "the value YES disables it.",
+                 "The DISABLE_INDEX tag can be used to turn on/off the condensed index (tabs)\n"
+                 "at top of each HTML page. The value NO (the default) enables the index and\n"
+                 "the value YES disables it. Since the tabs have the same information as the\n"
+                 "navigation tree you can set this option to NO if you already set\n"
+                 "GENERATE_TREEVIEW to YES.",
                  FALSE
                 );
   cb->addDependency("GENERATE_HTML");
-  //----
-  ci = cfg->addInt(
-                 "ENUM_VALUES_PER_LINE",
-                 "This tag can be used to set the number of enum values (range [1..20])\n"
-                 "that doxygen will group on one line in the generated HTML documentation.",
-                 1,20,4
-                );
-  ci->addDependency("GENERATE_HTML");
   //----
   cb = cfg->addBool(
                  "GENERATE_TREEVIEW",
@@ -1407,18 +1528,22 @@ void addConfigOptions(Config *cfg)
                  "containing a tree-like index structure (just like the one that\n"
                  "is generated for HTML Help). For this to work a browser that supports\n"
                  "JavaScript, DHTML, CSS and frames is required (i.e. any modern browser).\n"
-                 "Windows users are probably better off using the HTML help feature.",
+                 "Windows users are probably better off using the HTML help feature.\n"
+                 "Since the tree basically has the same information as the tab index you\n"
+                 "could consider to set DISABLE_INDEX to NO when enabling this option.",
                  FALSE
                 );
   cb->addDependency("GENERATE_HTML");
   //----
-  cb = cfg->addBool(
-                 "USE_INLINE_TREES",
-                 "By enabling USE_INLINE_TREES, doxygen will generate the Groups, Directories,\n"
-                 "and Class Hierarchy pages using a tree view instead of an ordered list.",
-                 FALSE
+  ci = cfg->addInt(
+                 "ENUM_VALUES_PER_LINE",
+                 "The ENUM_VALUES_PER_LINE tag can be used to set the number of enum values\n"
+                 "(range [0,1..20]) that doxygen will group on one line in the generated HTML\n"
+                 "documentation. Note that a value of 0 will completely suppress the enum\n"
+                 "values from appearing in the overview section.",
+                 0,20,4
                 );
-  cb->addDependency("GENERATE_HTML");
+  ci->addDependency("GENERATE_HTML");
   //----
   ci = cfg->addInt(
                  "TREEVIEW_WIDTH",
@@ -1460,6 +1585,38 @@ void addConfigOptions(Config *cfg)
   cb->addDependency("GENERATE_HTML");
   //----
   cb = cfg->addBool(
+                 "USE_MATHJAX",
+                 "Enable the USE_MATHJAX option to render LaTeX formulas using MathJax\n"
+                 "(see http://www.mathjax.org) which uses client side Javascript for the\n"
+                 "rendering instead of using prerendered bitmaps. Use this if you do not\n"
+                 "have LaTeX installed or if you want to formulas look prettier in the HTML\n"
+                 "output. When enabled you may also need to install MathJax separately and\n"
+                 "configure the path to it using the MATHJAX_RELPATH option.",
+                 FALSE
+                );
+  //----
+  cs = cfg->addString(
+                 "MATHJAX_RELPATH",
+                 "When MathJax is enabled you need to specify the location relative to the\n"
+                 "HTML output directory using the MATHJAX_RELPATH option. The destination\n"
+                 "directory should contain the MathJax.js script. For instance, if the mathjax\n"
+                 "directory is located at the same level as the HTML output directory, then\n"
+                 "MATHJAX_RELPATH should be ../mathjax. The default value points to\n"
+                 "the MathJax Content Delivery Network so you can quickly see the result without\n"
+                 "installing MathJax.\n"
+                 "However, it is strongly recommended to install a local\n"
+                 "copy of MathJax from http://www.mathjax.org before deployment."
+                );
+  cs->setDefaultValue("http://cdn.mathjax.org/mathjax/latest");
+  //----
+  cl = cfg->addList(
+                 "MATHJAX_EXTENSIONS",
+                 "The MATHJAX_EXTENSIONS tag can be used to specify one or MathJax extension\n"
+                 "names that should be enabled during MathJax rendering."
+                );
+  cl->addDependency("USE_MATHJAX");
+  //----
+  cb = cfg->addBool(
                  "SEARCHENGINE",
                  "When the SEARCHENGINE tag is enabled doxygen will generate a search box\n"
                  "for the HTML output. The underlying search engine uses javascript\n"
@@ -1479,7 +1636,7 @@ void addConfigOptions(Config *cfg)
                  "using Javascript. Doxygen will generate the search PHP script and index\n"
                  "file to put on the web server. The advantage of the server\n"
                  "based approach is that it scales better to large projects and allows\n"
-                 "full text search. The disadvances is that it is more difficult to setup\n"
+                 "full text search. The disadvantages are that it is more difficult to setup\n"
                  "and does not have live searching capabilities.",
                  FALSE
                 );
@@ -1540,9 +1697,9 @@ void addConfigOptions(Config *cfg)
   ce = cfg->addEnum(
                  "PAPER_TYPE",
                  "The PAPER_TYPE tag can be used to set the paper type that is used\n"
-                 "by the printer. Possible values are: a4, a4wide, letter, legal and\n"
+                 "by the printer. Possible values are: a4, letter, legal and\n"
                  "executive. If left blank a4wide will be used.",
-                 "a4wide"
+                 "a4"
                 );
   ce->addValue("a4");
   ce->addValue("a4wide");
@@ -1564,6 +1721,16 @@ void addConfigOptions(Config *cfg)
                  "the generated latex document. The header should contain everything until\n"
                  "the first chapter. If it is left blank doxygen will generate a\n"
                  "standard header. Notice: only use this tag if you know what you are doing!"
+                );
+  cs->setWidgetType(ConfigString::File);
+  cs->addDependency("GENERATE_LATEX");
+  //----
+  cs = cfg->addString(
+                 "LATEX_FOOTER",
+                 "The LATEX_FOOTER tag can be used to specify a personal LaTeX footer for\n"
+                 "the generated latex document. The footer should contain everything after\n"
+                 "the last chapter. If it is left blank doxygen will generate a\n"
+                 "standard footer. Notice: only use this tag if you know what you are doing!"
                 );
   cs->setWidgetType(ConfigString::File);
   cs->addDependency("GENERATE_LATEX");
@@ -1615,6 +1782,14 @@ void addConfigOptions(Config *cfg)
                  FALSE
                 );
   cb->addDependency("GENERATE_LATEX");
+  //----
+  cs = cfg->addString(
+                 "LATEX_BIB_STYLE",
+                 "The LATEX_BIB_STYLE tag can be used to specify the style to use for the\n"
+                 "bibliography, e.g. plainnat, or ieeetr. The default style is \"plain\". See\n"
+                 "http://en.wikipedia.org/wiki/BibTeX for more info."
+                );
+  cs->setDefaultValue("plain");
   //---------------------------------------------------------------------------
   cfg->addInfo("RTF","configuration options related to the RTF output");
   //---------------------------------------------------------------------------
@@ -1661,7 +1836,7 @@ void addConfigOptions(Config *cfg)
   //----
   cs = cfg->addString(
                  "RTF_STYLESHEET_FILE",
-                 "Load stylesheet definitions from file. Syntax is similar to doxygen's\n"
+                 "Load style sheet definitions from file. Syntax is similar to doxygen's\n"
                  "config file, i.e. a series of assignments. You only have to provide\n"
                  "replacements, missing definitions are set to their default value."
                 );
@@ -1857,7 +2032,7 @@ void addConfigOptions(Config *cfg)
   cb = cfg->addBool(
                  "SEARCH_INCLUDES",
                  "If the SEARCH_INCLUDES tag is set to YES (the default) the includes files\n"
-                 "in the INCLUDE_PATH (see below) will be search if a #include is found.",
+                 "pointed to by INCLUDE_PATH will be searched when a #include is found.",
                  TRUE
                 );
   cb->addDependency("ENABLE_PREPROCESSING");
@@ -1897,17 +2072,17 @@ void addConfigOptions(Config *cfg)
                  "If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then\n"
                  "this tag can be used to specify a list of macro names that should be expanded.\n"
                  "The macro definition that is found in the sources will be used.\n"
-                 "Use the PREDEFINED tag if you want to use a different macro definition."
+                 "Use the PREDEFINED tag if you want to use a different macro definition that\n"
+                 "overrules the definition found in the source code."
                 );
   cl->addDependency("ENABLE_PREPROCESSING");
   //----
   cb = cfg->addBool(
                  "SKIP_FUNCTION_MACROS",
                  "If the SKIP_FUNCTION_MACROS tag is set to YES (the default) then\n"
-                 "doxygen's preprocessor will remove all function-like macros that are alone\n"
-                 "on a line, have an all uppercase name, and do not end with a semicolon. Such\n"
-                 "function macros are typically used for boiler-plate code, and will confuse\n"
-                 "the parser if not removed.",
+                 "doxygen's preprocessor will remove all references to function-like macros\n"
+                 "that are alone on a line, have an all uppercase name, and do not end with a\n"
+                 "semicolon, because these will confuse the parser if not removed.",
                  TRUE
                 );
   cb->addDependency("ENABLE_PREPROCESSING");
@@ -1918,22 +2093,18 @@ void addConfigOptions(Config *cfg)
   //----
   cl = cfg->addList(
                  "TAGFILES",
-                 "The TAGFILES option can be used to specify one or more tagfiles.\n"
-                 "Optionally an initial location of the external documentation\n"
-                 "can be added for each tagfile. The format of a tag file without\n"
-                 "this location is as follows:\n"
+                 "The TAGFILES option can be used to specify one or more tagfiles. For each\n"
+                 "tag file the location of the external documentation should be added. The\n"
+                 "format of a tag file without this location is as follows:\n"
                  "\n"
                  "TAGFILES = file1 file2 ...\n"
                  "Adding location for the tag files is done as follows:\n"
                  "\n"
                  "TAGFILES = file1=loc1 \"file2 = loc2\" ...\n"
-                 "where \"loc1\" and \"loc2\" can be relative or absolute paths or\n"
-                 "URLs. If a location is present for each tag, the installdox tool\n"
-                 "does not have to be run to correct the links.\n"
-                 "Note that each tag file must have a unique name\n"
-                 "(where the name does NOT include the path)\n"
-                 "If a tag file is not located in the directory in which doxygen\n"
-                 "is run, you must also specify the path to the tagfile here."
+                 "where \"loc1\" and \"loc2\" can be relative or absolute paths\n"
+                 "or URLs. Note that each tag file must have a unique name (where the name does\n"
+                 "NOT include the path). If a tag file is not located in the directory in which\n"
+                 "doxygen is run, you must also specify the path to the tagfile here."
                 );
   cl->setWidgetType(ConfigList::File);
   //----
@@ -1977,9 +2148,8 @@ void addConfigOptions(Config *cfg)
                  "If the CLASS_DIAGRAMS tag is set to YES (the default) Doxygen will\n"
                  "generate a inheritance diagram (in HTML, RTF and LaTeX) for classes with base\n"
                  "or super classes. Setting the tag to NO turns the diagrams off. Note that\n"
-                 "this option is superseded by the HAVE_DOT option below. This is only a\n"
-                 "fallback. It is recommended to install and use dot, since it yields more\n"
-                 "powerful graphs.",
+                 "this option also works with HAVE_DOT disabled, but it is recommended to\n"
+                 "install and use dot, since it yields more powerful graphs.",
                  TRUE
                 );
   //----
@@ -2022,16 +2192,14 @@ void addConfigOptions(Config *cfg)
   //----
   cs = cfg->addString(
                  "DOT_FONTNAME",
-                 "By default doxygen will write a font called FreeSans.ttf to the output\n"
-                 "directory and reference it in all dot files that doxygen generates. This\n"
-                 "font does not include all possible unicode characters however, so when you need\n"
-                 "these (or just want a differently looking font) you can specify the font name\n"
-                 "using DOT_FONTNAME. You need need to make sure dot is able to find the font,\n"
-                 "which can be done by putting it in a standard location or by setting the\n"
-                 "DOTFONTPATH environment variable or by setting DOT_FONTPATH to the directory\n"
-                 "containing the font."
+                 "By default doxygen will use the Helvetica font for all dot files that\n"
+                 "doxygen generates. When you want a differently looking font you can specify\n"
+                 "the font name using DOT_FONTNAME. You need to make sure dot is able to find\n"
+                 "the font, which can be done by putting it in a standard location or by setting\n"
+                 "the DOTFONTPATH environment variable or by setting DOT_FONTPATH to the\n"
+                 "directory containing the font."
                 );
-  cs->setDefaultValue("FreeSans.ttf");
+  cs->setDefaultValue("Helvetica");
   cs->addDependency("HAVE_DOT");
   //----
   ci = cfg->addInt(
@@ -2044,10 +2212,9 @@ void addConfigOptions(Config *cfg)
   //----
   cs = cfg->addString(
                  "DOT_FONTPATH",
-                 "By default doxygen will tell dot to use the output directory to look for the\n"
-                 "FreeSans.ttf font (which doxygen will put there itself). If you specify a\n"
-                 "different font using DOT_FONTNAME you can set the path where dot\n"
-                 "can find it using this tag."
+                 "By default doxygen will tell dot to use the Helvetica font.\n"
+                 "If you specify a different font using DOT_FONTNAME you can use DOT_FONTPATH to\n"
+                 "set the path where dot can find it."
                 );
   cs->addDependency("HAVE_DOT");
   //----
@@ -2056,7 +2223,7 @@ void addConfigOptions(Config *cfg)
                  "If the CLASS_GRAPH and HAVE_DOT tags are set to YES then doxygen\n"
                  "will generate a graph for each documented class showing the direct and\n"
                  "indirect inheritance relations. Setting this tag to YES will force the\n"
-                 "the CLASS_DIAGRAMS tag to NO.",
+                 "CLASS_DIAGRAMS tag to NO.",
                  TRUE
                 );
   cb->addDependency("HAVE_DOT");
@@ -2087,6 +2254,18 @@ void addConfigOptions(Config *cfg)
                  FALSE
                 );
   cb->addDependency("HAVE_DOT");
+  //----
+  ci = cfg->addInt(
+                 "UML_LIMIT_NUM_FIELDS",
+                 "If the UML_LOOK tag is enabled, the fields and methods are shown inside\n"
+                 "the class node. If there are many fields or methods and many nodes the\n"
+                 "graph may become too big to be useful. The UML_LIMIT_NUM_FIELDS\n"
+                 "threshold limits the number of items for each type to make the size more\n"
+                 "managable. Set this to 0 for no limit. Note that the threshold may be\n"
+                 "exceeded by 50% before the limit is enforced.",
+                 0,100,10
+                );
+  ci->addDependency("HAVE_DOT");
   //----
   cb = cfg->addBool(
                  "TEMPLATE_RELATIONS",
@@ -2141,14 +2320,14 @@ void addConfigOptions(Config *cfg)
   cb = cfg->addBool(
                  "GRAPHICAL_HIERARCHY",
                  "If the GRAPHICAL_HIERARCHY and HAVE_DOT tags are set to YES then doxygen\n"
-                 "will graphical hierarchy of all classes instead of a textual one.",
+                 "will generate a graphical hierarchy of all classes instead of a textual one.",
                  TRUE
                 );
   cb->addDependency("HAVE_DOT");
   //----
   cb = cfg->addBool(
                  "DIRECTORY_GRAPH",
-                 "If the DIRECTORY_GRAPH, SHOW_DIRECTORIES and HAVE_DOT tags are set to YES\n"
+                 "If the DIRECTORY_GRAPH and HAVE_DOT tags are set to YES\n"
                  "then doxygen will show the dependencies a directory has on other directories\n"
                  "in a graphical way. The dependency relations are determined by the #include\n"
                  "relations between the files in the directories.",
@@ -2159,14 +2338,29 @@ void addConfigOptions(Config *cfg)
   ce = cfg->addEnum(
                  "DOT_IMAGE_FORMAT",
                  "The DOT_IMAGE_FORMAT tag can be used to set the image format of the images\n"
-                 "generated by dot. Possible values are png, jpg, or gif\n"
-                 "If left blank png will be used.",
+                 "generated by dot. Possible values are svg, png, jpg, or gif.\n"
+                 "If left blank png will be used. If you choose svg you need to set\n"
+                 "HTML_FILE_EXTENSION to xhtml in order to make the SVG files\n"
+                 "visible in IE 9+ (other browsers do not have this requirement).",
                  "png"
                 );
   ce->addValue("png");
   ce->addValue("jpg");
   ce->addValue("gif");
+  ce->addValue("svg");
   ce->addDependency("HAVE_DOT");
+  //----
+  cb = cfg->addBool(
+                 "INTERACTIVE_SVG",
+                 "If DOT_IMAGE_FORMAT is set to svg, then this option can be set to YES to\n"
+                 "enable generation of interactive SVG images that allow zooming and panning.\n"
+                 "Note that this requires a modern browser other than Internet Explorer.\n"
+                 "Tested and working are Firefox, Chrome, Safari, and Opera. For IE 9+ you\n"
+                 "need to set HTML_FILE_EXTENSION to xhtml in order to make the SVG files\n"
+                 "visible. Older versions of IE do not have SVG support.",
+                 FALSE
+                );
+  cb->addDependency("HAVE_DOT");
   //----
   cs = cfg->addString(
                  "DOT_PATH",
@@ -2183,6 +2377,14 @@ void addConfigOptions(Config *cfg)
                  "\\dotfile command)."
                 );
   cl->addDependency("HAVE_DOT");
+  cl->setWidgetType(ConfigList::Dir);
+  //----
+  cl = cfg->addList(
+                 "MSCFILE_DIRS",
+                 "The MSCFILE_DIRS tag can be used to specify one or more directories that\n"
+                 "contain msc files that are included in the documentation (see the\n"
+                 "\\mscfile command)."
+                );
   cl->setWidgetType(ConfigList::Dir);
   //----
   ci = cfg->addInt(
@@ -2275,4 +2477,10 @@ void addConfigOptions(Config *cfg)
   cfg->addObsolete("BIN_ABSPATH");
   //----
   cfg->addObsolete("EXT_DOC_PATHS");
+  //----
+  cfg->addObsolete("USE_INLINE_TREES");
+  //----
+  cfg->addObsolete("SHOW_DIRECTORIES");
+  //----
+  cfg->addObsolete("HTML_ALIGN_MEMBERS");
 }

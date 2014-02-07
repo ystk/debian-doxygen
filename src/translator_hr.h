@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -78,6 +78,8 @@
 //
 // 2010/05/27 
 // - Updates for 1.6.3 
+// 2012/04/12 
+// - Updates for 1.8.0 
 #ifndef TRANSLATOR_HR_H
 #define TRANSLATOR_HR_H
 
@@ -111,7 +113,7 @@ class TranslatorCroatian : public Translator
     QCString trMore()
     { return "Opširnije..."; }
     QCString trListOfAllMembers()
-    { return "Popis svih članova."; }
+    { return "Popis svih članova"; }
     QCString trMemberList()
     { return "Popis članova."; }
     QCString trThisIsTheListOfAllMembers()
@@ -1549,6 +1551,61 @@ class TranslatorCroatian : public Translator
       }
       return sdate;
     }
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "Bibliografija"; }
+
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    { return "Copyright"; }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    { return QCString("Direktoriji o kojima ovisi ")+name+":"; }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Detail level selector shown for hierarchical indices */
+    virtual QCString trDetailLevel()
+    { return "razina detalja"; }
+
+    /*! Section header for list of template parameters */
+    virtual QCString trTemplateParameters()
+    { return "Parametri predloška"; }
+
+    /*! Used in dot graph when UML_LOOK is enabled and there are many fields */
+    virtual QCString trAndMore(const QCString &number)
+    { return "i još "+number+" ..."; }
+
+    /*! Used file list for a Java enum */
+    virtual QCString trEnumGeneratedFromFiles(bool single)
+    { QCString result = "Dokumatacija za ovu enumeraciju je generirana iz ";
+      if (!single) result += "datoteka:";
+      else result += "datoteke:";
+      return result;
+    }
+
+    /*! Header of a Java enum page (Java enums are represented as classes). */
+    virtual QCString trEnumReference(const char *name)
+    { return "Opis enumeracije " + QCString(name); }
+
+    /*! Used for a section containing inherited members */
+    virtual QCString trInheritedFrom(const char *members,const char *what)
+    { return QCString(members)+" naslijeđeni od "+what; }
+
+    /*! Header of the sections with inherited members specific for the 
+     *  base class(es) 
+     */
+    virtual QCString trAdditionalInheritedMembers()
+    { return "Dodatni naslijeđeni članovi"; }
+
+//////////////////////////////////////////////////////////////////////////
 
 };
 

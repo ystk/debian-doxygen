@@ -599,9 +599,7 @@ char *configYYtext;
 #line 1 "config.l"
 /******************************************************************************
  *
- * $Id: config_templ.l,v 1.8 2001/01/01 10:15:16 root Exp $
- *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -610,7 +608,7 @@ char *configYYtext;
  * See the GNU General Public License for more details.
  *
  */
-#line 16 "config.l"
+#line 14 "config.l"
 
 /*
  *	includes
@@ -1052,7 +1050,7 @@ static QCString configStringRecode(
   QCString outputEncoding = toEncoding;
   if (inputEncoding.isEmpty() || outputEncoding.isEmpty() || inputEncoding==outputEncoding) return str;
   int inputSize=str.length();
-  size_t outputSize=inputSize*4+1;
+  int outputSize=inputSize*4+1;
   QCString output(outputSize);
   void *cd = portable_iconv_open(outputEncoding,inputEncoding);
   if (cd==(void *)(-1)) 
@@ -1061,13 +1059,13 @@ static QCString configStringRecode(
         inputEncoding.data(),outputEncoding.data());
     exit(1);
   }
-  size_t iLeft=inputSize;
-  size_t oLeft=outputSize;
+  size_t iLeft=(size_t)inputSize;
+  size_t oLeft=(size_t)outputSize;
   const char *inputPtr  = str.data();
   char       *outputPtr = output.data();
   if (!portable_iconv(cd, &inputPtr, &iLeft, &outputPtr, &oLeft))
   {
-    outputSize-=oLeft;
+    outputSize-=(int)oLeft;
     output.resize(outputSize+1);
     output.at(outputSize)='\0';
     //printf("iconv: input size=%d output size=%d\n[%s]\n",size,newSize,srcBuf.data());
@@ -1195,7 +1193,7 @@ static void readIncludeFile(const char *incName)
 
 
 
-#line 1199 "<stdout>"
+#line 1197 "<stdout>"
 
 #define INITIAL 0
 #define Start 1
@@ -1384,10 +1382,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 606 "config.l"
+#line 604 "config.l"
 
 
-#line 1391 "<stdout>"
+#line 1389 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -1472,17 +1470,17 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 608 "config.l"
+#line 606 "config.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 609 "config.l"
+#line 607 "config.l"
 { BEGIN(SkipComment); }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 610 "config.l"
+#line 608 "config.l"
 { QCString cmd=configYYtext;
                                            cmd=cmd.left(cmd.length()-1).stripWhiteSpace(); 
 					   ConfigOption *option = config->get(cmd);
@@ -1529,8 +1527,8 @@ YY_RULE_SETUP
 						 break;
 					       case ConfigOption::O_Obsolete:
 					         config_err("warning: Tag `%s' at line %d of file %s has become obsolete.\n"
-						            "To avoid this warning please update your configuration "
-							    "file using \"doxygen -u\"\n", cmd.data(),yyLineNr,yyFileName.data()); 
+						            "To avoid this warning please remove this line from your configuration "
+							    "file or upgrade it using \"doxygen -u\"\n", cmd.data(),yyLineNr,yyFileName.data()); 
 					         BEGIN(SkipInvalid);
 						 break;
 					     }
@@ -1539,7 +1537,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 663 "config.l"
+#line 661 "config.l"
 { QCString cmd=configYYtext;
                                           cmd=cmd.left(cmd.length()-2).stripWhiteSpace(); 
 					  ConfigOption *option = config->get(cmd);
@@ -1582,18 +1580,18 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 702 "config.l"
+#line 700 "config.l"
 { BEGIN(GetStrList); l=&includePathList; l->clear(); elemStr=""; }
 	YY_BREAK
 /* include a config file */
 case 6:
 YY_RULE_SETUP
-#line 704 "config.l"
+#line 702 "config.l"
 { BEGIN(Include);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 705 "config.l"
+#line 703 "config.l"
 { 
   					  readIncludeFile(configStringRecode(configYYtext,encoding,"UTF-8")); 
   					  BEGIN(Start);
@@ -1609,7 +1607,7 @@ case YY_STATE_EOF(GetStrList):
 case YY_STATE_EOF(GetQuotedString):
 case YY_STATE_EOF(GetEnvVar):
 case YY_STATE_EOF(Include):
-#line 709 "config.l"
+#line 707 "config.l"
 {
                                           //printf("End of include file\n");
 					  //printf("Include stack depth=%d\n",g_includeStack.count());
@@ -1634,19 +1632,19 @@ case YY_STATE_EOF(Include):
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 731 "config.l"
+#line 729 "config.l"
 { config_err("warning: ignoring unknown tag `%s' at line %d, file %s\n",configYYtext,yyLineNr,yyFileName.data()); }
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 732 "config.l"
+#line 730 "config.l"
 { yyLineNr++; BEGIN(Start); }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 733 "config.l"
+#line 731 "config.l"
 { 
   					  yyLineNr++; 
 					  if (!elemStr.isEmpty())
@@ -1659,7 +1657,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 742 "config.l"
+#line 740 "config.l"
 {
   				          if (!elemStr.isEmpty())
 					  {
@@ -1671,14 +1669,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 750 "config.l"
+#line 748 "config.l"
 { (*s)+=configStringRecode(configYYtext,encoding,"UTF-8"); 
                                           checkEncoding();
                                         }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 753 "config.l"
+#line 751 "config.l"
 { lastState=YY_START;
   					  BEGIN(GetQuotedString); 
                                           tmpString.resize(0); 
@@ -1687,7 +1685,7 @@ YY_RULE_SETUP
 case 14:
 /* rule 14 can match eol */
 YY_RULE_SETUP
-#line 757 "config.l"
+#line 755 "config.l"
 { 
                                           // we add a bogus space to signal that the string was quoted. This space will be stripped later on.
                                           tmpString+=" ";
@@ -1711,19 +1709,19 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 777 "config.l"
+#line 775 "config.l"
 {
   					  tmpString+='"';
   					}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 780 "config.l"
+#line 778 "config.l"
 { tmpString+=*configYYtext; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 781 "config.l"
+#line 779 "config.l"
 { 
   					  QCString bs=configYYtext; 
   					  bs=bs.upper();
@@ -1742,7 +1740,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 796 "config.l"
+#line 794 "config.l"
 {
   					  elemStr+=configStringRecode(configYYtext,encoding,"UTF-8");
   					}
@@ -1750,38 +1748,38 @@ YY_RULE_SETUP
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 799 "config.l"
+#line 797 "config.l"
 { yyLineNr++; BEGIN(Start); }
 	YY_BREAK
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 800 "config.l"
+#line 798 "config.l"
 { yyLineNr++; BEGIN(Start); }
 	YY_BREAK
 case 21:
 /* rule 21 can match eol */
 YY_RULE_SETUP
-#line 801 "config.l"
+#line 799 "config.l"
 { yyLineNr++; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 802 "config.l"
+#line 800 "config.l"
 
 	YY_BREAK
 case 23:
 /* rule 23 can match eol */
 YY_RULE_SETUP
-#line 803 "config.l"
+#line 801 "config.l"
 { yyLineNr++ ; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 805 "config.l"
+#line 803 "config.l"
 ECHO;
 	YY_BREAK
-#line 1785 "<stdout>"
+#line 1783 "<stdout>"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2739,7 +2737,7 @@ void configYYfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 805 "config.l"
+#line 803 "config.l"
 
 
 
@@ -2752,14 +2750,14 @@ void Config::writeTemplate(FTextStream &t,bool sl,bool upd)
   if (!sl)
   {
     t << "# This file describes the settings to be used by the documentation system\n";
-    t << "# doxygen (www.doxygen.org) for a project\n";
+    t << "# doxygen (www.doxygen.org) for a project.\n";
     t << "#\n";
-    t << "# All text after a hash (#) is considered a comment and will be ignored\n";
+    t << "# All text after a hash (#) is considered a comment and will be ignored.\n";
     t << "# The format is:\n";
     t << "#       TAG = value [value, ...]\n";
     t << "# For lists items can also be appended using:\n";
     t << "#       TAG += value [value, ...]\n";
-    t << "# Values that contain spaces should be placed between quotes (\" \")\n";
+    t << "# Values that contain spaces should be placed between quotes (\" \").\n";
   }
   ConfigOption *option = m_options->first();
   while (option)
@@ -2811,12 +2809,13 @@ void Config::convertStrToVal()
 
 static void substEnvVarsInString(QCString &s)
 {
-  static QRegExp re("\\$\\([a-z_A-Z0-9]+\\)");
+  static QRegExp re("\\$\\([a-z_A-Z0-9.-]+\\)");
+  static QRegExp re2("\\$\\([a-z_A-Z0-9.-]+\\([a-z_A-Z0-9.-]+\\)\\)"); // For e.g. PROGRAMFILES(X86)
   if (s.isEmpty()) return;
   int p=0;
   int i,l;
   //printf("substEnvVarInString(%s) start\n",s.data());
-  while ((i=re.match(s,p,&l))!=-1)
+  while ((i=re.match(s,p,&l))!=-1 || (i=re2.match(s,p,&l))!=-1)
   {
     //printf("Found environment var s.mid(%d,%d)=`%s'\n",i+2,l-3,s.mid(i+2,l-3).data());
     QCString env=portable_getenv(s.mid(i+2,l-3));
@@ -2974,9 +2973,9 @@ static void cleanUpPaths(QStrList &str)
 	int i = str.at();
 	str.remove();
 	if (str.at()==i) // did not remove last item
-	  str.insert(i,fi.absFilePath()+"/");
+	  str.insert(i,fi.absFilePath().utf8()+"/");
 	else
-	  str.append(fi.absFilePath()+"/");
+	  str.append(fi.absFilePath().utf8()+"/");
       }
     }
     sfp = str.next();
@@ -3023,7 +3022,7 @@ void Config::check()
   paperType=paperType.lower().stripWhiteSpace(); 
   if (paperType.isEmpty())
   {
-    paperType = "a4wide";
+    paperType = "a4";
   }
   if (paperType!="a4" && paperType!="a4wide" && paperType!="letter" && 
       paperType!="legal" && paperType!="executive")
@@ -3050,7 +3049,7 @@ void Config::check()
   char *sfp = stripFromPath.first();
   if (sfp==0) // by default use the current path
   {
-    stripFromPath.append(QDir::currentDirPath()+"/");
+    stripFromPath.append(QDir::currentDirPath().utf8()+"/");
   }
   else
   {
@@ -3125,6 +3124,25 @@ void Config::check()
     s=aliasList.next();
   }
 
+  // check if GENERATE_TREEVIEW and GENERATE_HTMLHELP are both enabled
+  if (Config_getBool("GENERATE_TREEVIEW") && Config_getBool("GENERATE_HTMLHELP"))
+  {
+    config_err("When enabling GENERATE_HTMLHELP the tree view (GENERATE_TREEVIEW) should be disabled. I'll do it for you.\n");
+    Config_getBool("GENERATE_TREEVIEW")=FALSE;
+  }
+  if (Config_getBool("SEARCHENGINE") && Config_getBool("GENERATE_HTMLHELP"))
+  {
+    config_err("When enabling GENERATE_HTMLHELP the search engine (SEARCHENGINE) should be disabled. I'll do it for you.\n");
+    Config_getBool("SEARCHENGINE")=FALSE;
+  }
+
+  // check if SEPARATE_MEMBER_PAGES and INLINE_GROUPED_CLASSES are both enabled
+  if (Config_getBool("SEPARATE_MEMBER_PAGES") && Config_getBool("INLINE_GROUPED_CLASSES"))
+  {
+    config_err("When enabling INLINE_GROUPED_CLASSES the SEPARATE_MEMBER_PAGES option should be disabled. I'll do it for you.\n");
+    Config_getBool("SEPARATE_MEMBER_PAGES")=FALSE;
+  }
+    
   // check dot image format
   QCString &dotImageFormat=Config_getEnum("DOT_IMAGE_FORMAT");
   dotImageFormat=dotImageFormat.stripWhiteSpace();
@@ -3143,20 +3161,28 @@ void Config::check()
   QCString &dotPath = Config_getString("DOT_PATH");
   if (!dotPath.isEmpty())
   {
-    QFileInfo dp(dotPath+"/dot"+portable_commandExtension());
-    if (!dp.exists() || !dp.isFile())
+    QFileInfo fi(dotPath);
+    if (fi.exists() && fi.isFile()) // user specified path + exec
     {
-      config_err("warning: the dot tool could not be found at %s\n",dotPath.data());
-      dotPath="";
+      dotPath=fi.dirPath(TRUE).utf8()+"/";
     }
     else
     {
-      dotPath=dp.dirPath(TRUE)+"/";
-#if defined(_WIN32) // convert slashes
-      uint i=0,l=dotPath.length();
-      for (i=0;i<l;i++) if (dotPath.at(i)=='/') dotPath.at(i)='\\';
-#endif
+      QFileInfo dp(dotPath+"/dot"+portable_commandExtension());
+      if (!dp.exists() || !dp.isFile())
+      {
+	config_err("warning: the dot tool could not be found at %s\n",dotPath.data());
+	dotPath="";
+      }
+      else
+      {
+	dotPath=dp.dirPath(TRUE).utf8()+"/";
+      }
     }
+#if defined(_WIN32) // convert slashes
+    uint i=0,l=dotPath.length();
+    for (i=0;i<l;i++) if (dotPath.at(i)=='/') dotPath.at(i)='\\';
+#endif
   }
   else // make sure the string is empty but not null!
   {
@@ -3175,7 +3201,7 @@ void Config::check()
     }
     else
     {
-      mscgenPath=dp.dirPath(TRUE)+"/";
+      mscgenPath=dp.dirPath(TRUE).utf8()+"/";
 #if defined(_WIN32) // convert slashes
       uint i=0,l=mscgenPath.length();
       for (i=0;i<l;i++) if (mscgenPath.at(i)=='/') mscgenPath.at(i)='\\';
@@ -3193,7 +3219,7 @@ void Config::check()
   if (inputSources.count()==0)
   {
     // use current dir as the default
-    inputSources.append(QDir::currentDirPath());
+    inputSources.append(QDir::currentDirPath().utf8());
   }
   else
   {
@@ -3242,8 +3268,12 @@ void Config::check()
     filePatternList.append("*.py");
     filePatternList.append("*.f90");
     filePatternList.append("*.f");
+    filePatternList.append("*.for");
     filePatternList.append("*.vhd");
     filePatternList.append("*.vhdl");
+    filePatternList.append("*.tcl");
+    filePatternList.append("*.md");
+    filePatternList.append("*.markdown");
     if (portable_fileSystemIsCaseSensitive())
     {
       // unix => case sensitive match => also include useful uppercase versions
@@ -3265,6 +3295,9 @@ void Config::check()
       filePatternList.append("*.F");
       filePatternList.append("*.VHD");
       filePatternList.append("*.VHDL");
+      filePatternList.append("*.TCL");
+      filePatternList.append("*.MD");
+      filePatternList.append("*.MARKDOWN");
     }
   }
 
@@ -3378,7 +3411,8 @@ void Config::check()
       (Config_getBool("INLINE_INHERITED_MEMB") || 
        Config_getBool("INHERIT_DOCS") || 
        !Config_getBool("HIDE_SCOPE_NAMES") ||
-       !Config_getBool("EXTRACT_PRIVATE")
+       !Config_getBool("EXTRACT_PRIVATE") ||
+       !Config_getBool("EXTRACT_PACKAGE")
       )
      )
   {
@@ -3386,21 +3420,28 @@ void Config::check()
     bool b2 = Config_getBool("INHERIT_DOCS");
     bool b3 = Config_getBool("HIDE_SCOPE_NAMES");
     bool b4 = Config_getBool("EXTRACT_PRIVATE");
-    const char *s1,*s2,*s3,*s4;
+    bool b5 = Config_getBool("SKIP_FUNCTION_MACROS");
+    bool b6 = Config_getBool("EXTRACT_PACKAGE");
+    const char *s1,*s2,*s3,*s4,*s5,*s6;
     if (b1)  s1="  INLINDE_INHERITED_MEMB = NO (was YES)\n"; else s1="";
     if (b2)  s2="  INHERIT_DOCS           = NO (was YES)\n"; else s2="";
     if (!b3) s3="  HIDE_SCOPE_NAMES       = YES (was NO)\n"; else s3="";
     if (!b4) s4="  EXTRACT_PRIVATE        = YES (was NO)\n"; else s4="";
+    if (b5)  s5="  ENABLE_PREPROCESSING   = NO (was YES)\n"; else s5="";
+    if (!b6) s6="  EXTRACT_PACKAGE        = YES (was NO)\n"; else s6="";
+
 
     config_err("warning: enabling OPTIMIZE_OUTPUT_VHDL assumes the following settings:\n"
-	       "%s%s%s%s",s1,s2,s3,s4
+	       "%s%s%s%s%s%s",s1,s2,s3,s4,s5,s6
 	      );
 
     Config_getBool("INLINE_INHERITED_MEMB") = FALSE;
     Config_getBool("INHERIT_DOCS")          = FALSE;
     Config_getBool("HIDE_SCOPE_NAMES")      = TRUE;
     Config_getBool("EXTRACT_PRIVATE")       = TRUE;
-  }
+    Config_getBool("ENABLE_PREPROCESSING")  = FALSE;
+    Config_getBool("EXTRACT_PACKAGE")       = TRUE;
+  }                               
 
 }
 

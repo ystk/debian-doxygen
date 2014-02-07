@@ -1,8 +1,6 @@
 /******************************************************************************
  *
- * $Id: config_templ.l,v 1.8 2001/01/01 10:15:16 root Exp $
- *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -454,7 +452,7 @@ static QCString configStringRecode(
   QCString outputEncoding = toEncoding;
   if (inputEncoding.isEmpty() || outputEncoding.isEmpty() || inputEncoding==outputEncoding) return str;
   int inputSize=str.length();
-  size_t outputSize=inputSize*4+1;
+  int outputSize=inputSize*4+1;
   QCString output(outputSize);
   void *cd = portable_iconv_open(outputEncoding,inputEncoding);
   if (cd==(void *)(-1)) 
@@ -463,13 +461,13 @@ static QCString configStringRecode(
         inputEncoding.data(),outputEncoding.data());
     exit(1);
   }
-  size_t iLeft=inputSize;
-  size_t oLeft=outputSize;
+  size_t iLeft=(size_t)inputSize;
+  size_t oLeft=(size_t)outputSize;
   const char *inputPtr  = str.data();
   char       *outputPtr = output.data();
   if (!portable_iconv(cd, &inputPtr, &iLeft, &outputPtr, &oLeft))
   {
-    outputSize-=oLeft;
+    outputSize-=(int)oLeft;
     output.resize(outputSize+1);
     output.at(outputSize)='\0';
     //printf("iconv: input size=%d output size=%d\n[%s]\n",size,newSize,srcBuf.data());
@@ -653,8 +651,8 @@ static void readIncludeFile(const char *incName)
 						 break;
 					       case ConfigOption::O_Obsolete:
 					         config_err("warning: Tag `%s' at line %d of file %s has become obsolete.\n"
-						            "To avoid this warning please update your configuration "
-							    "file using \"doxygen -u\"\n", cmd.data(),yyLineNr,yyFileName.data()); 
+						            "To avoid this warning please remove this line from your configuration "
+							    "file or upgrade it using \"doxygen -u\"\n", cmd.data(),yyLineNr,yyFileName.data()); 
 					         BEGIN(SkipInvalid);
 						 break;
 					     }
@@ -813,14 +811,14 @@ void Config::writeTemplate(FTextStream &t,bool sl,bool upd)
   if (!sl)
   {
     t << "# This file describes the settings to be used by the documentation system\n";
-    t << "# doxygen (www.doxygen.org) for a project\n";
+    t << "# doxygen (www.doxygen.org) for a project.\n";
     t << "#\n";
-    t << "# All text after a hash (#) is considered a comment and will be ignored\n";
+    t << "# All text after a hash (#) is considered a comment and will be ignored.\n";
     t << "# The format is:\n";
     t << "#       TAG = value [value, ...]\n";
     t << "# For lists items can also be appended using:\n";
     t << "#       TAG += value [value, ...]\n";
-    t << "# Values that contain spaces should be placed between quotes (\" \")\n";
+    t << "# Values that contain spaces should be placed between quotes (\" \").\n";
   }
   ConfigOption *option = m_options->first();
   while (option)
@@ -872,12 +870,13 @@ void Config::convertStrToVal()
 
 static void substEnvVarsInString(QCString &s)
 {
-  static QRegExp re("\\$\\([a-z_A-Z0-9]+\\)");
+  static QRegExp re("\\$\\([a-z_A-Z0-9.-]+\\)");
+  static QRegExp re2("\\$\\([a-z_A-Z0-9.-]+\\([a-z_A-Z0-9.-]+\\)\\)"); // For e.g. PROGRAMFILES(X86)
   if (s.isEmpty()) return;
   int p=0;
   int i,l;
   //printf("substEnvVarInString(%s) start\n",s.data());
-  while ((i=re.match(s,p,&l))!=-1)
+  while ((i=re.match(s,p,&l))!=-1 || (i=re2.match(s,p,&l))!=-1)
   {
     //printf("Found environment var s.mid(%d,%d)=`%s'\n",i+2,l-3,s.mid(i+2,l-3).data());
     QCString env=portable_getenv(s.mid(i+2,l-3));
@@ -1035,9 +1034,9 @@ static void cleanUpPaths(QStrList &str)
 	int i = str.at();
 	str.remove();
 	if (str.at()==i) // did not remove last item
-	  str.insert(i,fi.absFilePath()+"/");
+	  str.insert(i,fi.absFilePath().utf8()+"/");
 	else
-	  str.append(fi.absFilePath()+"/");
+	  str.append(fi.absFilePath().utf8()+"/");
       }
     }
     sfp = str.next();
@@ -1084,7 +1083,7 @@ void Config::check()
   paperType=paperType.lower().stripWhiteSpace(); 
   if (paperType.isEmpty())
   {
-    paperType = "a4wide";
+    paperType = "a4";
   }
   if (paperType!="a4" && paperType!="a4wide" && paperType!="letter" && 
       paperType!="legal" && paperType!="executive")
@@ -1111,7 +1110,7 @@ void Config::check()
   char *sfp = stripFromPath.first();
   if (sfp==0) // by default use the current path
   {
-    stripFromPath.append(QDir::currentDirPath()+"/");
+    stripFromPath.append(QDir::currentDirPath().utf8()+"/");
   }
   else
   {
@@ -1186,6 +1185,25 @@ void Config::check()
     s=aliasList.next();
   }
 
+  // check if GENERATE_TREEVIEW and GENERATE_HTMLHELP are both enabled
+  if (Config_getBool("GENERATE_TREEVIEW") && Config_getBool("GENERATE_HTMLHELP"))
+  {
+    config_err("When enabling GENERATE_HTMLHELP the tree view (GENERATE_TREEVIEW) should be disabled. I'll do it for you.\n");
+    Config_getBool("GENERATE_TREEVIEW")=FALSE;
+  }
+  if (Config_getBool("SEARCHENGINE") && Config_getBool("GENERATE_HTMLHELP"))
+  {
+    config_err("When enabling GENERATE_HTMLHELP the search engine (SEARCHENGINE) should be disabled. I'll do it for you.\n");
+    Config_getBool("SEARCHENGINE")=FALSE;
+  }
+
+  // check if SEPARATE_MEMBER_PAGES and INLINE_GROUPED_CLASSES are both enabled
+  if (Config_getBool("SEPARATE_MEMBER_PAGES") && Config_getBool("INLINE_GROUPED_CLASSES"))
+  {
+    config_err("When enabling INLINE_GROUPED_CLASSES the SEPARATE_MEMBER_PAGES option should be disabled. I'll do it for you.\n");
+    Config_getBool("SEPARATE_MEMBER_PAGES")=FALSE;
+  }
+    
   // check dot image format
   QCString &dotImageFormat=Config_getEnum("DOT_IMAGE_FORMAT");
   dotImageFormat=dotImageFormat.stripWhiteSpace();
@@ -1204,20 +1222,28 @@ void Config::check()
   QCString &dotPath = Config_getString("DOT_PATH");
   if (!dotPath.isEmpty())
   {
-    QFileInfo dp(dotPath+"/dot"+portable_commandExtension());
-    if (!dp.exists() || !dp.isFile())
+    QFileInfo fi(dotPath);
+    if (fi.exists() && fi.isFile()) // user specified path + exec
     {
-      config_err("warning: the dot tool could not be found at %s\n",dotPath.data());
-      dotPath="";
+      dotPath=fi.dirPath(TRUE).utf8()+"/";
     }
     else
     {
-      dotPath=dp.dirPath(TRUE)+"/";
-#if defined(_WIN32) // convert slashes
-      uint i=0,l=dotPath.length();
-      for (i=0;i<l;i++) if (dotPath.at(i)=='/') dotPath.at(i)='\\';
-#endif
+      QFileInfo dp(dotPath+"/dot"+portable_commandExtension());
+      if (!dp.exists() || !dp.isFile())
+      {
+	config_err("warning: the dot tool could not be found at %s\n",dotPath.data());
+	dotPath="";
+      }
+      else
+      {
+	dotPath=dp.dirPath(TRUE).utf8()+"/";
+      }
     }
+#if defined(_WIN32) // convert slashes
+    uint i=0,l=dotPath.length();
+    for (i=0;i<l;i++) if (dotPath.at(i)=='/') dotPath.at(i)='\\';
+#endif
   }
   else // make sure the string is empty but not null!
   {
@@ -1236,7 +1262,7 @@ void Config::check()
     }
     else
     {
-      mscgenPath=dp.dirPath(TRUE)+"/";
+      mscgenPath=dp.dirPath(TRUE).utf8()+"/";
 #if defined(_WIN32) // convert slashes
       uint i=0,l=mscgenPath.length();
       for (i=0;i<l;i++) if (mscgenPath.at(i)=='/') mscgenPath.at(i)='\\';
@@ -1254,7 +1280,7 @@ void Config::check()
   if (inputSources.count()==0)
   {
     // use current dir as the default
-    inputSources.append(QDir::currentDirPath());
+    inputSources.append(QDir::currentDirPath().utf8());
   }
   else
   {
@@ -1303,8 +1329,12 @@ void Config::check()
     filePatternList.append("*.py");
     filePatternList.append("*.f90");
     filePatternList.append("*.f");
+    filePatternList.append("*.for");
     filePatternList.append("*.vhd");
     filePatternList.append("*.vhdl");
+    filePatternList.append("*.tcl");
+    filePatternList.append("*.md");
+    filePatternList.append("*.markdown");
     if (portable_fileSystemIsCaseSensitive())
     {
       // unix => case sensitive match => also include useful uppercase versions
@@ -1326,6 +1356,9 @@ void Config::check()
       filePatternList.append("*.F");
       filePatternList.append("*.VHD");
       filePatternList.append("*.VHDL");
+      filePatternList.append("*.TCL");
+      filePatternList.append("*.MD");
+      filePatternList.append("*.MARKDOWN");
     }
   }
 
@@ -1439,7 +1472,8 @@ void Config::check()
       (Config_getBool("INLINE_INHERITED_MEMB") || 
        Config_getBool("INHERIT_DOCS") || 
        !Config_getBool("HIDE_SCOPE_NAMES") ||
-       !Config_getBool("EXTRACT_PRIVATE")
+       !Config_getBool("EXTRACT_PRIVATE") ||
+       !Config_getBool("EXTRACT_PACKAGE")
       )
      )
   {
@@ -1447,21 +1481,28 @@ void Config::check()
     bool b2 = Config_getBool("INHERIT_DOCS");
     bool b3 = Config_getBool("HIDE_SCOPE_NAMES");
     bool b4 = Config_getBool("EXTRACT_PRIVATE");
-    const char *s1,*s2,*s3,*s4;
+    bool b5 = Config_getBool("SKIP_FUNCTION_MACROS");
+    bool b6 = Config_getBool("EXTRACT_PACKAGE");
+    const char *s1,*s2,*s3,*s4,*s5,*s6;
     if (b1)  s1="  INLINDE_INHERITED_MEMB = NO (was YES)\n"; else s1="";
     if (b2)  s2="  INHERIT_DOCS           = NO (was YES)\n"; else s2="";
     if (!b3) s3="  HIDE_SCOPE_NAMES       = YES (was NO)\n"; else s3="";
     if (!b4) s4="  EXTRACT_PRIVATE        = YES (was NO)\n"; else s4="";
+    if (b5)  s5="  ENABLE_PREPROCESSING   = NO (was YES)\n"; else s5="";
+    if (!b6) s6="  EXTRACT_PACKAGE        = YES (was NO)\n"; else s6="";
+
 
     config_err("warning: enabling OPTIMIZE_OUTPUT_VHDL assumes the following settings:\n"
-	       "%s%s%s%s",s1,s2,s3,s4
+	       "%s%s%s%s%s%s",s1,s2,s3,s4,s5,s6
 	      );
 
     Config_getBool("INLINE_INHERITED_MEMB") = FALSE;
     Config_getBool("INHERIT_DOCS")          = FALSE;
     Config_getBool("HIDE_SCOPE_NAMES")      = TRUE;
     Config_getBool("EXTRACT_PRIVATE")       = TRUE;
-  }
+    Config_getBool("ENABLE_PREPROCESSING")  = FALSE;
+    Config_getBool("EXTRACT_PACKAGE")       = TRUE;
+  }                               
 
 }
 

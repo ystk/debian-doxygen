@@ -1,6 +1,6 @@
 # python script to generate configoptions.cpp from config.xml
 #
-# Copyright (C) 1997-2008 by Dimitri van Heesch.
+# Copyright (C) 1997-2012 by Dimitri van Heesch.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -34,8 +34,10 @@ def parseOption(node):
         if type=='bool':
         	if len(adefval)>0:
 			enabled = adefval
+		elif defval=='1':
+			enabled = "TRUE"
 		else:
-			enabled = "TRUE" if defval=='1' else "FALSE"
+			enabled = "FALSE"
 		print "  cb = cfg->addBool("
 		print "                 \"%s\"," % (name)
 		print "                 \"%s\"," % (docC)

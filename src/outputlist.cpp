@@ -2,7 +2,7 @@
  *
  * $Id: outputlist.cpp,v 1.35 2001/03/19 19:27:41 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -273,6 +273,18 @@ void OutputList::forall(void (OutputGenerator::*func)(a1,a2,a3,a4,a5),a1,a2,a3,a
   }                                                                                   \
 }                     
 
+// six arguments
+#define FORALL6(a1,a2,a3,a4,a5,a6,p1,p2,p3,p4,p5,p6)                                  \
+void OutputList::forall(void (OutputGenerator::*func)(a1,a2,a3,a4,a5,a6),a1,a2,a3,a4,a5,a6) \
+{                                                                                     \
+  OutputGenerator *og=outputs->first();                                               \
+  while (og)                                                                          \
+  {                                                                                   \
+    if (og->isEnabled()) (og->*func)(p1,p2,p3,p4,p5,p6);                              \
+    og=outputs->next();                                                               \
+  }                                                                                   \
+}                     
+
 // now instantiate only the ones we need.
 
 FORALL1(const char *a1,a1)
@@ -289,26 +301,30 @@ FORALL1(SectionTypes a1,a1)
 FORALL1(bool a1,a1)
 FORALL2(bool a1,int a2,a1,a2)
 FORALL2(bool a1,bool a2,a1,a2)
+FORALL2(const char *a1,bool a2,a1,a2)
 FORALL4(const char *a1,const char *a2,const char *a3,bool a4,a1,a2,a3,a4)
 #endif
 FORALL2(int a1,bool a2,a1,a2)
-FORALL2(bool a1,HighlightedItem a2,a1,a2)
 FORALL2(bool a1,const char *a2,a1,a2)
 FORALL2(ParamListTypes a1,const char *a2,a1,a2)
 FORALL1(IndexSections a1,a1)
 FORALL2(const char *a1,const char *a2,a1,a2)
-FORALL2(const char *a1,bool a2,a1,a2)
+FORALL2(const char *a1,int a2,a1,a2)
 FORALL2(const char *a1,SectionInfo::SectionType a2,a1,a2)
+FORALL3(bool a1,HighlightedItem a2,const char *a3,a1,a2,a3)
 FORALL3(bool a1,bool a2,bool a3,a1,a2,a3)
 FORALL3(const ClassDiagram &a1,const char *a2,const char *a3,a1,a2,a3)
 FORALL3(const char *a1,const char *a2,const char *a3,a1,a2,a3)
 FORALL3(const char *a1,const char *a2,bool a3,a1,a2,a3)
+FORALL3(const char *a1,int a2,const char *a3,a1,a2,a3)
 FORALL3(const char *a1,const char *a2,SectionInfo::SectionType a3,a1,a2,a3)
 FORALL3(uchar a1,uchar a2,uchar a3,a1,a2,a3)
 FORALL4(SectionTypes a1,const char *a2,const char *a3,const char *a4,a1,a2,a3,a4)
 FORALL4(const char *a1,const char *a2,const char *a3,const char *a4,a1,a2,a3,a4)
 FORALL4(const char *a1,const char *a2,const char *a3,int a4,a1,a2,a3,a4)
 FORALL5(const char *a1,const char *a2,const char *a3,const char *a4,const char *a5,a1,a2,a3,a4,a5)
+FORALL5(const char *a1,const char *a2,const char *a3,const char *a4,bool a5,a1,a2,a3,a4,a5)
+FORALL6(const char *a1,const char *a2,const char *a3,const char *a4,const char *a5,const char *a6,a1,a2,a3,a4,a5,a6)
 
 
 //--------------------------------------------------------------------------

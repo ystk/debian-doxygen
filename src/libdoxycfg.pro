@@ -1,11 +1,11 @@
 #
-# This file was generated from libdoxycfg.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from libdoxycfg.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 #
 # $Id: libdoxycfg.pro.in,v 1.1 2001/03/19 19:27:41 root Exp $
 #
-# Copyright (C) 1997-2010 by Dimitri van Heesch.
+# Copyright (C) 1997-2012 by Dimitri van Heesch.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -29,3 +29,4 @@ win32:INCLUDEPATH          += .
 DESTDIR                    =  ../lib
 TARGET                     =  doxycfg
 OBJECTS_DIR                =  ../objects
+TMAKE_MOC = /usr/bin/moc

@@ -3,7 +3,7 @@
  * $Id: layout.h,v 1.2 2001/03/19 19:27:41 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -38,21 +38,23 @@ struct LayoutDocEntry
               AuthorSection,
               
               // Class specific items
-              ClassIncludes,
+              ClassIncludes, ClassInlineClasses,
               ClassInheritanceGraph, ClassNestedClasses,
               ClassCollaborationGraph, ClassAllMembersLink,
               ClassUsedFiles,
 
               // Namespace specific items
               NamespaceNestedNamespaces, NamespaceClasses,
+              NamespaceInlineClasses,
 
               // File specific items
               FileClasses, FileNamespaces, 
               FileIncludes, FileIncludeGraph, 
               FileIncludedByGraph, FileSourceLink,
+              FileInlineClasses,
 
               // Group specific items
-              GroupClasses, GroupNamespaces,
+              GroupClasses, GroupInlineClasses, GroupNamespaces,
               GroupDirs, GroupNestedGroups, GroupFiles,
               GroupGraph, GroupPageDocs,
 
@@ -113,18 +115,24 @@ struct LayoutNavEntry
       Pages,
       Modules, 
       Namespaces, 
+      NamespaceList,
       NamespaceMembers,
-      Classes, 
-      ClassAnnotated, 
+      Classes,
+      ClassList, 
+      ClassIndex, 
       ClassHierarchy, 
       ClassMembers,
       Files, 
+      FileList,
       FileGlobals,
-      Dirs, 
-      Examples
+      //Dirs, 
+      Examples,
+      User,
+      UserGroup
     };
-    LayoutNavEntry(LayoutNavEntry *parent,Kind k,bool vs,const QCString &bf, const QCString &tl,bool prepend=FALSE) 
-      : m_parent(parent), m_kind(k), m_visible(vs), m_baseFile(bf), m_title(tl) 
+    LayoutNavEntry(LayoutNavEntry *parent,Kind k,bool vs,const QCString &bf, 
+                   const QCString &tl,const QCString &intro,bool prepend=FALSE) 
+      : m_parent(parent), m_kind(k), m_visible(vs), m_baseFile(bf), m_title(tl), m_intro(intro)
     { m_children.setAutoDelete(TRUE); 
       if (parent) { if (prepend) parent->prependChild(this); else parent->addChild(this); }
     }
@@ -132,12 +140,14 @@ struct LayoutNavEntry
     Kind kind() const                { return m_kind; }
     QCString baseFile() const        { return m_baseFile; }
     QCString title() const           { return m_title; }
+    QCString intro() const           { return m_intro; }
+    QCString url() const;
     bool visible()                   { return m_visible; }
     void clear()                     { m_children.clear(); }
     void addChild(LayoutNavEntry *e) { m_children.append(e); }
     void prependChild(LayoutNavEntry *e) { m_children.prepend(e); }
     const QList<LayoutNavEntry> &children() const { return m_children; }
-    LayoutNavEntry *find(LayoutNavEntry::Kind k) const;
+    LayoutNavEntry *find(LayoutNavEntry::Kind k,const char *file=0) const;
 
   private:
     LayoutNavEntry() : m_parent(0) {}
@@ -146,6 +156,7 @@ struct LayoutNavEntry
     bool m_visible;
     QCString m_baseFile;
     QCString m_title;
+    QCString m_intro;
     QList<LayoutNavEntry> m_children;
     friend class LayoutDocManager;
 };
@@ -170,7 +181,7 @@ class LayoutDocManager
     LayoutNavEntry *rootNavEntry() const;
 
     /** Parses a user provided layout */
-    void parse(QTextStream &t);
+    void parse(QTextStream &t,const char *fileName);
     void init();
   private:
     void addEntry(LayoutPart p,LayoutDocEntry*e);

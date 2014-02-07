@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -55,6 +55,7 @@
 #include "defargs.h"
 #include "entry.h"
 #include "util.h"
+#include "arguments.h"
   
 #define YY_NEVER_INTERACTIVE 1
   
@@ -140,7 +141,7 @@ ID	[a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF]*
   					  g_curArgDefValue+=*yytext;
   					  BEGIN( CopyArgString );
   					}
-<ReadFuncArgType>"("([^:)]+{B}*"::")*{B}*[&*]+{B}*/{ID} { 
+<ReadFuncArgType>"("([^:)]+{B}*"::")*{B}*[&*\^]+{B}*/{ID} { 
   					  // function pointer as argument
 					  g_curArgTypeName+=yytext;
 					  //g_curArgTypeName=g_curArgTypeName.simplifyWhiteSpace();
@@ -274,12 +275,11 @@ ID	[a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF]*
 					    {
 					      int i=l-1;
 					      while (i>=0 && (isspace((uchar)g_curArgTypeName.at(i)) || g_curArgTypeName.at(i)=='.')) i--;
-					      while (i>=0 && isId(g_curArgTypeName.at(i))) i--;
-					      //printf("g_curArgTypeName=`%s' i=%d\n",g_curArgTypeName.data(),i);
+					      while (i>=0 && (isId(g_curArgTypeName.at(i)) || g_curArgTypeName.at(i)=='$')) i--;
 					      Argument *a = new Argument; 
 					      a->attrib = g_curArgAttrib.copy();
 					      //printf("a->type=%s a->name=%s i=%d l=%d\n",
-					      //	a->type.data(),a->name.data(),i,l);
+					      //        a->type.data(),a->name.data(),i,l);
 					      a->array.resize(0);
 					      if (i==l-1 && g_curArgTypeName.at(i)==')') // function argument
 					      {
@@ -300,29 +300,38 @@ ID	[a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF]*
 					      }
 					      else if (i>=0 && g_curArgTypeName.at(i)!=':')
 					      { // type contains a name
-						a->type = removeRedundantWhiteSpace(g_curArgTypeName.left(i+1));
+						a->type = removeRedundantWhiteSpace(g_curArgTypeName.left(i+1)).stripWhiteSpace();
 						a->name = g_curArgTypeName.right(l-i-1).stripWhiteSpace();
 
 						// if the type becomes a type specifier only then we make a mistake
 						// and need to correct it to avoid seeing a nameless parameter
 						// "struct A" as a parameter with type "struct" and name "A".
 						int sv=0;
-						if (a->type.left(6)=="const ") sv=6;
-						else if (a->type.left(8)=="volatile ") sv=9;
-						if (a->type.mid(sv)=="struct"    || 
-						    a->type.mid(sv)=="union"     || 
-						    a->type.mid(sv)=="class"     || 
-						    a->type.mid(sv)=="typename"  || 
-						    a->type=="const" || a->type=="volatile")
+						if      (a->type.left(6)=="const ")    sv=6;
+						else if (a->type.left(9)=="volatile ") sv=9;
+
+						if (a->type.mid(sv)=="struct"    ||
+						    a->type.mid(sv)=="union"     ||
+						    a->type.mid(sv)=="class"     ||
+						    a->type.mid(sv)=="typename"  ||
+						    a->type=="const"             ||
+						    a->type=="volatile"
+						   )
 						{ 
 						  a->type = a->type + " " + a->name;
 						  a->name.resize(0);
 						}
+						//printf(" --> a->type='%s'\n",a->type.data());
 					      }
 					      else // assume only the type was specified, try to determine name later 
 					      {
 						a->type = removeRedundantWhiteSpace(g_curArgTypeName);  
 					      }
+                                              if (!a->type.isEmpty() && a->type.at(0)=='$') // typeless PHP name?
+                                              {
+                                                a->name = a->type;
+                                                a->type = "";
+                                              }
 					      a->array  += removeRedundantWhiteSpace(g_curArgArray);
 					      //printf("array=%s\n",a->array.data());
 					      int alen = a->array.length();
@@ -359,7 +368,7 @@ ID	[a-z_A-Z\x80-\xFF][a-z_A-Z0-9\x80-\xFF]*
 					    }
 					  }
   					}
-<ReadFuncArgType,ReadFuncArgPtr>{ID}	{ 
+<ReadFuncArgType,ReadFuncArgPtr>"$"?{ID} { 
   					  QCString name=yytext; //resolveDefines(yytext);
 					  if (YY_START==ReadFuncArgType && g_curArgArray=="[]") // Java style array
 					  {

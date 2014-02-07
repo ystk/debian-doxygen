@@ -2,7 +2,7 @@
  *
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby
@@ -17,6 +17,8 @@
  
 // Updates:
 // --------
+// 2012/04/18 - Updates for "new since 1.8.0".
+// 2011/07/28 - Updates for "new since 1.7.5".
 // 2010/06/04 - big leap from 1.2.18 to 1.6.3+
 //
 // Slovak translation started by Stanislav Kudlac (skudlac at pobox dot sk).
@@ -90,7 +92,7 @@ class TranslatorSlovak : public Translator
 
     /*! put in the class documentation */
     virtual QCString trListOfAllMembers()
-    { return "Zoznam všetkých členov."; }
+    { return "Zoznam všetkých členov"; }
 
     /*! used as the title of the "list of all members" page of a class */
     virtual QCString trMemberList()
@@ -1831,6 +1833,68 @@ class TranslatorSlovak : public Translator
       return sdate;
     }
 
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "Odkazy na literatúru"; }
+
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    { return "Copyright"; }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    { return QCString("Graf závislosti na priečinkoch pre  ")+name+":"; }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Detail level selector shown for hierarchical indices */
+    virtual QCString trDetailLevel()
+    { return "úroveň detailov"; }
+
+    /*! Section header for list of template parameters */
+    virtual QCString trTemplateParameters()
+    { return "Parametry šablón"; }
+
+    /*! Used in dot graph when UML_LOOK is enabled and there are many fields */
+    virtual QCString trAndMore(const QCString &number)
+    {
+        QCString result("a " + number + " ďaľší");
+        if (atoi(number) >= 5)
+            result += "ch";
+        return result + "...";
+    }
+
+    /*! Used file list for a Java enum */
+    virtual QCString trEnumGeneratedFromFiles(bool single)
+    { QCString result = "Dokumentácia pre tuto enumeráciu bola generovaná z ";
+      if (single)
+          result += "nasledujúceho súboru:";
+      else
+          result += "nasledujúcich súborov:";
+      return result;
+    }
+
+    /*! Header of a Java enum page (Java enums are represented as classes). */
+    virtual QCString trEnumReference(const char *name)
+    { return "Referencia k enumerácii "+QCString(name); }
+
+    /*! Used for a section containing inherited members */
+    virtual QCString trInheritedFrom(const char *members,const char *what)
+    { return QCString(members)+" dedí sa z "+what; }
+
+    /*! Header of the sections with inherited members specific for the
+     *  base class(es)
+     */
+    virtual QCString trAdditionalInheritedMembers()
+    { return "Ďaľšie zdedené členy"; }
+
+//////////////////////////////////////////////////////////////////////////
 };
 
 #endif // TRANSLATOR_SK_H

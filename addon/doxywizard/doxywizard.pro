@@ -1,5 +1,5 @@
 #
-# This file was generated from doxywizard.pro.in on Fri Jun 25 11:08:35 CEST 2010
+# This file was generated from doxywizard.pro.in on Thu Jul 12 20:08:34 CEST 2012
 #
 
 ######################################################################
@@ -30,3 +30,4 @@ SOURCES     += doxywizard.cpp ../../src/version.cpp expert.cpp wizard.cpp \
 LEXSOURCES  += config.l
 RESOURCES   += doxywizard.qrc
 win32:RC_FILE += doxywizard.rc
+TMAKE_MOC = /usr/bin/moc

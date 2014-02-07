@@ -3,7 +3,7 @@
  * 
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -21,11 +21,7 @@
 
 #include <qdict.h>
 
-struct CommandMap
-{
-  const char *cmdName;
-  int cmdId;
-};
+struct CommandMap;
 
 const int SIMPLESECT_BIT = 0x1000;
 
@@ -77,7 +73,7 @@ enum CommandType
   CMD_PARAM        = 43 | SIMPLESECT_BIT,
   CMD_PERCENT      = 44, 
   CMD_POST         = 45 | SIMPLESECT_BIT,
-  CMD_PRE          = 46 | SIMPLESECT_BIT ,
+  CMD_PRE          = 46 | SIMPLESECT_BIT,
   CMD_REF          = 47,
   CMD_SECREFITEM   = 48,
   CMD_REMARK       = 49 | SIMPLESECT_BIT ,
@@ -113,7 +109,15 @@ enum CommandType
   CMD_TPARAM       = 79 | SIMPLESECT_BIT,
   CMD_COPYBRIEF    = 80,
   CMD_COPYDETAILS  = 81,
-  CMD_QUOTE        = 82 
+  CMD_QUOTE        = 82,
+  CMD_MSCFILE      = 83,
+  CMD_DCOLON       = 84,
+  CMD_COPYRIGHT    = 85 | SIMPLESECT_BIT,
+  CMD_CITE         = 86,
+  CMD_SNIPPET      = 87,
+  CMD_RTFONLY      = 88, 
+  CMD_ENDRTFONLY   = 89,
+  CMD_PIPE         = 90
 };
 
 enum HtmlTagType
@@ -151,6 +155,7 @@ enum HtmlTagType
   HTML_H6        = 30,
   HTML_SPAN      = 31,
   HTML_DIV       = 32,
+  HTML_BLOCKQUOTE= 33,
 
   XML_CmdMask    = 0x100,
 
@@ -175,35 +180,22 @@ enum HtmlTagType
   XML_TERM         = XML_CmdMask + 18,
   XML_TYPEPARAM    = XML_CmdMask + 19,
   XML_TYPEPARAMREF = XML_CmdMask + 20,
-  XML_VALUE        = XML_CmdMask + 21
+  XML_VALUE        = XML_CmdMask + 21,
+  XML_INHERITDOC   = XML_CmdMask + 22
 };
 
+/** Class representing a mapping from command names to command IDs. */
 class Mapper
 {
   public:
-    int map(const char *n)
-    {
-      QCString name=n;
-      if (!m_cs) name=name.lower();
-      int *result;
-      return !name.isEmpty() && (result=m_map.find(name)) ? *result: 0;
-    }
-
-    Mapper(const CommandMap *cm,bool caseSensitive) : m_map(89), m_cs(caseSensitive)
-    {
-      m_map.setAutoDelete(TRUE);
-      const CommandMap *p = cm;
-      while (p->cmdName)
-      {
-        m_map.insert(p->cmdName,new int(p->cmdId));
-        p++;
-      }
-    }
+    int map(const char *n);
+    Mapper(const CommandMap *cm,bool caseSensitive);
   private:
     QDict<int> m_map;
     bool m_cs;
 };
 
+/** Class representing a namespace for the doxygen and HTML command mappers. */
 struct Mappers
 {
   static void freeMappers();

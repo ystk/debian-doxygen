@@ -3,7 +3,7 @@
  * $Id: debug.h,v 1.6 2001/03/19 19:27:40 root Exp $
  *
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -19,6 +19,7 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+/** Class containing a print function for diagnostics. */
 class Debug
 {
   public:
@@ -33,7 +34,9 @@ class Debug
                      Validate     = 0x00000080,
                      PrintTree    = 0x00000100,
                      Time         = 0x00000200,
-                     ExtCmd       = 0x00000400
+                     ExtCmd       = 0x00000400,
+                     Markdown     = 0x00000800,
+                     FilterOutput = 0x00001000
                    };
     static void print(DebugMask mask,int prio,const char *fmt,...);
     static void setFlag(const char *label);

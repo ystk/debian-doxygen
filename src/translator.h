@@ -2,7 +2,7 @@
  *
  * 
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -23,6 +23,7 @@
 #include "util.h"
 #include "config.h"
 
+/** Abstract base class for all translatable text fragments. */
 class Translator
 {
   private:
@@ -497,6 +498,25 @@ class Translator
                                 int hour,int minutes,int seconds,
                                 bool includeTime) = 0;
                        
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
+
+    virtual QCString trCiteReferences() = 0;
+    virtual QCString trCopyright() = 0;
+    virtual QCString trDirDepGraph(const char *name) = 0;
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    virtual QCString trDetailLevel() = 0;
+    virtual QCString trTemplateParameters() = 0;
+    virtual QCString trAndMore(const QCString &number) = 0;
+    virtual QCString trEnumGeneratedFromFiles(bool single) = 0;
+    virtual QCString trEnumReference(const char *name) = 0;
+    virtual QCString trInheritedFrom(const char *members,const char *what) = 0;
+    virtual QCString trAdditionalInheritedMembers() = 0;
 
 };
 

@@ -2,7 +2,7 @@
  *
  * $Id: translator_nl.h,v 1.22 2001/03/19 19:27:42 root Exp $
  *
- * Copyright (C) 1997-2010 by Dimitri van Heesch.
+ * Copyright (C) 1997-2012 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -33,9 +33,6 @@ class TranslatorDutch : public Translator
      *  "\\usepackage[latin2]{inputenc}\n"
      *  "\\usepackage[T1]{fontenc}\n"
      *  </pre>
-     * 
-     * The Dutch LaTeX does not use such commands.  Because of this
-     * the empty string is returned in this implementation.
      */
     QCString latexLanguageSupportCommand()
     {
@@ -64,7 +61,7 @@ class TranslatorDutch : public Translator
     QCString trMore()
     { return "Meer..."; }
     QCString trListOfAllMembers()
-    { return "Lijst van alle members."; }
+    { return "Lijst van alle members"; }
     QCString trMemberList()
     { return "Member Lijst"; }
     QCString trThisIsTheListOfAllMembers()
@@ -90,11 +87,11 @@ class TranslatorDutch : public Translator
     QCString trCompoundList()
     { return "Klasse Lijst"; }
     QCString trFileList()
-    { return "File Lijst"; }
+    { return "Bestandslijst"; }
     QCString trCompoundMembers()
     { return "Klasse Members"; }
     QCString trFileMembers()
-    { return "File members"; }
+    { return "Bestand members"; }
     QCString trRelatedPages()
     { return "Gerelateerde pagina's"; }
     QCString trExamples()
@@ -150,13 +147,13 @@ class TranslatorDutch : public Translator
     QCString trCompoundIndex()
     { return "Klasse Index"; }
     QCString trFileIndex() 
-    { return "File Index"; }
+    { return "Bestand Index"; }
     QCString trModuleDocumentation()
     { return "Module Documentatie"; }
     QCString trClassDocumentation()
     { return "Klassen Documentatie"; }
     QCString trFileDocumentation()
-    { return "File Documentatie"; }
+    { return "Bestand Documentatie"; }
     QCString trExampleDocumentation()
     { return "Documentatie van voorbeelden"; }
     QCString trPageDocumentation()
@@ -165,7 +162,7 @@ class TranslatorDutch : public Translator
     { return "Naslagwerk"; }
 
     QCString trDefines()
-    { return "Defines"; }
+    { return "Macros"; }
     QCString trFuncProtos()
     { return "Functie Prototypes"; }
     QCString trTypedefs()
@@ -179,7 +176,7 @@ class TranslatorDutch : public Translator
     QCString trEnumerationValues()
     { return "Enumeratie waarden"; }
     QCString trDefineDocumentation()
-    { return "Documentatie van defines"; }
+    { return "Documentatie van macro's"; }
     QCString trFunctionPrototypeDocumentation()
     { return "Documentatie van functie Prototypes"; }
     QCString trTypedefDocumentation()
@@ -420,8 +417,10 @@ class TranslatorDutch : public Translator
         case ClassDef::Category:   result+="deze categorie"; break;
         case ClassDef::Exception:  result+="deze exceptie"; break;
       }
-      result+=" is gegenereerd op grond van het volgende bestand";
-      if (single) result+=":"; else result+="s:";
+      result+=" is gegenereerd op grond van ";
+      if (single) result+="het"; else result+="de";
+      result+=" volgende bestand";
+      if (single) result+=":"; else result+="en:";
       return result;
     }
 
@@ -1145,7 +1144,7 @@ class TranslatorDutch : public Translator
      *  and the fact that it is sorted alphabetically per level
      */
     virtual QCString trDirDescription()
-    { return "Deze directory hi&euml;rarchie is min of meer alfabetisch "
+    { return "Deze folder hi&euml;rarchie is min of meer alfabetisch "
              "gesorteerd:";
     }
 
@@ -1191,7 +1190,7 @@ class TranslatorDutch : public Translator
     
     /*! header that is put before the list of member subprograms (Fortran). */
     virtual QCString trMemberFunctionDocumentationFortran()
-    { return "Member Function/Subroutine Documentation"; }
+    { return "Member Functie/Subroutine Documentatie"; }
 
 //////////////////////////////////////////////////////////////////////////
 // new since 1.5.4 (mainly for Fortran)
@@ -1342,8 +1341,10 @@ class TranslatorDutch : public Translator
         case ClassDef::Category:   result+="deze category"; break;
         case ClassDef::Exception:  result+="deze exception"; break;
       }
-      result+=" is gegenereerd op grond van het volgende bestand";
-      if (single) result+=":"; else result+="s:";
+      result+=" is gegenereerd op grond van ";
+      if (single) result+="het"; else result+="de";
+      result+=" volgende bestand";
+      if (single) result+=":"; else result+="en:";
       return result;
     }
     /*! This is used for translation of the word that will possibly
@@ -1451,8 +1452,60 @@ class TranslatorDutch : public Translator
       return sdate;
     }
 
+//////////////////////////////////////////////////////////////////////////
+// new since 1.7.5
+//////////////////////////////////////////////////////////////////////////
 
+    /*! Header for the page with bibliographic citations */
+    virtual QCString trCiteReferences()
+    { return "Bibliografie"; }
 
+    /*! Text for copyright paragraph */
+    virtual QCString trCopyright()
+    { return "Copyright"; }
+
+    /*! Header for the graph showing the directory dependencies */
+    virtual QCString trDirDepGraph(const char *name)
+    { return QCString("Folder afhankelijkheidsgraaf voor ")+name+":"; }
+
+//////////////////////////////////////////////////////////////////////////
+// new since 1.8.0
+//////////////////////////////////////////////////////////////////////////
+
+    /*! Detail level selector shown for hierarchical indices */
+    virtual QCString trDetailLevel()
+    { return "detail niveau"; }
+
+    /*! Section header for list of template parameters */
+    virtual QCString trTemplateParameters()
+    { return "Template Parameters"; }
+
+    /*! Used in dot graph when UML_LOOK is enabled and there are many fields */
+    virtual QCString trAndMore(const QCString &number)
+    { return "en "+number+ " anderen..."; }
+
+    /*! Used file list for a Java enum */
+    virtual QCString trEnumGeneratedFromFiles(bool single)
+    { QCString result = "De documentatie voor deze enum is gegenereerd op grond van ";
+      if (single) result+="het"; else result+="de";
+      result+=" volgende bestand";
+      if (single) result+=":"; else result+="en:";
+      return result;
+    }
+
+    /*! Header of a Java enum page (Java enums are represented as classes). */
+    virtual QCString trEnumReference(const char *name)
+    { return QCString(name)+" Enum Referentie"; }
+
+    /*! Used for a section containing inherited members */
+    virtual QCString trInheritedFrom(const char *members,const char *what)
+    { return QCString(members)+" overge&euml;rfd van "+what; }
+
+    /*! Header of the sections with inherited members specific for the 
+     *  base class(es) 
+     */
+    virtual QCString trAdditionalInheritedMembers()
+    { return "Additionele Overge&euml;rfde Members"; }
 
 };
 
