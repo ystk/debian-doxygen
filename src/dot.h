@@ -1,9 +1,9 @@
 /******************************************************************************
  *
- * $Id: dot.h,v 1.14 2001/03/19 19:27:40 root Exp $
+ * 
  *
  *
- * Copyright (C) 1997-2012 by Dimitri van Heesch.
+ * Copyright (C) 1997-2014 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -19,7 +19,6 @@
 #ifndef _DOT_H
 #define _DOT_H
 
-#include "qtbc.h"
 #include <qlist.h>
 #include <qdict.h>
 #include <qwaitcondition.h>
@@ -82,6 +81,7 @@ class DotNode
     int  m_subgraphId;
     void clearWriteFlag();
     void writeXML(FTextStream &t,bool isClassGraph);
+    void writeDocbook(FTextStream &t,bool isClassGraph);
     void writeDEF(FTextStream &t);
     QCString label() const { return m_label; }
     int  number() const { return m_number; }
@@ -170,6 +170,7 @@ class DotClassGraph
                     bool TBRank=TRUE,bool imageMap=TRUE,int graphId=-1) const;
 
     void writeXML(FTextStream &t);
+    void writeDocbook(FTextStream &t);
     void writeDEF(FTextStream &t);
     QCString diskName() const;
 
@@ -202,7 +203,7 @@ class DotInclDepGraph
     bool isTooBig() const;
     QCString diskName() const;
     void writeXML(FTextStream &t);
-
+    void writeDocbook(FTextStream &t);
   private:
     void buildGraph(DotNode *n,FileDef *fd,int distance);
     void determineVisibleNodes(QList<DotNode> &queue,int &maxNodes);
@@ -212,7 +213,6 @@ class DotInclDepGraph
     QDict<DotNode> *m_usedNodes;
     static int      m_curNodeNumber;
     QCString        m_diskName;
-    int             m_maxDistance;
     bool            m_inverse;
 };
 
@@ -236,8 +236,6 @@ class DotCallGraph
     DotNode        *m_startNode;
     static int      m_curNodeNumber;
     QDict<DotNode> *m_usedNodes;
-    int             m_maxDistance;
-    int             m_recDepth;
     bool            m_inverse;
     QCString        m_diskName;
     Definition *    m_scope;
@@ -407,11 +405,10 @@ class DotRunnerQueue
 class DotWorkerThread : public QThread
 {
   public:
-    DotWorkerThread(int id,DotRunnerQueue *queue);
+    DotWorkerThread(DotRunnerQueue *queue);
     void run();
     void cleanup();
   private:
-    int m_id;
     DotRunnerQueue *m_queue;
     QList<DotRunner::CleanupItem> m_cleanupItems;
 };

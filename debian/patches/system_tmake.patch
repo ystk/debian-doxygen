@@ -1,0 +1,20 @@
+Author: Helmut Grohne <helmut@subdivi.de>
+Description: adapt configure to use the system copy of tmake
+Last-Update: 2013-05-22
+
+Index: doxygen/configure
+===================================================================
+--- doxygen.orig/configure	2014-05-16 20:02:37.000000000 +0200
++++ doxygen/configure	2014-05-16 20:02:37.000000000 +0200
+@@ -743,9 +743,9 @@
+ 
+ cat > .makeconfig <<EOF
+ DOXYGEN   = $configPWD
+-TMAKEPATH = $configPWD/tmake/lib/$f_platform
++TMAKEPATH = /usr/share/tmake/$f_platform
+ ENV       = env TMAKEPATH="\$(TMAKEPATH)"
+-TMAKE     = $configPWD/tmake/bin/tmake
++TMAKE     = $configPWD/debian/tmake
+ MAKE      = $f_make
+ PYTHON    = $f_python
+ LEX       = $f_flex

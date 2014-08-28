@@ -1,11 +1,11 @@
 #
-# This file was generated from doxygen.pro.in on Thu Jul 12 20:08:34 CEST 2012
+# This file was generated from doxygen.pro.in on Sun Apr 20 17:17:24 CEST 2014
 #
 
 #
-# $Id: doxygen.pro.in,v 1.6 2001/03/19 19:27:40 root Exp $
+# 
 #
-# Copyright (C) 1997-2012 by Dimitri van Heesch.
+# Copyright (C) 1997-2014 by Dimitri van Heesch.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation under the terms of the GNU General Public License is hereby 
@@ -22,16 +22,17 @@ TEMPLATE     =	app.t
 CONFIG       =	console warn_on debug
 HEADERS      =	doxygen.h 
 SOURCES      =	main.cpp 
-unix:LIBS                  += -L../lib -ldoxygen -ldoxycfg -lqtools -lmd5 -lpthread
+unix:LIBS                  += -L../lib -ldoxygen -ldoxycfg -lqtools -lmd5 -lpthread  
 win32:INCLUDEPATH          += .
-win32-mingw:LIBS           += -L../lib -ldoxygen -ldoxycfg -lqtools -lmd5 -lpthread
+win32-mingw:LIBS           += -L../lib -ldoxygen -ldoxycfg -lqtools -lmd5 -lpthread -llibiconv -lole32  
 win32-msvc:LIBS            += qtools.lib md5.lib doxygen.lib doxycfg.lib shell32.lib iconv.lib
 win32-msvc:TMAKE_LFLAGS    += /LIBPATH:..\lib
 win32-borland:LIBS         += qtools.lib md5.lib doxygen.lib doxycfg.lib shell32.lib iconv.lib
 win32-borland:TMAKE_LFLAGS += -L..\lib -L$(BCB)\lib\psdk
 win32:TMAKE_CXXFLAGS       += -DQT_NODLL
-win32-g++:LIBS             = -L../lib -ldoxygen -ldoxycfg -lqtools -lmd5 -liconv -lpthread
+win32-g++:LIBS             = -L../lib -ldoxygen -ldoxycfg -lqtools -lmd5 -liconv -lpthread   -Wl,--as-needed -lole32
 win32-g++:TMAKE_CXXFLAGS   += -fno-exceptions -fno-rtti
+DEPENDPATH                 += ../generated_src/doxygen
 INCLUDEPATH                += ../qtools ../libmd5 .
 DESTDIR                    =  ../bin
 TARGET                     =  doxygen
@@ -39,6 +40,8 @@ unix:TARGETDEPS            =  ../lib/libdoxygen.a ../lib/libdoxycfg.a
 win32:TARGETDEPS           =  ..\lib\doxygen.lib ..\lib\doxycfg.lib
 win32-g++:TARGETDEPS       =  ../lib/libdoxygen.a ../lib/libdoxycfg.a
 win32-mingw:TARGETDEPS     =  ../lib/libdoxygen.a ../lib/libdoxycfg.a
-OBJECTS_DIR                =  ../objects
+OBJECTS_DIR                =  ../objects/doxygen
 
 TMAKE_MOC = /usr/bin/moc
+LIBS += -L/opt/local/lib
+INCLUDEPATH += /opt/local/include
