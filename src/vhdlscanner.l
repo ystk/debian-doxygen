@@ -34,7 +34,7 @@
  *******************************************************/
 /******************************************************************************
  * modified for doxygen by M. Kreis
- * extended to VHDL 93/2002/2008 
+ * extended to VHDL 93/2008 
  ******************************************************************************/
 %{
 
@@ -42,29 +42,29 @@
 	typedef int YYSTYPE;
 #endif
 
-#include <ctype.h>
 #include <search.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
+
+#include <qmap.h>
 #include "commentscan.h"
 #include "vhdlparser.h"
 #include "vhdlscanner.h"
-
 #include "doxygen.h"
 #include "searchindex.h"
-#include <ctype.h>
 #include "scanner.h"
 #include "vhdldocgen.h"
 #include "util.h"
 #include "bufstr.h"
 #include "message.h"
 #include "vhdlcode.h"
-#include <qmap.h>
 #include "entry.h"
+#include "config.h"
+
+#define YY_NO_INPUT 1
 
 extern void vhdlParse(); // defined in vhdlparser.y
 
@@ -96,7 +96,7 @@ static QMap<QCString, int> keyMap;
 static QList<Entry>  lineEntry;
 static bool  checkMultiComment(QCString& qcs,int line);
 static void handleCommentBlock(const QCString &doc,bool brief);
-static void mapLibPackage(const Entry* ce);
+static void mapLibPackage(Entry* ce);
 static QList<Entry>* getEntryAtLine(const Entry* ce,int line);
 static bool addLibUseClause(const QCString &type);
 static Entry* oldEntry;
@@ -112,7 +112,7 @@ static struct
 } str_doc;
 
 #define YY_NEVER_INTERACTIVE 1
-#define YY_USER_ACTION num_chars += vhdlScanYYleng;
+#define YY_USER_ACTION num_chars += (int)vhdlscannerYYleng;
 
 #define MAX_KEYWORD_LEN 20
 
@@ -280,7 +280,7 @@ static int find_keyword(char *s)
 // update current line
 static void lineCount()
 {
-  for (const char* c=vhdlScanYYtext ; *c ; ++c )
+  for (const char* c=vhdlscannerYYtext ; *c ; ++c )
   {
     yyLineNr += (*c == '\n') ;
   }
@@ -344,10 +344,10 @@ static bool isConstraintFile(const QCString &fileName,const QCString &ext)
 //static void resetScanner(const char* s,MyParserVhdl* parse);
 
 #undef  YY_INPUT
-#define	YY_INPUT(buf,result,max_size) result=vhdlScanYYread(buf,max_size);
+#define	YY_INPUT(buf,result,max_size) result=vhdlscannerYYread(buf,max_size);
 
 
-static int vhdlScanYYread(char *buf,int max_size)
+static int vhdlscannerYYread(char *buf,int max_size)
 {
   int c=0;
   while ( c < max_size && inputVhdlString.at(inputPosition) )
@@ -437,14 +437,14 @@ BR                         [ \t\n\r]
 
 
 {letter}(_?{letter_or_digit})*|{extended_character} 	{
-          int itoken=find_keyword(vhdlScanYYtext);
+          int itoken=find_keyword(vhdlscannerYYtext);
         
-          //	fprintf(stderr,"\n <<<< search tok:  %s %d %d>>>\n",vhdlScanYYtext,itoken,yyLineNr);
+          //	fprintf(stderr,"\n <<<< search tok:  %s %d %d>>>\n",vhdlscannerYYtext,itoken,yyLineNr);
         
           // tokens in vhdlparser.hpp 258..412
 	  if (itoken>200  && itoken<500 && prevToken!=t_END)
 	  {
-	    //  	printf("\n <<<< insert tok:  %s %d %d>>>\n",vhdlScanYYtext,itoken,yyLineNr);
+	    //  	printf("\n <<<< insert tok:  %s %d %d>>>\n",vhdlscannerYYtext,itoken,yyLineNr);
 	    lineIndex[itoken]=yyLineNr;
 	  }
 	 
@@ -462,7 +462,7 @@ BR                         [ \t\n\r]
 	 
 	  prevToken=itoken;
         
-          yycont->qstr=vhdlScanYYtext;
+          yycont->qstr=vhdlscannerYYtext;
           yycont->yyLineNr=yyLineNr;
           if (itoken== -1)  
           {
@@ -476,13 +476,13 @@ BR                         [ \t\n\r]
         }
 
 ({decimal_literal})|({base}#{based_integer}(\.{based_integer})?#({exponent})?)|({base}:{based_integer}(\.{based_integer})?:({exponent})?) {
-          yycont->qstr=vhdlScanYYtext;
+          yycont->qstr=vhdlscannerYYtext;
           return ( t_ABSTRLIST );
         }
 
 '({graphic_character}|\"|\%)' 	{
-          QCString q(vhdlScanYYtext);	       
-          yycont->qstr=vhdlScanYYtext; 
+          QCString q(vhdlscannerYYtext);	       
+          yycont->qstr=vhdlscannerYYtext; 
         
           if (q=="'('") // std_logic'('1') ?
           {
@@ -502,19 +502,19 @@ BR                         [ \t\n\r]
         }
 
 (\"({graphic_character}|(\"\")|\%)*\")|(\%({graphic_character}|(\%\%)|\")*\%) {
-          yycont->qstr=vhdlScanYYtext;
+          yycont->qstr=vhdlscannerYYtext;
           yycont->iLine=yyLineNr;
 	  return ( t_STRING );
         } 
 
 {base_specifier}(\"{extended_digit}(_?{extended_digit})*\"|\%{extended_digit}(_?{extended_digit})*\%) 							{
-	  yycont->qstr=vhdlScanYYtext;
+	  yycont->qstr=vhdlscannerYYtext;
 	  yycont->iLine=yyLineNr;
 	  return ( t_DIGIT );
         }
 
 {vhdl2008tooldir} {
-	  yycont->qstr=vhdlScanYYtext;
+	  yycont->qstr=vhdlscannerYYtext;
 	  yycont->iLine=yyLineNr;
 	  return(t_ToolDir);
         }	
@@ -526,19 +526,26 @@ BR                         [ \t\n\r]
 
 <*>"--"[^\n]* {
           /* comment */
-	  QCString qcs(vhdlScanYYtext);
+	  QCString qcs(vhdlscannerYYtext);
 	  //  vhdl comment ?
 	  if (qcs.stripPrefix("--!"))
 	  {
 	    REJECT;
 	  }
+          else if (qcs.stripPrefix("--#"))
+          {
+            if (VhdlDocGen::getFlowMember())
+            {
+              FlowChart::addFlowChart(FlowChart::COMMENT_NO,0,0,qcs.data());
+            }
+          }
         }               
 .	{ /* unknown characters */ }
 									
 
-<*>{BR}*"--!"[^{}\n][^\n]*\n/{B}*"--!" { // multi line comment
+<*>{B}*"--!"[^{}\n]*[^\n]*\n/{B}*"--!" { // multi line comment
   if (iDocLine==-1) iDocLine=yyLineNr;
-  QCString qc(vhdlScanYYtext);
+  QCString qc(vhdlscannerYYtext);
   int len=qc.contains('\n')+yyLineNr-1;
   if (YY_START!=Comment) // Start of the comment block
   {
@@ -548,7 +555,7 @@ BR                         [ \t\n\r]
   
    if(!checkMultiComment(qc,len))
   {
-    strComment+=vhdlScanYYtext;
+    strComment+=vhdlscannerYYtext;
   }
   lineCount();
   BEGIN(Comment);
@@ -556,7 +563,7 @@ BR                         [ \t\n\r]
 
 <Comment>^{B}*"--!"[^\n]* {
   if (iDocLine==-1) iDocLine=yyLineNr;
-  strComment+=vhdlScanYYtext;
+  strComment+=vhdlscannerYYtext;
   int index=strComment.find("\\code");
   if (index>0)
   {
@@ -584,14 +591,14 @@ BR                         [ \t\n\r]
             handleCommentBlock(strComment,FALSE);
           }
           strComment.resize(0);;
-          unput(*vhdlScanYYtext);
+          unput(*vhdlscannerYYtext);
           doxComment=FALSE;
           BEGIN(g_lastCommentContext);
         }
         
 <*>"--!"[^\n]* { // one line comment
           if (iDocLine==-1) iDocLine=yyLineNr;
-          QCString qcs(vhdlScanYYtext);
+          QCString qcs(vhdlscannerYYtext);
 
 	  bool isEndCode=qcs.contains("\\endcode");
 
@@ -623,7 +630,7 @@ BR                         [ \t\n\r]
        }
 
 <*>"/*" {
-	  strComment+=vhdlScanYYtext;
+	  strComment+=vhdlscannerYYtext;
 	  if (yy_hold_char=='!') // found  comment starting with "/*!"
   	  {
 	    doxComment=TRUE;
@@ -632,7 +639,7 @@ BR                         [ \t\n\r]
         }
 
 <Vhdl2008Comment>[^*]*[*]+    {
-    	  QCString tt(vhdlScanYYtext);
+    	  QCString tt(vhdlscannerYYtext);
 	  int len=tt.length();
 	  yyLineNr+=tt.contains('\n');
 
@@ -705,7 +712,7 @@ void vhdlscanFreeScanner()
 #if defined(YY_FLEX_SUBMINOR_VERSION)
   if (g_lexInit)
   {
-    vhdlScanYYlex_destroy();
+    vhdlscannerYYlex_destroy();
   }
 #endif
 }
@@ -728,12 +735,16 @@ void VHDLLanguageScanner::parsePrototype(const char *text)
 // do parsing
 //int VhdlParser::doLex()
 //{
-//  int token=vhdlScanYYlex();
+//  int token=vhdlscannerYYlex();
 //  //fprintf(stderr,"\ntoken: %d at line: %d",token,yyLineNr);
 //  return token;
 //}
 
-void VHDLLanguageScanner::parseInput(const char *fileName,const char *fileBuf,Entry *root)
+void VHDLLanguageScanner::parseInput(const char *fileName,
+                                     const char *fileBuf,
+                                     Entry *root,
+                                     bool /*sameTranslationUnit*/,
+                                     QStrList & /*filesInSameTranslationUnit*/)
 {
   yyFileName=QCString(fileName);
 
@@ -752,6 +763,7 @@ void VHDLLanguageScanner::parseInput(const char *fileName,const char *fileBuf,En
     VhdlDocGen::parseUCF(fileBuf,root,yyFileName,TRUE); 
     return; 
   }
+  printlex(yy_flex_debug, TRUE, __FILE__, fileName);
 
   ::parserInit();
   yycont=getVhdlCont();
@@ -764,7 +776,7 @@ void VHDLLanguageScanner::parseInput(const char *fileName,const char *fileBuf,En
   inputFile.setName(fileName);
   if (g_lexInit)
   {
-    vhdlScanYYrestart( vhdlScanYYin );
+    vhdlscannerYYrestart( vhdlscannerYYin );
   }
   g_lexInit=TRUE;
   g_thisParser=this;
@@ -780,11 +792,13 @@ void VHDLLanguageScanner::parseInput(const char *fileName,const char *fileBuf,En
   free(lineIndex);
   inputFile.close();
   mapLibPackage(root);
+  printlex(yy_flex_debug, FALSE, __FILE__, fileName);
 }
 
 void VHDLLanguageScanner::parseCode(CodeOutputInterface &codeOutIntf,
     const char *scopeName,
     const QCString &input,
+    SrcLangExt /*lang*/,
     bool isExampleBlock,
     const char *exampleName,
     FileDef *fileDef,
@@ -792,12 +806,14 @@ void VHDLLanguageScanner::parseCode(CodeOutputInterface &codeOutIntf,
     int endLine,
     bool inlineFragment,
     MemberDef *memberDef,
-    bool showLineNumbers
+    bool showLineNumbers,
+    Definition *searchCtx,
+    bool collectXRefs
     )
 {
   ::parseVhdlCode(codeOutIntf,scopeName,input,isExampleBlock,exampleName,
                   fileDef,startLine,endLine,inlineFragment,memberDef,
-                  showLineNumbers);
+                  showLineNumbers,searchCtx,collectXRefs);
 }
 
 /*
@@ -811,73 +827,43 @@ void VHDLLanguageScanner::parseCode(CodeOutputInterface &codeOutIntf,
  * .....
  * and so on..
  */
-static void mapLibPackage(const Entry* ce)
+static void mapLibPackage( Entry* root)
 {
-  Entry *lastComp=0;
-  while (TRUE)
+  QList<Entry> epp=getLibUse();
+  EntryListIterator eli(epp);
+  Entry *rt;
+  for (;(rt=eli.current());++eli)
   {
-    bool found = FALSE;
-    Entry *rt=0;
-    //const QList<Entry> *epp=ce->children();
-    EntryListIterator eli(*ce->children());
-    EntryListIterator eli1=eli;
-    for (;(rt=eli.current()),eli1=eli;++eli)
+    if (addLibUseClause(rt->name))
     {
-      if (rt->spec==VhdlDocGen::LIBRARY || rt->spec==VhdlDocGen::USE)
-        // top level library or use statement
+      Entry *current;
+      EntryListIterator eLib(*root->children());
+      bool bFound=FALSE;
+      for (eLib.toFirst();(current=eLib.current());++eLib)
       {
-        Entry *temp=0;
-        if(!addLibUseClause(rt->name))
-        {
-          rt->spec=-1;
-          rt->section=0;
-          //  continue;
-        }
-
-        for (;(temp=eli1.current());++eli1) // find next entity
-        {
-          if (temp->spec==VhdlDocGen::ENTITY || 
-              temp->spec==VhdlDocGen::PACKAGE || 
-              temp->spec==VhdlDocGen::ARCHITECTURE || 
-              temp->spec==VhdlDocGen::PACKAGE_BODY)
+        if (VhdlDocGen::isVhdlClass(current))
+          if (current->startLine > rt->startLine)
           {
-            Entry *ee=new Entry(*rt); //append a copy to entries sublist
-            temp->addSubEntry(ee);
-            found=TRUE;
-            rt->spec=-1; //nullify entry
-            rt->section=0;
-            lastComp=temp;
-            break;
+            bFound=TRUE;
+            current->addSubEntry(rt);
+            break;     
           }
-        }//for
-        if (lastComp && rt->spec!=-1)
-        {
-          Entry *ee=new Entry(*rt); //append a copy to entries sublist
-          lastComp->addSubEntry(ee);
-          found=TRUE;
-          rt->spec=-1; //nullify entry
-          rt->section=0;
-        }
-      }//if
-    }//for
-    if (!found) // nothing left to do
-    {
-      return; 
-    }
-  }//while
+      }//for
+      if (!bFound)
+      {
+        root->addSubEntry(rt);
+      }
+    } //if
+  }// for
+
+  epp.clear();
 }//MapLib
 
 static bool addLibUseClause(const QCString &type)
 {
-  static bool show=Config_getBool("SHOW_INCLUDE_FILES");
   static bool showIEEESTD=Config_getBool("FORCE_LOCAL_INCLUDES");
 
-  if (!show)  // all libraries and included packages will not  be shown
-  {
-    return FALSE;
-  }
-
-  if (!showIEEESTD) // all standard packages and libraries will not be shown
+  if (showIEEESTD) // all standard packages and libraries will not be shown
   {  
     if (type.lower().stripPrefix("ieee")) return FALSE;
     if (type.lower().stripPrefix("std")) return FALSE;
@@ -982,7 +968,9 @@ int getParsedLine(int object)
 void isVhdlDocPending()
 {
   if (!str_doc.pending)
+  {
     return;
+  }
   str_doc.pending=FALSE;
   oldEntry=0; // prevents endless recursion
   iDocLine=str_doc.iDocLine;
@@ -996,16 +984,16 @@ static bool  checkMultiComment(QCString& qcs,int line)
 
   if (pTemp->isEmpty()) return false;
 
-  int ii=pTemp->count();
+  //int ii=pTemp->count();
   qcs.stripPrefix("--!");
   while (!pTemp->isEmpty())
   {
-    Entry *e=(Entry*)pTemp->first();
+    Entry *e=(Entry*)pTemp->getFirst();
     e->briefLine=line;
     e->brief+=qcs;
     iDocLine=-1;
     pTemp->removeFirst();
-    ii=pTemp->count();
+    //ii=pTemp->count();
   }
   return true; 
 }

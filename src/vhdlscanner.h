@@ -1,8 +1,8 @@
 /******************************************************************************
  *
- * $Id: vhdlscanner.h,v 1.9 2001/03/19 19:27:39 root Exp $
+ * 
  *
- * Copyright (C) 1997-2012 by Dimitri van Heesch.
+ * Copyright (C) 1997-2014 by Dimitri van Heesch.
  *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation under the terms of the GNU General Public License is hereby 
@@ -28,9 +28,8 @@
 #include <unistd.h>
 #include <qfile.h>
 #include <qdict.h>
-
+#include "vhdldocgen.h"
 #include "entry.h"
-#include "memberlist.h"
 
 class Entry;
 class ClassSDict;
@@ -38,6 +37,7 @@ class FileStorage;
 class ClassDef;
 class MemberDef;
 class QStringList;
+class MemberList;
 
 
 /** VHDL parser using state-based lexical scanning.
@@ -48,13 +48,18 @@ class VHDLLanguageScanner : public ParserInterface
 {
   public:
     virtual ~VHDLLanguageScanner() {}
+    void startTranslationUnit(const char *) {}
+    void finishTranslationUnit() {}
     void parseInput(const char * fileName, 
                     const char *fileBuf, 
-                    Entry *root);
+                    Entry *root,
+                    bool sameTranslationUnit,
+                    QStrList &filesInSameTranslationUnit);
     bool needsPreprocessing(const QCString &extension);
     void parseCode(CodeOutputInterface &codeOutIntf,
                    const char *scopeName,
                    const QCString &input,
+                   SrcLangExt lang,
                    bool isExampleBlock,
                    const char *exampleName=0,
                    FileDef *fileDef=0,
@@ -62,7 +67,9 @@ class VHDLLanguageScanner : public ParserInterface
                    int endLine=-1,
                    bool inlineFragment=FALSE,
                    MemberDef *memberDef=0,
-                   bool showLineNumbers=TRUE
+                   bool showLineNumbers=TRUE,
+                   Definition *searchCtx=0,
+                   bool collectXRefs=TRUE
                   );
     void resetCodeParserState();
     void parsePrototype(const char *text);
@@ -78,32 +85,32 @@ struct VhdlContainer
   Entry*  root;          // root
 };   
 
-/** Configuation node for VHDL */
+/** Configuration node for VHDL */
 struct VhdlConfNode
 { 
-  VhdlConfNode *prevNode;
-  VhdlConfNode(const char*  a,const char*  b,const char* config) 
+  VhdlConfNode(const char*  a,const char*  b,const char* config,const char* cs,bool leaf) 
   { 
     arch=a;              // architecture  e.g. for iobuffer
+    arch=arch.lower();
     binding=b;           // binding e.g.  use entiy work.xxx(bev)
+    binding=binding.lower();
     confVhdl=config;     // configuration foo is bar
-    isBind=false;
-    prevNode=NULL;
-    isRoot=false;          
+    compSpec=cs;        
     isInlineConf=false;  // primary configuration?
+    isLeaf=leaf;
   };
 
   QCString confVhdl;
   QCString arch;
   QCString binding;
-  QList<VhdlConfNode> confN;
-  bool isBind;
+  QCString compSpec;
+  int level;
+  bool isLeaf;
   bool isInlineConf;
-  bool isRoot;
 
-  void addNode(VhdlConfNode* n) { confN.append(n); }
-  bool isBinding()          { return binding.isEmpty(); }
 };
+
+
 
 // returns the current conpound entity,architecture, package,package body 
 Entry* getVhdlCompound();
@@ -128,8 +135,13 @@ void vhdlParse();
 // return the list of component instantiations e.g. foo: component bar 
 QList<Entry> &  getVhdlInstList();
 
-// returns the list of found configurations
+// returns   configuration list
 QList<VhdlConfNode>& getVhdlConfiguration();
 
+// returns library/used list
+QList<Entry> &  getLibUse();
+
 void isVhdlDocPending();
+
+
 #endif

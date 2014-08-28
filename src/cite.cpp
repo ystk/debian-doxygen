@@ -26,11 +26,11 @@
 //--------------------------------------------------------------------------
 
 static const char *doxygen_bst =
-#include "doxygen_bst.h"
+#include "doxygen.bst.h"
 ;
 
 static const char *bib2xhtml_pl =
-#include "bib2xhtml.h"
+#include "bib2xhtml.pl.h"
 ;
 
 //--------------------------------------------------------------------------
@@ -45,7 +45,7 @@ CiteDict::CiteDict(int size) : m_entries(size, FALSE)
   m_entries.setAutoDelete(TRUE);
 }
 
-static QCString getListOfBibFiles(const QCString &sep,bool stripExtension)
+static QCString getListOfBibFiles(const QCString &sep,bool namesOnly)
 {
   QCString result;
   QStrList &citeDataList = Config_getList("CITE_BIB_FILES");
@@ -54,17 +54,24 @@ static QCString getListOfBibFiles(const QCString &sep,bool stripExtension)
   {
     int i;
     QCString bibFile = bibdata;
-    if (stripExtension && bibFile.right(4)==".bib")
+    if (namesOnly && bibFile.right(4)==".bib") // strip extension
     {
       bibFile = bibFile.left(bibFile.length()-4);
     }
-    if (stripExtension && (i=bibFile.findRev('/'))!=-1)
+    if ((i=bibFile.findRev('/'))!=-1) // strip path
     {
       bibFile = bibFile.mid(i+1);
     }
     if (!bibFile.isEmpty())
     {
-      result+=bibFile;
+      if (namesOnly) // bare names
+      {
+        result+=bibFile;
+      }
+      else // add quotes for paths with spaces
+      {
+        result+="\""+bibFile+"\""; 
+      }
       bibdata = citeDataList.next();
       if (bibdata)
       {
@@ -81,11 +88,24 @@ static QCString getListOfBibFiles(const QCString &sep,bool stripExtension)
 
 void CiteDict::writeLatexBibliography(FTextStream &t)
 {
-  if (m_entries.count()==0) return;
+  if (m_entries.isEmpty())
+    return;
+
   QCString style = Config_getString("LATEX_BIB_STYLE");
-  if (style.isEmpty()) style="plain";
-  t << "\\newpage \\bibliographystyle{" << style << "}" << endl;
-  t << "\\bibliography{" << getListOfBibFiles(",",TRUE) << "}" << endl;
+  if (style.isEmpty())
+    style="plain";
+  QCString unit;
+  if (Config_getBool("COMPACT_LATEX"))
+    unit = "section";
+  else
+    unit = "chapter";
+  t << "% Bibliography\n"
+       "\\newpage\n"
+       "\\phantomsection\n"
+       "\\addcontentsline{toc}{" << unit << "}{" << theTranslator->trCiteReferences() << "}\n"
+       "\\bibliographystyle{" << style << "}\n"
+       "\\bibliography{" << getListOfBibFiles(",",TRUE) << "}\n"
+       "\n";
 }
 
 void CiteDict::insert(const char *label)
@@ -123,7 +143,7 @@ void CiteDict::generatePage() const
   f.setName(citeListFile);
   if (!f.open(IO_WriteOnly)) 
   {
-    err("error: could not open file %s for writing\n",citeListFile.data());
+    err("could not open file %s for writing\n",citeListFile.data());
   }
   FTextStream t(&f);
   t << "<!-- BEGIN CITATIONS -->" << endl;
@@ -146,7 +166,7 @@ void CiteDict::generatePage() const
   QCString bib2xhtml = bib2xhtml_pl;
   if (!f.open(IO_WriteOnly)) 
   {
-    err("error: could not open file %s for writing\n",bib2xhtmlFile.data());
+    err("could not open file %s for writing\n",bib2xhtmlFile.data());
   }
   f.writeBlock(bib2xhtml, bib2xhtml.length());
   f.close();
@@ -157,21 +177,61 @@ void CiteDict::generatePage() const
   f.setName(doxygenBstFile);
   if (!f.open(IO_WriteOnly)) 
   {
-    err("error: could not open file %s for writing\n",doxygenBstFile.data());
+    err("could not open file %s for writing\n",doxygenBstFile.data());
   }
   f.writeBlock(bstData, bstData.length());
   f.close();
 
-  // 4. run bib2xhtml perl script on the generated file which will insert the
-  //    bibliography in citelist.doc
-  portable_system("perl",bib2xhtmlFile+" "+getListOfBibFiles(" ",FALSE)+" "+
-                         citeListFile);
+  // 4. for html we just copy the bib files to the output so that
+  //    bibtex can find them without path (bibtex doesn't support path's
+  //    with spaces!)
+  QList<QCString> tempFiles;
+  tempFiles.setAutoDelete(TRUE);
+  QDir thisDir;
+  if (Config_getBool("GENERATE_HTML"))
+  {
+    // copy bib files to the latex output dir
+    QStrList &citeDataList = Config_getList("CITE_BIB_FILES");
+    QCString bibOutputDir = outputDir+"/";
+    QFileInfo fo(bibOutputDir);
+    const char *bibdata = citeDataList.first();
+    while (bibdata)
+    {
+      QCString bibFile = bibdata;
+      if (!bibFile.isEmpty() && bibFile.right(4)!=".bib") bibFile+=".bib";
+      QFileInfo fi(bibFile);
+      if (fi.exists() && fi.dirPath(TRUE)!=fo.absFilePath())
+      {
+        if (!bibFile.isEmpty())
+        {
+          QCString destFile=bibOutputDir+fi.fileName().data();
+          copyFile(bibFile,destFile);
+          tempFiles.append(new QCString(destFile));
+        }
+      }
+      else if (!fi.exists())
+      {
+        err("bib file %s not found!\n",bibFile.data());
+      }
+      bibdata = citeDataList.next();
+    }
+  }
 
-  // 5. read back the file
+  QCString oldDir = QDir::currentDirPath().utf8();
+  QDir::setCurrent(outputDir);
+
+  // 5. run bib2xhtml perl script on the generated file which will insert the
+  //    bibliography in citelist.doc
+  portable_system("perl","\""+bib2xhtmlFile+"\" "+getListOfBibFiles(" ",FALSE)+" \""+
+                         citeListFile+"\"");
+
+  QDir::setCurrent(oldDir);
+
+  // 6. read back the file
   f.setName(citeListFile);
   if (!f.open(IO_ReadOnly)) 
   {
-    err("error: could not open file %s/citelist.doc for reading\n",outputDir.data());
+    err("could not open file %s/citelist.doc for reading\n",outputDir.data());
   }
   bool insideBib=FALSE;
   
@@ -179,6 +239,7 @@ void CiteDict::generatePage() const
   QFileInfo fi(citeListFile);
   QCString input(fi.size()+1);
   f.readBlock(input.data(),fi.size());
+  f.close();
   input.at(fi.size())='\0';
   int p=0,s;
   //printf("input=[%s]\n",input.data());
@@ -212,11 +273,11 @@ void CiteDict::generatePage() const
   }
   //printf("doc=[%s]\n",doc.data());
 
-  // 6. add it as a page
+  // 7. add it as a page
   addRelatedPage(CiteConsts::fileName,
        theTranslator->trCiteReferences(),doc,0,CiteConsts::fileName,1,0,0,0);
 
-  // 7. for latex we just copy the bib files to the output and let 
+  // 8. for latex we just copy the bib files to the output and let 
   //    latex do this work.
   if (Config_getBool("GENERATE_LATEX"))
   {
@@ -238,17 +299,20 @@ void CiteDict::generatePage() const
       }
       else
       {
-        err("Error: bib file %s not found!\n",bibFile.data());
+        err("bib file %s not found!\n",bibFile.data());
       }
       bibdata = citeDataList.next();
     }
   }
 
-  // 8. Remove temporary files
-  QDir thisDir;
+  // 9. Remove temporary files
   thisDir.remove(citeListFile);
   thisDir.remove(doxygenBstFile);
   thisDir.remove(bib2xhtmlFile);
-
+  while (!tempFiles.isEmpty()) 
+  {
+    QCString *s=tempFiles.take(0);
+    thisDir.remove(*s);
+  }
 }
 
