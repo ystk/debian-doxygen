@@ -1,5 +1,5 @@
 #
-# This file was generated from Makefile.in on Sun Apr 20 17:17:24 CEST 2014
+# This file was generated from Makefile.in on Thu Aug 21 10:48:35 CEST 2014
 #
 
 DOXYGEN   = /Users/dimitri/doxygen
@@ -8,10 +8,11 @@ ENV       = env TMAKEPATH="$(TMAKEPATH)"
 TMAKE     = /Users/dimitri/doxygen/tmake/bin/tmake
 MAKE      = /opt/local/bin/gmake
 PYTHON    = /opt/local/bin/python2
+PERL      = /opt/local/bin/perl
 LEX       = /usr/bin/flex
 RM        = rm -f
 CP        = cp
-VERSION   = 1.8.6
+VERSION   = 1.8.8
 INSTALL   = /usr/local
 INSTTOOL  = /opt/local/bin/ginstall
 DOXYDOCS  = ..

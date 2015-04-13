@@ -1,4 +1,4 @@
-%define version 1.8.7
+%define version 1.8.8
 %define revision 1
 %define mmn 1
 %define name doxygen

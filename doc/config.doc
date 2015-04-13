@@ -95,6 +95,7 @@ followed by the descriptions of the tags grouped by category.
 \refitem cfg_disable_index DISABLE_INDEX
 \refitem cfg_distribute_group_doc DISTRIBUTE_GROUP_DOC
 \refitem cfg_docbook_output DOCBOOK_OUTPUT
+\refitem cfg_docbook_programlisting DOCBOOK_PROGRAMLISTING
 \refitem cfg_docset_bundle_id DOCSET_BUNDLE_ID
 \refitem cfg_docset_feedname DOCSET_FEEDNAME
 \refitem cfg_docset_publisher_id DOCSET_PUBLISHER_ID
@@ -249,6 +250,7 @@ followed by the descriptions of the tags grouped by category.
 \refitem cfg_perlmod_makevar_prefix PERLMOD_MAKEVAR_PREFIX
 \refitem cfg_perlmod_pretty PERLMOD_PRETTY
 \refitem cfg_perl_path PERL_PATH
+\refitem cfg_plantuml_jar_path PLANTUML_JAR_PATH
 \refitem cfg_predefined PREDEFINED
 \refitem cfg_project_brief PROJECT_BRIEF
 \refitem cfg_project_logo PROJECT_LOGO
@@ -1292,9 +1294,7 @@ FILE_VERSION_INFO = "cleartool desc -fmt \%Vn"
  \c bibtex tool to be installed. See also http://en.wikipedia.org/wiki/BibTeX for
  more info. For \f$\mbox{\LaTeX}\f$ the style of the bibliography can be controlled 
  using \ref cfg_latex_bib_style "LATEX_BIB_STYLE".
- To use this 
- feature you need \c bibtex and \c perl available in the search path. Do not use 
- file names with spaces, \c bibtex cannot handle them.
+ To use this feature you need \c bibtex and \c perl available in the search path.
  See also \ref cmdcite "\\cite" for info how to create references.
 
 </dl>
@@ -1932,13 +1932,15 @@ This tag requires that the tag \ref cfg_generate_html "GENERATE_HTML" is set to 
  \anchor cfg_html_extra_stylesheet
 <dt>\c HTML_EXTRA_STYLESHEET <dd>
  \addindex HTML_EXTRA_STYLESHEET
- The \c HTML_EXTRA_STYLESHEET tag can be used to specify an additional 
- user-defined cascading style sheet that is included after the standard 
+ The \c HTML_EXTRA_STYLESHEET tag can be used to specify additional 
+ user-defined cascading style sheets that are included after the standard 
  style sheets created by doxygen. Using this option one can overrule 
  certain style aspects. This is preferred over using \ref cfg_html_stylesheet "HTML_STYLESHEET" 
  since it does not replace the standard style sheet and is therefor more 
- robust against future updates. Doxygen will copy the style sheet file to 
- the output directory. Here is an example stylesheet that gives the contents area a fixed width:
+ robust against future updates. Doxygen will copy the style sheet files to 
+ the output directory.
+ \note The order of the extra stylesheet files is of importance (e.g. the last
+ stylesheet in the list overrules the setting of the previous ones in the list). Here is an example stylesheet that gives the contents area a fixed width:
 \verbatim
 body {
         background-color: #CCC;
@@ -2748,11 +2750,10 @@ This tag requires that the tag \ref cfg_generate_latex "GENERATE_LATEX" is set t
  The following commands have a special meaning inside the header:
  <code>\$title</code>, <code>\$datetime</code>, <code>\$date</code>,
  <code>\$doxygenversion</code>, <code>\$projectname</code>, 
- <code>\$projectnumber</code>. 
- Doxygen will replace them by respectively 
- the title of the page, the current date and time, only the current date,
- the version number of doxygen, the project name (see \ref cfg_project_name "PROJECT_NAME"), or the
- project number (see \ref cfg_project_number "PROJECT_NUMBER").
+ <code>\$projectnumber</code>, <code>\$projectbrief</code>, 
+ <code>\$projectlogo</code>. 
+ Doxygen will replace <code>\$title</code> with the empy string, for the replacement values of the
+ other commands the user is refered to \ref cfg_html_header "HTML_HEADER".
 
 
 This tag requires that the tag \ref cfg_generate_latex "GENERATE_LATEX" is set to \c YES.
@@ -2763,6 +2764,9 @@ This tag requires that the tag \ref cfg_generate_latex "GENERATE_LATEX" is set t
  the generated \f$\mbox{\LaTeX}\f$ document. The footer should contain everything after 
  the last chapter. If it is left blank doxygen will generate a 
  standard footer.
+ See \ref cfg_latex_header "LATEX_HEADER" for more information on 
+ how to generate a default footer and what special commands can be 
+ used inside the footer.
  
  <br>Note: Only use a user-defined footer if you know what you are doing!
 
@@ -2796,7 +2800,7 @@ This tag requires that the tag \ref cfg_generate_latex "GENERATE_LATEX" is set t
  \anchor cfg_use_pdflatex
 <dt>\c USE_PDFLATEX <dd>
  \addindex USE_PDFLATEX
- If the \c LATEX_PDFLATEX tag is set to \c YES, doxygen will use
+ If the \c USE_PDFLATEX tag is set to \c YES, doxygen will use
  \c pdflatex to generate the PDF file directly from the \f$\mbox{\LaTeX}\f$
  files.  Set this option to \c YES to get a higher quality PDF documentation.
 
@@ -3050,6 +3054,19 @@ If a relative path is entered the value of \ref cfg_output_directory "OUTPUT_DIR
 front of it.
 
 The default directory is: <code>docbook</code>.
+
+
+This tag requires that the tag \ref cfg_generate_docbook "GENERATE_DOCBOOK" is set to \c YES.
+ \anchor cfg_docbook_programlisting
+<dt>\c DOCBOOK_PROGRAMLISTING <dd>
+ \addindex DOCBOOK_PROGRAMLISTING
+ If the \c DOCBOOK_PROGRAMLISTING tag is set to \c YES doxygen will
+ include the program listings (including syntax highlighting
+ and cross-referencing information) to the DOCBOOK output. Note that
+ enabling this will significantly increase the size of the DOCBOOK output.
+
+
+The default value is: <code>NO</code>.
 
 
 This tag requires that the tag \ref cfg_generate_docbook "GENERATE_DOCBOOK" is set to \c YES.
@@ -3376,7 +3393,7 @@ This tag requires that the tag \ref cfg_have_dot "HAVE_DOT" is set to \c YES.
  \anchor cfg_dot_fontname
 <dt>\c DOT_FONTNAME <dd>
  \addindex DOT_FONTNAME
- When you want a differently looking font n the dot files that doxygen generates
+ When you want a differently looking font in the dot files that doxygen generates
  you can specify the font name 
  using \c DOT_FONTNAME. You need to make sure dot is able to find the font, 
  which can be done by putting it in a standard location or by setting the 
@@ -3630,6 +3647,16 @@ This tag requires that the tag \ref cfg_have_dot "HAVE_DOT" is set to \c YES.
  contain dia files that are included in the documentation (see the
  \ref cmdmscfile "\\diafile" command).
 
+ \anchor cfg_plantuml_jar_path
+<dt>\c PLANTUML_JAR_PATH <dd>
+ \addindex PLANTUML_JAR_PATH
+ When using plantuml, the \c PLANTUML_JAR_PATH tag should be used to specify the path where 
+ java can find the \c plantuml.jar file. If left blank, it is assumed PlantUML is not used or 
+ called during a preprocessing step. Doxygen will generate a warning when it encounters a 
+ \ref cmdstartuml "\\startuml" command in this case and will not generate output for the diagram.
+
+
+This tag requires that the tag \ref cfg_have_dot "HAVE_DOT" is set to \c YES.
  \anchor cfg_dot_graph_max_nodes
 <dt>\c DOT_GRAPH_MAX_NODES <dd>
  \addindex DOT_GRAPH_MAX_NODES

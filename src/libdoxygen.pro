@@ -1,5 +1,5 @@
 #
-# This file was generated from libdoxygen.pro.in on Sun Apr 20 17:17:24 CEST 2014
+# This file was generated from libdoxygen.pro.in on Thu Aug 21 10:48:35 CEST 2014
 #
 
 #
@@ -54,6 +54,7 @@ HEADERS      =	arguments.h \
 		example.h \
 		filedef.h \
 		filename.h \
+		fileparser.h \
 		formula.h \
 		ftextstream.h \
 		ftvhelp.h \
@@ -90,6 +91,7 @@ HEADERS      =	arguments.h \
 		pagedef.h \
 		perlmodgen.h \
 		lodepng.h \
+		plantuml.h \
 		pre.h \
                 printdocvisitor.h \
                 pycode.h \
@@ -119,11 +121,12 @@ HEADERS      =	arguments.h \
 		version.h \
 		vhdlcode.h \
 		vhdldocgen.h \
-		vhdlscanner.h \
 		xmldocvisitor.h \
                 xmlgen.h \
                 docbookvisitor.h \
                 docbookgen.h \
+		vhdljjparser.h 
+		
 
 SOURCES      =	arguments.cpp \
 		cite.cpp \
@@ -149,6 +152,7 @@ SOURCES      =	arguments.cpp \
 		entry.cpp \
 		filedef.cpp \
 		filename.cpp \
+		fileparser.cpp \
 		formula.cpp \
 		ftextstream.cpp \
 		ftvhelp.cpp \
@@ -166,6 +170,7 @@ SOURCES      =	arguments.cpp \
                 layout.cpp \
 		lodepng.cpp \
 		logos.cpp \
+		plantuml.cpp \
 		mandocvisitor.cpp \
 		mangen.cpp \
 		sqlite3gen.cpp \
@@ -202,11 +207,10 @@ SOURCES      =	arguments.cpp \
                 xmlgen.cpp \
                 docbookvisitor.cpp \
                 docbookgen.cpp \
-                ../generated_src/doxygen/ce_parse.cpp \
+                vhdljjparser.cpp \
+	        ../generated_src/doxygen/ce_parse.cpp \
                 ../generated_src/doxygen/constexp.cpp \
 		../generated_src/doxygen/vhdlcode.cpp \
-		../generated_src/doxygen/vhdlparser.cpp \
-		../generated_src/doxygen/vhdlscanner.cpp \
 		../generated_src/doxygen/code.cpp \
 		../generated_src/doxygen/commentcnv.cpp \
 		../generated_src/doxygen/commentscan.cpp \
@@ -220,13 +224,15 @@ SOURCES      =	arguments.cpp \
                 ../generated_src/doxygen/tclscanner.cpp \
 		../generated_src/doxygen/fortrancode.cpp \
 		../generated_src/doxygen/fortranscanner.cpp \
-		../generated_src/doxygen/version.cpp
+		../generated_src/doxygen/version.cpp 
+		
+		
 
 win32:TMAKE_CXXFLAGS       += -DQT_NODLL
 win32-msvc:TMAKE_CXXFLAGS  += -Zm200
 win32-g++:TMAKE_CXXFLAGS   += -fno-exceptions
 linux-g++:TMAKE_CXXFLAGS   += -fno-exceptions
-INCLUDEPATH                += ../generated_src/doxygen ../src ../qtools ../libmd5
+INCLUDEPATH                += ../generated_src/doxygen ../src ../qtools ../libmd5 ../vhdlparser
 INCLUDEPATH                += 
 DEPENDPATH                 += ../generated_src/doxygen
 win32:INCLUDEPATH          += .
