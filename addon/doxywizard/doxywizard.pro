@@ -1,5 +1,5 @@
 #
-# This file was generated from doxywizard.pro.in on Sun Apr 20 17:17:24 CEST 2014
+# This file was generated from doxywizard.pro.in on Thu Aug 21 10:48:35 CEST 2014
 #
 
 ######################################################################
@@ -19,7 +19,7 @@ RCC_DIR      = ../../rcc/doxywizard
 DEFINES     += QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII
 
 macx-g++ {
-  CONFIG += x86 
+  CONFIG += x86 x86_64
 }
 
 # Input

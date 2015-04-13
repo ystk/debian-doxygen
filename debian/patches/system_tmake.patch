@@ -2,11 +2,11 @@ Author: Helmut Grohne <helmut@subdivi.de>
 Description: adapt configure to use the system copy of tmake
 Last-Update: 2013-05-22
 
-Index: doxygen/configure
+Index: b/configure
 ===================================================================
---- doxygen.orig/configure	2014-05-16 20:02:37.000000000 +0200
-+++ doxygen/configure	2014-05-16 20:02:37.000000000 +0200
-@@ -743,9 +743,9 @@
+--- a/configure
++++ b/configure
+@@ -751,9 +751,9 @@ configPWD=`pwd`
  
  cat > .makeconfig <<EOF
  DOXYGEN   = $configPWD
@@ -17,4 +17,4 @@ Index: doxygen/configure
 +TMAKE     = $configPWD/debian/tmake
  MAKE      = $f_make
  PYTHON    = $f_python
- LEX       = $f_flex
+ PERL      = $f_perl
