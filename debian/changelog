@@ -1,3 +1,11 @@
+doxygen (1.8.8-5+deb8u1) jessie-security; urgency=medium
+
+  * Non-maintainer upload by the LTS team.
+  * CVE-2016-10245: External search does not properly escape user
+    supplied data, resulting in vulnerability.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 01 Jun 2019 00:52:03 +0200
+
 doxygen (1.8.8-5) unstable; urgency=medium
 
   * Cherry pick c83db38ea83499be19d9ff242bfa22ae534ee80c. (Closes: #762272)

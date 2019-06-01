@@ -11,3 +11,4 @@ clang-configure.diff
 sqlite3-configure.diff
 fix-760700.diff
 fix-762272.diff
+CVE-2016-10245.patch
